@@ -7,7 +7,7 @@ from src.Car import Car
 from src.utils.draw_arabic import draw_arabic_text_box
 
 
-# ---------------- SILENCE THIRD-PARTY LOGS ONLY ----------------
+# Silence noisy libraries
 logging.getLogger("ppocr").setLevel(logging.ERROR)
 logging.getLogger("ultralytics").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
@@ -27,18 +27,19 @@ def main():
     cap = cv2.VideoCapture(args.input)
 
     if not cap.isOpened():
-        raise RuntimeError("❌ Cannot open input video")
+        raise RuntimeError("Cannot open input video")
 
-    # -------- READ TRUE VIDEO SIZE --------
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
 
-    # -------- OUTPUT VIDEO (FULL FRAME GUARANTEED) --------
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter("output_video.mp4", fourcc, fps, (width, height))
+    out = cv2.VideoWriter(
+        "output_video.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        fps,
+        (width, height)
+    )
 
-    # -------- FORCE FULL WINDOW (THIS FIXES CROPPING) --------
     if args.display:
         cv2.namedWindow("ALPR", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("ALPR", width, height)
@@ -54,7 +55,7 @@ def main():
 
         for x1, y1, x2, y2, car_id, plate_img in detections:
             if car_id not in cars:
-                cars[car_id] = Car(car_id=car_id, bbox=(x1, y1, x2, y2))
+                cars[car_id] = Car(car_id, (x1, y1, x2, y2))
 
             car = cars[car_id]
             car.update_bbox((x1, y1, x2, y2))
@@ -64,10 +65,9 @@ def main():
 
         for car_id in active_ids:
             car = cars.get(car_id)
-            if car is None:
+            if not car:
                 continue
 
-            # Car bounding box
             cv2.rectangle(
                 frame,
                 (car.x1, car.y1),
@@ -76,7 +76,6 @@ def main():
                 2
             )
 
-            # Plate text
             if car.final_plate:
                 draw_arabic_text_box(
                     frame,

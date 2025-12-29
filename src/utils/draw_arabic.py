@@ -3,8 +3,7 @@ import numpy as np
 import arabic_reshaper
 from bidi.algorithm import get_display
 
-
-FONT_PATH = "doc/fonts/arial.ttf"  # must support Arabic
+FONT_PATH = "doc/fonts/arial.ttf"
 
 
 def draw_arabic_text_box(
@@ -16,15 +15,9 @@ def draw_arabic_text_box(
     box_color=(255, 255, 255),
     padding=6
 ):
-    """
-    Draw Arabic text with a white background box (readable on video).
-    """
-
-    # Arabic shaping
     reshaped = arabic_reshaper.reshape(str(text))
     bidi_text = get_display(reshaped)
 
-    # Convert OpenCV frame to PIL
     img_pil = Image.fromarray(frame)
     draw = ImageDraw.Draw(img_pil)
 
@@ -38,7 +31,6 @@ def draw_arabic_text_box(
     x, y = position
     y = max(0, y - text_height - padding * 2)
 
-    # Draw white rectangle
     draw.rectangle(
         [
             x,
@@ -49,7 +41,6 @@ def draw_arabic_text_box(
         fill=box_color
     )
 
-    # Draw text
     draw.text(
         (x + padding, y + padding),
         bidi_text,
@@ -57,5 +48,4 @@ def draw_arabic_text_box(
         font=font
     )
 
-    # Back to OpenCV
     frame[:] = np.array(img_pil)

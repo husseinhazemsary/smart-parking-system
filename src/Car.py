@@ -31,7 +31,7 @@ class Car:
     # ---------------- OCR ----------------
     def try_read_plate(self, plate_img):
         """
-        Try OCR until we lock a final REAL plate (not headers like Egypt).
+        Try OCR until we lock a final plate.
         """
         from src.PlateReader import PlateReader
         reader = PlateReader()
@@ -42,22 +42,25 @@ class Car:
 
         text = str(text).strip()
 
-        # ❌ Reject very short
+        # ---------------- FILTER INVALID READS ----------------
+
+        # Ignore country labels
+        if text.lower() in {"egypt", "مصر"}:
+            return
+
+        # Must contain at least one digit OR Arabic letter
+        if not re.search(r"[0-9\u0621-\u064A]", text):
+            return
+
+        # Too short to be a real plate
         if len(text) < 4:
             return
 
-        # ❌ Reject known header-only words
-        lower = text.lower()
-        if lower in ["egypt", "arab republic", "مصر", "جمهورية", "العربية"]:
-            return
-
-        # ❌ Must contain at least one digit (Arabic or English)
-        if not re.search(r"[0-9٠-٩]", text):
-            return
+        # -----------------------------------------------------
 
         self.plate_candidates.append(text)
 
-        # ✅ Lock only after repetition
+        # Lock plate once repeated
         if self.plate_candidates.count(text) >= 2:
             self.final_plate = text
             self._save_debug_plate(plate_img)
@@ -68,6 +71,7 @@ class Car:
             return
 
         os.makedirs("debug/plates", exist_ok=True)
+
         path = f"debug/plates/car_{self.id}_{self.final_plate}.jpg"
         cv2.imwrite(path, plate_img)
 
