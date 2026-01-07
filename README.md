@@ -14,8 +14,6 @@ Run the main script with the following command:
 ```
 python main.py 
 ```
-<br>
-<br>
 Run the old main (main_old) script with the following command:
 ```
 python main_old.py -i input_video.mp4 -d
