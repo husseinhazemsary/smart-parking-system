@@ -166,3 +166,13 @@ cython_debug/
 /license-plate-detector-training.ipynb
 /weights/PlateDetector.pt
 /sample_output.mp4
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Debug/Testing
+debug/
+logs/
+*.log
