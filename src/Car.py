@@ -1,3 +1,5 @@
+# Car class to track vehicles and their license plates
+
 import time
 import os
 import cv2
@@ -6,32 +8,34 @@ import re
 
 class Car:
     def __init__(self, car_id, bbox):
-        self.id = car_id
+        self.id = car_id    # Unique identifier
 
-        # Bounding box
+        # Position - Bounding box
         self.x1, self.y1, self.x2, self.y2 = bbox
 
         # Plate logic
-        self.plate_candidates = []
-        self.final_plate = None
+        self.plate_candidates = []  # All OCR readings
+        self.final_plate = None  # Locked plate text
         self.last_seen = time.time()
         self.printed = False
 
         # Visualization
-        self.color = (0, 255, 0)
+        self.color = (0, 255, 0) # Green box
 
         # Debug saving
         self.saved_debug = False
 
-    # ---------------- UPDATE ----------------
+    # Update bounding box
     def update_bbox(self, bbox):
+        # Update position (called every frame vehicle is detected)
         self.x1, self.y1, self.x2, self.y2 = bbox
-        self.last_seen = time.time()
+        self.last_seen = time.time()    # Reset timeout
 
-    # ---------------- OCR ----------------
+    # Attempt to read plate from given image crop
     def try_read_plate(self, plate_img):
         """
-        Try OCR until we lock a final plate.
+        Simpler validation logic used in early versions.
+        Current system uses validation in main_clean.py instead.
         """
         from src.PlateReader import PlateReader
         reader = PlateReader()
@@ -42,30 +46,27 @@ class Car:
 
         text = str(text).strip()
 
-        # ---------------- FILTER INVALID READS ----------------
-
-        # Ignore country labels
+        # FILTER 1: Reject country labels
         if text.lower() in {"egypt", "مصر"}:
             return
 
-        # Must contain at least one digit OR Arabic letter
+        # FILTER 2: Must have Arabic content
         if not re.search(r"[0-9\u0621-\u064A]", text):
             return
 
-        # Too short to be a real plate
+        # FILTER 3: Minimum length
         if len(text) < 4:
             return
 
-        # -----------------------------------------------------
-
+        #  Add to candidates
         self.plate_candidates.append(text)
 
-        # Lock plate once repeated
+        # STABILITY CHECK: Lock after 2 identical reads
         if self.plate_candidates.count(text) >= 2:
             self.final_plate = text
             self._save_debug_plate(plate_img)
 
-    # ---------------- DEBUG ----------------
+    # Debug: Save plate image once final plate is determined
     def _save_debug_plate(self, plate_img):
         if self.saved_debug:
             return
