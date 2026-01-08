@@ -11,8 +11,8 @@ from src.utils.draw_arabic import draw_arabic_text_box
 # CONFIG
 # ==============================
 
-INPUT_VIDEO = "input/video.mp4"
-OUTPUT_VIDEO = "output/output_video.mp4"
+INPUT_VIDEO = "input/video2.mp4"
+OUTPUT_VIDEO = "output/output_video2.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 

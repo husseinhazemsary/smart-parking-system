@@ -166,7 +166,7 @@ cython_debug/
 /license-plate-detector-training.ipynb
 /weights/PlateDetector.pt
 /sample_output.mp4
-/diagnose_system.py
+/main_with_diagnostics.py
 
 # IDE
 .idea/
@@ -177,3 +177,4 @@ cython_debug/
 debug/
 logs/
 *.log
+diagnostics/
