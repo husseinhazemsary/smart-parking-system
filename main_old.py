@@ -7,7 +7,7 @@ import logging
 
 from src.PlateDetector import PlateDetector
 from src.Car import Car
-from src.utils.draw_arabic import draw_arabic_text_box
+from utils.draw_arabic import draw_arabic_text_box
 
 
 # Silence noisy libraries

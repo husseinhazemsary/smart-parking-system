@@ -6,13 +6,50 @@ from src.Car import Car
 from src.PlateDetector import PlateDetector
 from src.PlateReader import PlateReader
 from src.utils.draw_arabic import draw_arabic_text_box
+import re
+
+HEADER_PATTERNS = [
+    r"\bEGYPT\b",
+    r"\bEGYPTI\b",
+    r"\bLEGYPTE\b",
+    r"\bCEGYPT\b",
+    r"\bEGTP\b",
+    r"\bEGTPT\b",
+    r"\bEGYP\b",
+    r"\bEGYPT[A-Z]*\b",
+    r"مصر",
+    r"مصـر",
+    r"مصان",
+    r"مطير",
+    r"مطى",
+]
+
+def remove_plate_header(text):
+    if not text:
+        return text
+
+    cleaned = text.upper()
+    for pattern in HEADER_PATTERNS:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+
+    # Normalize spaces
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
+def extract_arabic_digits(text):
+    digits = re.findall(r"[٠-٩]", text)
+    return "".join(digits) if digits else None
+
+def extract_arabic_letters(text):
+    letters = re.findall(r"[ء-ي]", text)
+    return letters if letters else []
 
 # ==============================
 # CONFIG
 # ==============================
 
-INPUT_VIDEO = "input/video2.mp4"
-OUTPUT_VIDEO = "output/output_video2.mp4"
+INPUT_VIDEO = "input/whiskvid.mp4"
+OUTPUT_VIDEO = "output/output_whiskvid.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
@@ -28,7 +65,7 @@ DEBUG_SHOW_OCR_RESULTS = True  # Show all OCR results in console
 # VALIDATION MODE
 # ==============================
 # Use lenient validation for fast-moving cars (accepts partial reads)
-USE_LENIENT_VALIDATION = True
+USE_LENIENT_VALIDATION = False
 
 # ==============================
 # GATE ZONE TOGGLE
@@ -263,12 +300,9 @@ def reconstruct_plate_from_partials(candidates):
     
     return None
 
+def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
+                          debug_mode=False, save_plates=False):
 
-def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index, debug_mode=False, save_plates=False):
-    """
-    Detect plate in car ROI and perform OCR with detailed debugging.
-    Returns tuple: (plate_text, debug_info_dict)
-    """
     debug_info = {
         'plate_detected': False,
         'plate_crop_size': None,
@@ -276,7 +310,7 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
         'validation_passed': False,
         'rejection_reason': None
     }
-    
+
     x1, y1, x2, y2 = car.x1, car.y1, car.x2, car.y2
     car_roi = frame[y1:y2, x1:x2]
 
@@ -284,65 +318,71 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
         debug_info['rejection_reason'] = "Empty car ROI"
         return None, debug_info
 
-    # Detect plate in car ROI
     plate_results = plate_detector.plate_model(car_roi, verbose=False)[0]
-    
+
     if len(plate_results.boxes) == 0:
         debug_info['rejection_reason'] = "No plate detected by YOLO"
         return None, debug_info
 
-    # Get first plate detection
     debug_info['plate_detected'] = True
+
     p = plate_results.boxes[0].xyxy[0]
     px1, py1, px2, py2 = map(int, p)
-    
-    # Clamp to ROI boundaries
+
     px1 = max(0, px1)
     py1 = max(0, py1)
     px2 = min(car_roi.shape[1], px2)
     py2 = min(car_roi.shape[0], py2)
-    
+
     plate_img = car_roi[py1:py2, px1:px2].copy()
-    
+
     if plate_img.size == 0:
         debug_info['rejection_reason'] = "Empty plate crop"
         return None, debug_info
-    
+
     debug_info['plate_crop_size'] = f"{plate_img.shape[1]}x{plate_img.shape[0]}"
-    
-    # Skip OCR if plate is too small (likely too far/blurry for good read)
-    # Increased thresholds to reduce false positives from tiny plates
-    MIN_PLATE_WIDTH = 60   # Was 50
-    MIN_PLATE_HEIGHT = 28  # Was 23
-    
-    if plate_img.shape[1] < MIN_PLATE_WIDTH or plate_img.shape[0] < MIN_PLATE_HEIGHT:
-        debug_info['rejection_reason'] = f"Plate too small ({plate_img.shape[1]}x{plate_img.shape[0]}), waiting for closer..."
+
+    if plate_img.shape[1] < 60 or plate_img.shape[0] < 28:
+        debug_info['rejection_reason'] = "Plate too small"
         return None, debug_info
 
-    # Save plate crop for debugging
     if save_plates:
         import os
         os.makedirs("debug/plate_crops", exist_ok=True)
-        crop_path = f"debug/plate_crops/car_{car.id}_frame_{frame_index}.jpg"
-        cv2.imwrite(crop_path, plate_img)
+        cv2.imwrite(
+            f"debug/plate_crops/car_{car.id}_frame_{frame_index}.jpg",
+            plate_img
+        )
 
-    # Perform OCR
-    plate_text = plate_reader.read_plate(plate_img)
-    debug_info['ocr_result'] = plate_text if plate_text else "NULL"
-    
-    if not plate_text:
+    # -------- OCR --------
+    raw_text = plate_reader.read_plate(plate_img)
+    debug_info['ocr_result'] = raw_text if raw_text else "NULL"
+
+    if not raw_text:
         debug_info['rejection_reason'] = "OCR returned empty"
         return None, debug_info
-    
-    # Validate Egyptian plate format (use lenient or strict based on config)
-    validation_func = lenient_egyptian_plate if USE_LENIENT_VALIDATION else valid_egyptian_plate
-    
-    if validation_func(plate_text):
+
+    # -------- HEADER REMOVAL --------
+    cleaned_text = remove_plate_header(raw_text)
+
+    # -------- DIGIT EXTRACTION --------
+    digits = extract_arabic_digits(cleaned_text)
+    letters = extract_arabic_letters(cleaned_text)
+
+    # Accept if digits exist
+    if digits and len(digits) >= 3:
         debug_info['validation_passed'] = True
+
+        # Use letters only if we have exactly 2 (Egyptian format)
+        if len(letters) == 2:
+            plate_text = f"{digits} {' '.join(letters)}"
+        else:
+            plate_text = digits  # fallback
+
         return plate_text, debug_info
-    else:
-        debug_info['rejection_reason'] = f"Failed validation (text: '{plate_text}')"
-        return None, debug_info
+
+    debug_info['rejection_reason'] = f"No valid digits after cleaning: '{cleaned_text}'"
+    return None, debug_info
 
 
 # ==============================
