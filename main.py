@@ -1,12 +1,17 @@
 import cv2
 import time
 import re
+from db.db import check_access
+
 
 from src.Car import Car
 from src.PlateDetector import PlateDetector
 from src.PlateReader import PlateReader
 from src.utils.draw_arabic import draw_arabic_text_box
 import re
+
+last_gate_open_time = 0
+GATE_COOLDOWN = 5  # seconds
 
 HEADER_PATTERNS = [
     r"\bEGYPT\b",
@@ -215,6 +220,25 @@ def choose_gate_car(cars, gate_zone):
 
     candidates.sort(key=lambda x: x[0], reverse=True)
     return candidates[0][1]
+
+
+def try_open_gate_with_db(plate_text):
+    global gate_open, gate_open_plate, last_gate_open_time
+
+    decision, reason = check_access(plate_text)
+    print(f"[DB] Decision: {decision} | Reason: {reason}")
+
+    now = time.time()
+    if decision == "GRANTED" and now - last_gate_open_time > GATE_COOLDOWN:
+        gate_open = True
+        gate_open_plate = plate_text
+        last_gate_open_time = now
+        print("[GATE] Gate opened (DB authorized)")
+        return True
+
+    print("[GATE] Access denied by DB")
+    return False
+
 
 
 def choose_closest_car(cars):
@@ -534,13 +558,13 @@ while True:
                         
                         if full_plate and valid_egyptian_plate(full_plate):
                             gate_car.final_plate = full_plate
-                            gate_open = True
-                            gate_open_plate = full_plate
-                            
+
                             print(f"\n{'='*60}")
                             print(f"[ENTRY] Plate detected: {full_plate}")
                             print(f"[INFO] Reconstructed from: {gate_car.plate_candidates}")
-                            print(f"[GATE] Gate opened at frame {frame_index}")
+
+                            try_open_gate_with_db(full_plate)
+
                             print(f"[TIMING] Approximate time: {frame_index / fps:.2f}s")
                             print(f"{'='*60}\n")
                     
@@ -553,14 +577,14 @@ while True:
                         
                         if count >= PLATE_STABILITY_COUNT:
                             gate_car.final_plate = most_common_text
-                            gate_open = True
-                            gate_open_plate = most_common_text
-                            
+
                             print(f"\n{'='*60}")
                             print(f"[ENTRY] Plate detected (partial): {most_common_text}")
                             print(f"[WARNING] Could not reconstruct full plate")
                             print(f"[INFO] All candidates: {gate_car.plate_candidates}")
-                            print(f"[GATE] Gate opened at frame {frame_index}")
+
+                            try_open_gate_with_db(most_common_text)
+
                             print(f"[TIMING] Approximate time: {frame_index / fps:.2f}s")
                             print(f"{'='*60}\n")
 
