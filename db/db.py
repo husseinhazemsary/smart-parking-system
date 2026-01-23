@@ -1,5 +1,5 @@
 import os
-from flask.cli import load_dotenv
+from dotenv import load_dotenv
 import psycopg2
 
 # Load environment variables from .env file
