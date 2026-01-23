@@ -167,6 +167,7 @@ cython_debug/
 /weights/PlateDetector.pt
 /sample_output.mp4
 /main_with_diagnostics.py
+output/
 
 # IDE
 .idea/

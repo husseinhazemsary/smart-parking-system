@@ -48,8 +48,8 @@ def extract_arabic_letters(text):
 # CONFIG
 # ==============================
 
-INPUT_VIDEO = "input/whiskvid.mp4"
-OUTPUT_VIDEO = "output/output_whiskvid.mp4"
+INPUT_VIDEO = "input/whisk2.mp4"
+OUTPUT_VIDEO = "output/output_whiskvid2.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
