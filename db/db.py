@@ -1,11 +1,17 @@
+import os
+from flask.cli import load_dotenv
 import psycopg2
+
+# Load environment variables from .env file
+load_dotenv()
+
 # Database connection parameters
 DB_CONFIG = {
-    "dbname": "ocr_db",
-    "user": "postgres",
-    "password": "root",
-    "host": "localhost",
-    "port": 5432
+    "dbname": os.getenv("DB_NAME", "ocr_db"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD"),
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": os.getenv("DB_PORT", "5432")
 }
 
 GATE_ID = "b67456c7-7e78-4d42-a339-acd0bab9bb20"
