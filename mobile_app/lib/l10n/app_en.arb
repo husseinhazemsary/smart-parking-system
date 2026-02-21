@@ -1,0 +1,46 @@
+{
+  "@@locale": "en",
+
+  "splashTagline": "Your Spot, Ready Before You Arrive",
+
+  "onboarding1Title": "See Available Spots in",
+  "onboarding1Highlight": "Real-Time",
+  "onboarding1Subtitle": "Never waste time searching for parking",
+
+  "onboarding2Title": "Navigate ",
+  "onboarding2Highlight": "Directly",
+  "onboarding2TitleEnd": " to your spot",
+  "onboarding2Subtitle": "Save time and fuel. It guides you to the best open spot instantly.",
+
+  "onboarding3TitleHighlight": "Smart Insights",
+  "onboarding3Title": " for\nBetter Parking",
+  "onboarding3Subtitle": "See peak hours, availability predictions, and find the best time to park.",
+
+  "next": "Next",
+  "skip": "Skip",
+  "back": "Back",
+  "getStarted": "Get Started",
+
+  "createAccount": "Create Account",
+  "fullName": "Full Name",
+  "fullNameHint": "Enter your full name",
+  "email": "Email",
+  "emailHint": "Enter your email",
+  "phoneNumber": "Phone Number",
+  "phoneHint": "Enter your phone number",
+  "dateOfBirth": "Date of Birth",
+  "dobHint": "Enter your Date of Birth",
+  "password": "Password",
+  "passwordHint": "Create a password",
+  "notificationsConsent": "I agree to receive safety notifications and updates about my driving habits",
+  "alreadyHaveAccount": "Already have an account?",
+  "signIn": "Sign In",
+
+  "welcomeBack": "Welcome Back",
+  "passwordHintLogin": "Enter your password",
+  "rememberMe": "Remember me",
+  "forgotPassword": "Forgot Password?",
+  "orContinueWith": "or continue with",
+  "noAccount": "Don't have an account?",
+  "signUp": "Sign Up"
+}

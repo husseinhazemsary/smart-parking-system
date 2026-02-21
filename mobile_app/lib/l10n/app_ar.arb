@@ -1,0 +1,46 @@
+{
+  "@@locale": "ar",
+
+  "splashTagline": "مكانك جاهز قبل وصولك",
+
+  "onboarding1Title": "شاهد الأماكن المتاحة في",
+  "onboarding1Highlight": "الوقت الفعلي",
+  "onboarding1Subtitle": "لا تضيع وقتك في البحث عن موقف",
+
+  "onboarding2Title": "انتقل ",
+  "onboarding2Highlight": "مباشرةً",
+  "onboarding2TitleEnd": " إلى مكانك",
+  "onboarding2Subtitle": "وفّر الوقت والوقود. يرشدك إلى أفضل مكان متاح على الفور.",
+
+  "onboarding3TitleHighlight": "رؤى ذكية",
+  "onboarding3Title": " لأفضل\nتجربة وقوف",
+  "onboarding3Subtitle": "اطّلع على أوقات الذروة وتوقعات التوفر واعثر على أفضل وقت للوقوف.",
+
+  "next": "التالي",
+  "skip": "تخطي",
+  "back": "رجوع",
+  "getStarted": "ابدأ الآن",
+
+  "createAccount": "إنشاء حساب",
+  "fullName": "الاسم الكامل",
+  "fullNameHint": "أدخل اسمك الكامل",
+  "email": "البريد الإلكتروني",
+  "emailHint": "أدخل بريدك الإلكتروني",
+  "phoneNumber": "رقم الهاتف",
+  "phoneHint": "أدخل رقم هاتفك",
+  "dateOfBirth": "تاريخ الميلاد",
+  "dobHint": "أدخل تاريخ ميلادك",
+  "password": "كلمة المرور",
+  "passwordHint": "أنشئ كلمة مرور",
+  "notificationsConsent": "أوافق على تلقي إشعارات السلامة وتحديثات حول عادات القيادة",
+  "alreadyHaveAccount": "لديك حساب بالفعل؟",
+  "signIn": "تسجيل الدخول",
+
+  "welcomeBack": "مرحباً بعودتك",
+  "passwordHintLogin": "أدخل كلمة المرور",
+  "rememberMe": "تذكرني",
+  "forgotPassword": "نسيت كلمة المرور؟",
+  "orContinueWith": "أو تابع باستخدام",
+  "noAccount": "ليس لديك حساب؟",
+  "signUp": "إنشاء حساب"
+}

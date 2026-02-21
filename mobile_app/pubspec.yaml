@@ -1,0 +1,33 @@
+name: ezrakna
+description: "EzRakna - Your Spot, Ready Before You Arrive"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+  provider: ^6.1.1
+  smooth_page_indicator: ^1.1.0
+  cupertino_icons: ^1.0.8
+  video_player: ^2.9.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+    - assets/gifs/
+    - assets/videos/
