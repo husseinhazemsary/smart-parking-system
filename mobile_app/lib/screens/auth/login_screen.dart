@@ -5,6 +5,7 @@ import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_colors.dart';
 import '../auth/signup_screen.dart';
+import '../navigation/app_navigator.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -168,7 +169,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Sign In button
                     ElevatedButton(
                       onPressed: () {
-                        // TODO: implement sign in logic
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (_) => const AppNavigator()),
+                        );
                       },
                       child: Text(l10n.signIn),
                     ),

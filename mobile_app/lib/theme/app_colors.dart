@@ -16,6 +16,7 @@ class AppColors {
   // Accent
   static const Color purple = Color(0xFF7D39EB);
   static const Color purpleLight = Color(0xFF9B5FF5);
+  static const Color accentGreen = Color(0xFFC6FF33);
 
   // Text
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
