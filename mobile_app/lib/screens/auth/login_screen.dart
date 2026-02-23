@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  _LangToggle(localeProvider: localeProvider),
+                  _LangToggle(),
                   const SizedBox(width: 10),
                   _ThemeToggle(themeProvider: themeProvider),
                 ],
@@ -349,25 +349,67 @@ class _GoogleIcon extends StatelessWidget {
 }
 
 class _LangToggle extends StatelessWidget {
-  final LocaleProvider localeProvider;
-  const _LangToggle({required this.localeProvider});
+  const _LangToggle();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: localeProvider.toggleLocale,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderDark),
-        ),
-        child: Text(
-          localeProvider.isArabic ? 'EN' : 'EN',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
-        ),
+    // Watch directly so this widget rebuilds on every locale change
+    final localeProvider = context.watch<LocaleProvider>();
+    final isArabic = localeProvider.isArabic;
+
+    return Container(
+      height: 34,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderDark),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: isArabic ? localeProvider.toggleLocale : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 40,
+              height: 34,
+              decoration: BoxDecoration(
+                color: !isArabic ? AppColors.purple : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'EN',
+                style: TextStyle(
+                  color: !isArabic ? Colors.white : AppColors.textSecondaryDark,
+                  fontWeight: !isArabic ? FontWeight.w700 : FontWeight.w400,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: isArabic ? null : localeProvider.toggleLocale,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 40,
+              height: 34,
+              decoration: BoxDecoration(
+                color: isArabic ? AppColors.purple : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'AR',
+                style: TextStyle(
+                  color: isArabic ? Colors.white : AppColors.textSecondaryDark,
+                  fontWeight: isArabic ? FontWeight.w700 : FontWeight.w400,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

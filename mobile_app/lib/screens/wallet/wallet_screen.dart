@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'add_card_screen.dart';
+import '../account/settings_screen.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -40,7 +41,14 @@ class WalletScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Icon(Icons.settings_outlined, color: textPrimary, size: 22),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const SettingsScreen()),
+                      ),
+                      child: Icon(Icons.settings_outlined,
+                          color: textPrimary, size: 22),
+                    ),
                   ],
                 ),
               ),

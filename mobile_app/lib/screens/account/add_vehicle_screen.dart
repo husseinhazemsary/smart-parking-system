@@ -69,7 +69,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     child: const Text(
                       'Cancel',
                       style: TextStyle(
-                        color: AppColors.purple,
+                        color: AppColors.accentGreen,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -205,7 +205,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
 
                     // Set as default toggle
                     _ToggleRow(
@@ -282,22 +282,28 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
-                                      child: Text(
-                                        'Visa ending in 4242',
-                                        style: TextStyle(
-                                            color: textPrimary,
-                                            fontSize: 13),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Visa ending in 4242',
+                                            style: TextStyle(
+                                                color: textPrimary,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          const Text(
+                                            'Default',
+                                            style: TextStyle(
+                                              color: AppColors.accentGreen,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    const Text(
-                                      'Default',
-                                      style: TextStyle(
-                                        color: AppColors.purple,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
                                     const Text(
                                       'Change',
                                       style: TextStyle(

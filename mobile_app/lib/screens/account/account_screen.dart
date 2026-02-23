@@ -2,10 +2,13 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../account/add_vehicle_screen.dart';
+import '../auth/login_screen.dart';
+import 'settings_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -44,7 +47,13 @@ class _AccountScreenState extends State<AccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Purple header ──────────────────────────────────
-                  _ProfileHeader(isDark: isDark),
+                  _ProfileHeader(
+                    isDark: isDark,
+                    onSettings: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
 
                   // Gap to clear the stats bar overhang
                   const SizedBox(height: _ProfileHeader._statsHeight / 2 + 24),
@@ -141,10 +150,7 @@ class _AccountScreenState extends State<AccountScreen> {
                           isDark: isDark,
                           child: Column(
                             children: [
-                              _LanguageRow(
-                                isDark: isDark,
-                                localeProvider: localeProvider,
-                              ),
+                              _LanguageRow(isDark: isDark),
                               _RowDivider(isDark: isDark),
                               _PreferenceRow(
                                 isDark: isDark,
@@ -211,19 +217,19 @@ class _AccountScreenState extends State<AccountScreen> {
                                   isDark: isDark,
                                   icon: Icons.help_outline,
                                   label: 'Help Center',
-                                  onTap: () {}),
+                                  onTap: () => _launchUrl('https://ezrakna.com/help')),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.chat_bubble_outline,
                                   label: 'Contact Us',
-                                  onTap: () {}),
+                                  onTap: () => _showContactSheet(context, isDark)),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.star_outline,
                                   label: 'Rate the App',
-                                  onTap: () {}),
+                                  onTap: () => _rateApp()),
                             ],
                           ),
                         ),
@@ -257,13 +263,13 @@ class _AccountScreenState extends State<AccountScreen> {
                                   isDark: isDark,
                                   icon: Icons.privacy_tip_outlined,
                                   label: 'Privacy Policy',
-                                  onTap: () {}),
+                                  onTap: () => _launchUrl('https://ezrakna.com/privacy')),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.description_outlined,
                                   label: 'Terms of Service',
-                                  onTap: () {}),
+                                  onTap: () => _launchUrl('https://ezrakna.com/terms')),
                             ],
                           ),
                         ),
@@ -277,7 +283,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: GestureDetector(
-                      onTap: () {},
+                      onTap: () => _confirmLogout(context),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -323,12 +329,377 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
     );
   }
+
+  // ── Helper methods ───────────────────────────────────────────────────────
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open $url')),
+      );
+    }
+  }
+
+  Future<void> _rateApp() async {
+    // Replace with your actual App Store / Play Store URL
+    const storeUrl = 'https://play.google.com/store/apps/details?id=com.ezrakna.app';
+    await _launchUrl(storeUrl);
+  }
+
+  void _showContactSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('Contact Us',
+                style: TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+            const SizedBox(height: 6),
+            Text('Reach out to us through any of these channels:',
+                style: TextStyle(fontSize: 14, color: subColor)),
+            const SizedBox(height: 20),
+            _ContactOption(
+              isDark: isDark,
+              icon: Icons.email_outlined,
+              label: 'Email Support',
+              subtitle: 'support@ezrakna.com',
+              onTap: () => _launchUrl('mailto:support@ezrakna.com'),
+            ),
+            const SizedBox(height: 12),
+            _ContactOption(
+              isDark: isDark,
+              icon: Icons.phone_outlined,
+              label: 'Call Us',
+              subtitle: '+20 100 000 0000',
+              onTap: () => _launchUrl('tel:+201000000000'),
+            ),
+            const SizedBox(height: 12),
+            _ContactOption(
+              isDark: isDark,
+              icon: Icons.chat_outlined,
+              label: 'WhatsApp',
+              subtitle: 'Chat on WhatsApp',
+              onTap: () => _launchUrl('https://wa.me/201000000000'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSettingsSheet(BuildContext context) {
+    final isDark = context.read<ThemeProvider>().isDark;
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('Settings',
+                style: TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+            const SizedBox(height: 20),
+            _SettingsOption(
+              isDark: isDark,
+              icon: Icons.person_outline,
+              label: 'Edit Profile',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: navigate to edit profile screen
+              },
+            ),
+            const SizedBox(height: 12),
+            _SettingsOption(
+              isDark: isDark,
+              icon: Icons.lock_outline,
+              label: 'Change Password',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: navigate to change password screen
+              },
+            ),
+            const SizedBox(height: 12),
+            _SettingsOption(
+              isDark: isDark,
+              icon: Icons.payment_outlined,
+              label: 'Payment Methods',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: navigate to payment methods screen
+              },
+            ),
+            const SizedBox(height: 12),
+            _SettingsOption(
+              isDark: isDark,
+              icon: Icons.delete_outline,
+              label: 'Delete Account',
+              labelColor: Colors.redAccent,
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDeleteAccount(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmLogout(BuildContext context) {
+    final isDark = context.read<ThemeProvider>().isDark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor:
+        isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Log Out',
+          style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight),
+        ),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: TextStyle(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+              );
+            },
+            child: const Text('Log Out',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAccount(BuildContext context) {
+    final isDark = context.read<ThemeProvider>().isDark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor:
+        isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete Account',
+            style: TextStyle(
+                color: Colors.redAccent, fontWeight: FontWeight.w700)),
+        content: Text(
+          'This action is permanent and cannot be undone. All your data will be lost.',
+          style: TextStyle(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: TextStyle(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // TODO: call delete account API
+            },
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ── Purple header ─────────────────────────────────────────────────────────────
+// ── Contact option widget ─────────────────────────────────────────────────────
+class _ContactOption extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _ContactOption({
+    required this.isDark,
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.purple, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                size: 18,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Settings option widget ────────────────────────────────────────────────────
+class _SettingsOption extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final String label;
+  final Color? labelColor;
+  final VoidCallback onTap;
+  const _SettingsOption({
+    required this.isDark,
+    required this.icon,
+    required this.label,
+    this.labelColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = labelColor ??
+        (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: textColor, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: textColor)),
+            ),
+            Icon(Icons.chevron_right,
+                size: 18,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileHeader extends StatelessWidget {
   final bool isDark;
-  const _ProfileHeader({required this.isDark});
+  final VoidCallback onSettings;
+  const _ProfileHeader({required this.isDark, required this.onSettings});
 
   static const double _statsHeight = 76.0;
 
@@ -376,8 +747,11 @@ class _ProfileHeader extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Icon(Icons.settings_outlined,
-                        color: Colors.white, size: 24),
+                    GestureDetector(
+                      onTap: onSettings,
+                      child: const Icon(Icons.settings_outlined,
+                          color: Colors.white, size: 24),
+                    ),
                   ],
                 ),
               ),
@@ -551,11 +925,12 @@ class _StatDivider extends StatelessWidget {
 // ── Language row ──────────────────────────────────────────────────────────────
 class _LanguageRow extends StatelessWidget {
   final bool isDark;
-  final LocaleProvider localeProvider;
-  const _LanguageRow({required this.isDark, required this.localeProvider});
+  const _LanguageRow({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
+    // Watch directly so this widget rebuilds on every locale change
+    final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
     final textPrimary =
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -583,23 +958,26 @@ class _LanguageRow extends StatelessWidget {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: localeProvider.toggleLocale,
-            child: Container(
-              height: 32,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.borderDark
-                    : const Color(0xFFEEEEF5),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _LangOption(label: 'EN', isActive: !isArabic, isDark: isDark),
-                  _LangOption(label: 'AR', isActive: isArabic, isDark: isDark),
-                ],
-              ),
+          Container(
+            height: 32,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.borderDark
+                  : const Color(0xFFEEEEF5),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: isArabic ? localeProvider.toggleLocale : null,
+                  child: _LangOption(label: 'EN', isActive: !isArabic, isDark: isDark),
+                ),
+                GestureDetector(
+                  onTap: isArabic ? null : localeProvider.toggleLocale,
+                  child: _LangOption(label: 'AR', isActive: isArabic, isDark: isDark),
+                ),
+              ],
             ),
           ),
         ],
