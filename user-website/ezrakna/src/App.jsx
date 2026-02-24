@@ -213,17 +213,18 @@ function Landing({ onEnter, onAuthOpen, user }){
   },[]);
 
   return(
-    <div style={{ color:T.text }}>
+    <div style={{ color:T.text, width:"100%", overflowX:"hidden" }}>
       {/* Navbar */}
       <nav style={{
         position:"fixed",top:0,left:0,right:0,zIndex:100,
-        padding:`0 ${isMobile?"16px":"5%"}`, height:68,
+        padding:0, height:68,
         display:"flex",alignItems:"center",gap:16,
         background:scrolled?"rgba(7,0,26,.94)":"transparent",
         backdropFilter:scrolled?"blur(14px)":"none",
         borderBottom:scrolled?`1px solid ${T.border}`:"none",
         transition:"all .3s",
       }}>
+        <div style={{ width:"100%",maxWidth:1200,margin:"0 auto",padding:`0 ${isMobile?"16px":"24px"}`,display:"flex",alignItems:"center",gap:16 }}>
         <div style={{ fontWeight:800,fontSize:22,letterSpacing:-0.5,flex:1,cursor:"pointer" }}>
           <span style={{ color:T.purple }}>ez</span>rakna
         </div>
@@ -247,6 +248,7 @@ function Landing({ onEnter, onAuthOpen, user }){
             <GlowBtn small onClick={onAuthOpen}>Sign Up</GlowBtn>
           </div>
         )}
+        </div>
       </nav>
 
       {/* Hero */}
@@ -270,7 +272,7 @@ function Landing({ onEnter, onAuthOpen, user }){
         </p>
 
         <div style={{ display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center" }}>
-          <GlowBtn onClick={()=>{ user?onEnter():onAuthOpen(); }}>
+          <GlowBtn onClick={onEnter}>
             {user?"Go to Dashboard":"Find Parking Now"}
           </GlowBtn>
           <GlowBtn outline onClick={()=>document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}>
@@ -343,11 +345,11 @@ function Landing({ onEnter, onAuthOpen, user }){
               <span style={{ padding:"4px 14px",borderRadius:999,fontSize:12,fontWeight:700,background:`${T.amber}22`,color:T.amber }}>📍 Live Spots</span>
               <h2 style={{ fontSize:`clamp(24px,4vw,44px)`,fontWeight:800,letterSpacing:-1,marginTop:12 }}>Spots near you right now</h2>
             </div>
-            <GlowBtn small onClick={()=>{ user?onEnter():onAuthOpen(); }}>View All →</GlowBtn>
+            <GlowBtn small onClick={onEnter}>View All →</GlowBtn>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:`repeat(${isMobile?"1":isTabletVal()?"2":"3"},1fr)`,gap:20 }}>
             {SPOTS.slice(0,3).map(s=>(
-              <LandingCard key={s.id} s={s} onReserve={()=>{ user?onEnter():onAuthOpen(); }} />
+              <LandingCard key={s.id} s={s} onReserve={onEnter} />
             ))}
           </div>
         </div>
@@ -445,7 +447,7 @@ function LandingCard({ s, onReserve }){
 }
 
 /* ─── App shell ──────────────────────────────────────────────── */
-function AppShell({ user, onLogout, onBack }){
+function AppShell({ user, onLogout, onBack, onAuthOpen }){
   const [tab,setTab]=useState("find");
   const [booked,setBooked]=useState(null);
   const { isMobile, isTablet }=useBreakpoint();
@@ -458,6 +460,16 @@ function AppShell({ user, onLogout, onBack }){
     { id:"history", label:"History",      icon:"🕐" },
     { id:"account", label:"Account",      icon:"👤" },
   ];
+
+  const setTabSafe = (id) => {
+    // Guests can browse spots, but need to authenticate for session/wallet/history/account.
+    if(!user && id!=="find"){
+      onAuthOpen?.();
+      return;
+    }
+    setTab(id);
+  };
+
 
   return(
     <div style={{ minHeight:"100vh",background:T.dark,color:T.text,display:"flex",flexDirection:"column" }}>
@@ -473,9 +485,9 @@ function AppShell({ user, onLogout, onBack }){
 
         {/* Desktop nav tabs */}
         {!isMobile && (
-          <nav style={{ display:"flex",gap:4 }}>
+          <nav className="hideScroll" style={{ display:"flex",gap:4,overflowX:"auto",maxWidth:"60vw",paddingBottom:2,scrollbarWidth:"none" }}>
             {tabs.map(t=>(
-              <button key={t.id} onClick={()=>setTab(t.id)} style={{
+              <button key={t.id} onClick={()=>setTabSafe(t.id)} style={{
                 padding:"8px 16px",borderRadius:10,border:"none",fontFamily:"inherit",
                 background:tab===t.id?"rgba(125,57,235,.18)":"transparent",
                 color:tab===t.id?T.text:T.sub,
@@ -491,25 +503,46 @@ function AppShell({ user, onLogout, onBack }){
 
         {/* User */}
         <div style={{ display:"flex",alignItems:"center",gap:10,flexShrink:0 }}>
-          {!isMobile && <span style={{ fontSize:13,color:T.sub }}>{user.name}</span>}
-          <button onClick={onLogout} style={{ background:"rgba(239,68,68,.1)",border:`1px solid rgba(239,68,68,.2)`,borderRadius:10,color:T.red,cursor:"pointer",padding:"6px 12px",fontSize:12,fontFamily:"inherit",whiteSpace:"nowrap" }}>Log out</button>
+          {user ? (
+            <>
+              {!isMobile && <span style={{ fontSize:13,color:T.sub,whiteSpace:"nowrap" }}>{user.name}</span>}
+              <button onClick={onLogout} style={{ background:"rgba(239,68,68,.1)",border:`1px solid rgba(239,68,68,.2)`,borderRadius:10,color:T.red,cursor:"pointer",padding:"6px 12px",fontSize:12,fontFamily:"inherit",whiteSpace:"nowrap" }}>Log out</button>
+            </>
+          ) : (
+            <>
+              {!isMobile && <GlowBtn small outline onClick={onAuthOpen}>Log In</GlowBtn>}
+              <GlowBtn small onClick={onAuthOpen}>Sign Up</GlowBtn>
+            </>
+          )}
         </div>
       </header>
 
       {/* Content */}
       <div style={{ flex:1,overflow:"auto" }}>
-        {tab==="find"    && <FindTab onReserve={s=>{ setBooked(s); setTab("session"); }} />}
-        {tab==="session" && <SessionTab spot={booked} onEnd={()=>{ setBooked(null); setTab("find"); }} />}
-        {tab==="wallet"  && <WalletTab />}
-        {tab==="history" && <HistoryTab />}
-        {tab==="account" && <AccountTab user={user} onLogout={onLogout} />}
+        {tab==="find" && <FindTab user={user} onAuthOpen={onAuthOpen} onReserve={s=>{ setBooked(s); setTab("session"); }} />}
+        {tab!=="find" && !user && (
+          <div style={{ padding:28,maxWidth:720,margin:"0 auto" }}>
+            <Card style={{ padding:24,textAlign:"center" }}>
+              <div style={{ fontSize:26,marginBottom:10 }}>🔒</div>
+              <div style={{ fontSize:18,fontWeight:800,marginBottom:8 }}>Please log in to access this section</div>
+              <div style={{ color:T.sub,fontSize:14,lineHeight:1.7,marginBottom:16 }}>
+                You can browse parking locations without an account. To reserve, manage sessions, or view your wallet and history, please log in.
+              </div>
+              <GlowBtn onClick={onAuthOpen}>Log In / Sign Up</GlowBtn>
+            </Card>
+          </div>
+        )}
+        {tab==="session" && user && <SessionTab spot={booked} onEnd={()=>{ setBooked(null); setTab("find"); }} />}
+        {tab==="wallet"  && user && <WalletTab />}
+        {tab==="history" && user && <HistoryTab />}
+        {tab==="account" && user && <AccountTab user={user} onLogout={onLogout} />}
       </div>
 
       {/* Mobile bottom nav */}
       {isMobile && (
         <div style={{ position:"sticky",bottom:0,display:"flex",borderTop:`1px solid ${T.border}`,background:"rgba(17,0,48,.97)",backdropFilter:"blur(12px)",zIndex:50 }}>
           {tabs.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{
+            <button key={t.id} onClick={()=>setTabSafe(t.id)} style={{
               flex:1,padding:"10px 4px 12px",border:"none",background:"none",
               display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",
               position:"relative",
@@ -526,7 +559,7 @@ function AppShell({ user, onLogout, onBack }){
 }
 
 /* ─── Find & Reserve tab ─────────────────────────────────────── */
-function FindTab({ onReserve }){
+function FindTab({ onReserve, user, onAuthOpen }){
   const [search,setSearch]=useState("");
   const [cat,setCat]=useState("All");
   const [selected,setSelected]=useState(null);
@@ -535,11 +568,17 @@ function FindTab({ onReserve }){
   const cats=["All","Mall","University","Airport","Street"];
   const filtered=SPOTS.filter(s=>(cat==="All"||s.category===cat)&&(s.name.toLowerCase().includes(search.toLowerCase())||s.address.toLowerCase().includes(search.toLowerCase())));
 
+
+  const reserveSpot = (spot) => {
+    if(!user){ onAuthOpen?.(); return; }
+    onReserve(spot);
+  };
+
   return(
-    <div style={{ display:"flex",height:isMobile?"auto":"calc(100vh - 64px)",flexDirection:isMobile?"column":"row" }}>
+    <div style={{ display:"flex",flex:1,minHeight:0,height:isMobile?"auto":"100%",flexDirection:isMobile?"column":"row" }}>
 
       {/* List panel */}
-      <div style={{ width:isMobile?"100%":420,borderRight:isMobile?"none":`1px solid ${T.border}`,display:"flex",flexDirection:"column",flexShrink:0,borderBottom:isMobile?`1px solid ${T.border}`:"none" }}>
+      <div style={{ width:isMobile?"100%":"clamp(320px, 34vw, 420px)",borderRight:isMobile?"none":`1px solid ${T.border}`,display:"flex",flexDirection:"column",flexShrink:0,borderBottom:isMobile?`1px solid ${T.border}`:"none",minWidth:isMobile?"auto":320 }}>
         <div style={{ padding:"20px 20px 0" }}>
           <div style={{ position:"relative",marginBottom:12 }}>
             <span style={{ position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:T.sub,pointerEvents:"none" }}>🔍</span>
@@ -557,7 +596,7 @@ function FindTab({ onReserve }){
           </div>
         </div>
 
-        <div style={{ flex:1,overflowY:"auto",padding:"0 20px 20px",display:"flex",flexDirection:"column",gap:12,maxHeight:isMobile?360:"none" }}>
+        <div style={{ flex:1,minHeight:0,overflowY:"auto",padding:"0 20px 20px",display:"flex",flexDirection:"column",gap:12,maxHeight:isMobile?360:"none" }}>
           {filtered.map(s=>{
             const ac=availColor(s.available,s.total);
             const al=availLabel(s.available,s.total);
@@ -596,7 +635,7 @@ function FindTab({ onReserve }){
 
       {/* Map area (desktop) */}
       {!isMobile && (
-        <div style={{ flex:1,position:"relative",background:`radial-gradient(ellipse at 60% 40%,rgba(125,57,235,.1),transparent 60%),linear-gradient(180deg,rgba(17,0,48,.9),${T.dark})`,overflow:"hidden" }}>
+        <div style={{ flex:1,minHeight:0,position:"relative",background:`radial-gradient(ellipse at 60% 40%,rgba(125,57,235,.1),transparent 60%),linear-gradient(180deg,rgba(17,0,48,.9),${T.dark})`,overflow:"hidden" }}>
           <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(125,57,235,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(125,57,235,.06) 1px,transparent 1px)`,backgroundSize:"48px 48px" }} />
           {!selected && (
             <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8,color:T.sub }}>
@@ -616,7 +655,7 @@ function FindTab({ onReserve }){
               </div>
             );
           })}
-          {selected && <SpotDetailPanel spot={selected} onReserve={()=>onReserve(selected)} onClose={()=>setSelected(null)} />}
+          {selected && <SpotDetailPanel spot={selected} onReserve={()=>reserveSpot(selected)} onClose={()=>setSelected(null)} />}
         </div>
       )}
 
@@ -624,7 +663,7 @@ function FindTab({ onReserve }){
       <Modal open={modal&&!!selected} onClose={()=>setModal(false)}>
         {selected && (
           <div style={{ padding:24 }}>
-            <SpotDetailContent spot={selected} onReserve={()=>{ setModal(false); onReserve(selected); }} onClose={()=>setModal(false)} />
+            <SpotDetailContent spot={selected} onReserve={()=>{ setModal(false); reserveSpot(selected); }} onClose={()=>setModal(false)} />
           </div>
         )}
       </Modal>
@@ -634,7 +673,7 @@ function FindTab({ onReserve }){
 
 function SpotDetailPanel({ spot, onReserve, onClose }){
   return(
-    <div style={{ borderTop:`1px solid ${T.border}`,background:T.surface,padding:"24px 28px",animation:"slideUp .2s ease" }}>
+    <div style={{ position:"absolute",left:0,right:0,bottom:0,zIndex:5,borderTop:`1px solid ${T.border}`,background:T.surface,padding:"24px 28px",animation:"slideUp .2s ease",maxHeight:"55%",overflowY:"auto",boxShadow:"0 -10px 30px rgba(0,0,0,.35)" }}>
       <SpotDetailContent spot={spot} onReserve={onReserve} onClose={onClose} />
     </div>
   );
@@ -642,6 +681,8 @@ function SpotDetailPanel({ spot, onReserve, onClose }){
 
 function SpotDetailContent({ spot, onReserve, onClose }){
   const ac=availColor(spot.available,spot.total);
+  const { isMobile, w } = useBreakpoint();
+  const cols = isMobile || w < 520 ? 2 : 4;
   return(
     <>
       <div style={{ display:"flex",alignItems:"flex-start",gap:14,marginBottom:18 }}>
@@ -656,10 +697,10 @@ function SpotDetailContent({ spot, onReserve, onClose }){
           </div>
         </div>
       </div>
-      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16 }}>
+      <div style={{ display:"grid",gridTemplateColumns:`repeat(${cols}, minmax(0, 1fr))`,gap:10,marginBottom:16 }}>
         {[{ l:"Rate",v:`EGP ${spot.rate}/hr`,c:T.green },{ l:"Spots",v:`${spot.available}/${spot.total}`,c:ac },{ l:"Distance",v:`${spot.distance}km`,c:T.purple },{ l:"Hours",v:spot.hours,c:T.sub }].map(s=>(
-          <div key={s.l} style={{ padding:"10px 8px",borderRadius:12,background:"rgba(255,255,255,.04)",border:`1px solid ${T.border}`,textAlign:"center" }}>
-            <div style={{ fontSize:12,fontWeight:700,color:s.c,marginBottom:2 }}>{s.v}</div>
+          <div key={s.l} style={{ padding:"10px 8px",borderRadius:12,background:"rgba(255,255,255,.04)",border:`1px solid ${T.border}`,textAlign:"center",minWidth:0 }}>
+            <div style={{ fontSize:12,fontWeight:700,color:s.c,marginBottom:2,overflowWrap:"anywhere",wordBreak:"break-word" }}>{s.v}</div>
             <div style={{ fontSize:10,color:T.sub }}>{s.l}</div>
           </div>
         ))}
@@ -981,7 +1022,7 @@ export default function Ezrakna(){
 
   const handleAuth = (u) => { setUser(u); setAuthOpen(false); setView("app"); };
   const handleLogout = () => { setUser(null); setView("landing"); };
-  const handleEnter = () => { user ? setView("app") : setAuthOpen(true); };
+  const handleEnter = () => { setView("app"); };
 
   return(
     <div style={{ background:T.dark,minHeight:"100vh",color:T.text }}>
@@ -990,6 +1031,9 @@ export default function Ezrakna(){
         *{box-sizing:border-box;margin:0;padding:0;}
         html{font-family:'Sora',sans-serif;}
         body{background:#07001A;}
+        #root{width:100%;max-width:none;margin:0;padding:0;}
+        html,body{width:100%;overflow-x:hidden;}
+        
         ::-webkit-scrollbar{width:6px;height:6px;}
         ::-webkit-scrollbar-track{background:rgba(255,255,255,.02);}
         ::-webkit-scrollbar-thumb{background:rgba(125,57,235,.4);border-radius:3px;}
@@ -1000,12 +1044,14 @@ export default function Ezrakna(){
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
         @keyframes pls{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(2.2);opacity:0}}
+        .hideScroll::-webkit-scrollbar{height:0;}
+        .hideScroll{msOverflowStyle:none;}
         a:hover{opacity:.8;}
         section{scroll-margin-top:68px;}
       `}</style>
 
       {view==="landing" && <Landing onEnter={handleEnter} onAuthOpen={()=>setAuthOpen(true)} user={user} />}
-      {view==="app"     && <AppShell user={user} onLogout={handleLogout} onBack={()=>setView("landing")} />}
+      {view==="app"     && <AppShell user={user} onLogout={handleLogout} onBack={()=>setView("landing")} onAuthOpen={()=>setAuthOpen(true)} />}
 
       <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuth={handleAuth} />
     </div>
