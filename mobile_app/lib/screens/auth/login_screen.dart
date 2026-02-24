@@ -177,63 +177,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
+                    // Divider with centred label between sign-in and social buttons.
                     Row(
                       children: [
-                        Expanded(
-                          child: Divider(
-                            color: isDark
-                                ? AppColors.borderDark
-                                : AppColors.borderLight,
-                          ),
-                        ),
+                        Expanded(child: Divider(color: isDark ? AppColors.borderDark : AppColors.borderLight)),
                         Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
                             l10n.orContinueWith,
                             style: TextStyle(
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
+                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                               fontSize: 13,
                             ),
                           ),
                         ),
-                        Expanded(
-                          child: Divider(
-                            color: isDark
-                                ? AppColors.borderDark
-                                : AppColors.borderLight,
-                          ),
-                        ),
+                        Expanded(child: Divider(color: isDark ? AppColors.borderDark : AppColors.borderLight)),
                       ],
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _SocialButton(
-                            icon: _GoogleIcon(),
-                            onTap: () {
+                    // Full-width Google button with icon + label.
+                    _SocialButton(
+                      icon: _GoogleIcon(),
+                      label: 'Continue with Google',
+                      onTap: () {},
+                      isDark: isDark,
+                    ),
 
-                            },
-                            isDark: isDark,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _SocialButton(
-                            icon: const Icon(Icons.apple,
-                                color: Colors.white, size: 26),
-                            onTap: () {
+                    const SizedBox(height: 12),
 
-                            },
-                            isDark: isDark,
-                          ),
-                        ),
-                      ],
+                    // Full-width Apple button with icon + label.
+                    _SocialButton(
+                      icon: const Icon(Icons.apple, color: Colors.white, size: 22),
+                      label: 'Continue with Apple',
+                      onTap: () {},
+                      isDark: isDark,
                     ),
 
                     const SizedBox(height: 28),
@@ -300,19 +279,21 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-// Bordered social login button (Google / Apple) with a centred icon.
+// Full-width social login button with a leading icon and a centred label.
 class _SocialButton extends StatelessWidget {
   final Widget icon;
+  final String label;
   final VoidCallback onTap;
   final bool isDark;
   const _SocialButton(
-      {required this.icon, required this.onTap, required this.isDark});
+      {required this.icon, required this.label, required this.onTap, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         height: 54,
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -321,7 +302,21 @@ class _SocialButton extends StatelessWidget {
             color: isDark ? AppColors.borderDark : AppColors.borderLight,
           ),
         ),
-        child: Center(child: icon),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

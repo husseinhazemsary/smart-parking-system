@@ -69,7 +69,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     child: const Text(
                       'Cancel',
                       style: TextStyle(
-                        color: AppColors.purple,
+                        color: AppColors.accentGreen,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),

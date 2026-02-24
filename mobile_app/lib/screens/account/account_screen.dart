@@ -1010,19 +1010,15 @@ class _ProfileHeader extends StatelessWidget {
                 padding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).maybePop(),
-                      child: const Icon(Icons.chevron_left,
-                          color: Colors.white, size: 28),
-                    ),
-                    const Text(
-                      'Profile',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: const Text(
+                        'Profile',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     GestureDetector(

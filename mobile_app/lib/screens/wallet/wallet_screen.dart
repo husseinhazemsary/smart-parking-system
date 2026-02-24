@@ -29,18 +29,15 @@ class WalletScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).maybePop(),
-                      child: Icon(Icons.arrow_back, color: textPrimary),
-                    ),
-                    Text(
-                      'Wallet',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Text(
+                        'Wallet',
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     GestureDetector(
@@ -87,7 +84,7 @@ class WalletScreen extends StatelessWidget {
 
               SizedBox(
                 // Horizontal card carousel — clips to none so the purple border shadow on the
-// primary card renders fully without being cut off.
+                // primary card renders fully without being cut off.
                 height: 130,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
