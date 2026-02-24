@@ -8,7 +8,8 @@ smart-parking-system/
 │   ├── lpr/              # License Plate Recognition system
 │   └── slot-detection/   # Parking slot detection system
 ├── backend/              # API server 
-├── mobile-app/           # Mobile application 
+├── mobile-app/           # Mobile application
+├── user-website/         # User web interface
 ├── admin-dashboard/      # Admin web interface 
 ```
 
