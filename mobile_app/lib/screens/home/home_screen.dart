@@ -1,3 +1,5 @@
+// Home screen — main landing tab after login.
+// Currently a placeholder; replace body with map/parking discovery UI.
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 

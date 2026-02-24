@@ -1,7 +1,11 @@
+// Centralised theme definitions for dark and light modes.
+// All widget defaults (buttons, inputs, checkboxes, appbar) are set here
+// so individual screens stay free of repeated styling boilerplate.
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTheme {
+  // Dark theme — used when ThemeProvider.isDark is true.
   static ThemeData get dark => ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.backgroundDark,
@@ -13,6 +17,7 @@ class AppTheme {
       onBackground: AppColors.textPrimaryDark,
       onSurface: AppColors.textPrimaryDark,
     ),
+    // All TextFormFields inherit this decoration — screens only override specific properties.
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.inputDark,
@@ -31,6 +36,7 @@ class AppTheme {
         borderSide: const BorderSide(color: AppColors.purple, width: 1.5),
       ),
     ),
+    // Checkbox fill uses purple when selected, transparent otherwise.
     checkboxTheme: CheckboxThemeData(
       fillColor: MaterialStateProperty.resolveWith((states) {
         if (states.contains(MaterialState.selected)) return AppColors.purple;
@@ -39,6 +45,7 @@ class AppTheme {
       side: const BorderSide(color: AppColors.borderDark, width: 1.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
+    // Full-width purple button used as the primary CTA across all screens.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.purple,
@@ -65,6 +72,7 @@ class AppTheme {
     ),
   );
 
+  // Light theme — used when ThemeProvider.isDark is false.
   static ThemeData get light => ThemeData(
     brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.backgroundLight,
@@ -76,6 +84,7 @@ class AppTheme {
       onBackground: AppColors.textPrimaryLight,
       onSurface: AppColors.textPrimaryLight,
     ),
+    // All TextFormFields inherit this decoration — screens only override specific properties.
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.inputLight,
@@ -94,6 +103,7 @@ class AppTheme {
         borderSide: const BorderSide(color: AppColors.purple, width: 1.5),
       ),
     ),
+    // Checkbox fill uses purple when selected, transparent otherwise.
     checkboxTheme: CheckboxThemeData(
       fillColor: MaterialStateProperty.resolveWith((states) {
         if (states.contains(MaterialState.selected)) return AppColors.purple;
@@ -102,6 +112,7 @@ class AppTheme {
       side: const BorderSide(color: AppColors.borderLight, width: 1.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
+    // Full-width purple button used as the primary CTA across all screens.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.purple,

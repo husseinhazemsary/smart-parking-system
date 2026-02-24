@@ -1,3 +1,5 @@
+// Settings screen — full-page settings with sections for account, appearance,
+// notifications, auto-pay, privacy/security, support/legal and danger zone.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,19 +15,20 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // ── Notification toggles ──
+
+  // Notification preference toggles — each maps to a future API preference key.
   bool _pushNotifications = true;
   bool _emailNotifications = false;
   bool _sessionReminders = true;
   bool _promoAlerts = false;
   bool _parkingExpiry = true;
 
-  // ── Privacy toggles ──
+  // Privacy toggles — biometric and location require OS-level permission requests.
   bool _locationAlways = false;
   bool _shareAnalytics = true;
   bool _biometricLogin = false;
 
-  // ── Auto-Pay toggles ──
+  // Auto-pay toggles — disabling autoPayEnabled hides the spending limit row.
   bool _autoPayEnabled = true;
   bool _receiptByEmail = true;
 
@@ -46,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Top bar ───────────────────────────────────────────────
+
             Padding(
               padding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -85,14 +88,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
-            // ── Scrollable content ─────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── ACCOUNT ──────────────────────────────────────
+
                     _SectionTitle('ACCOUNT', textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
@@ -104,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           label: 'Edit Profile',
                           subtitle: 'Name, email, phone number',
                           onTap: () {
-                            // TODO: navigate to edit profile
+
                           },
                         ),
                         _Divider(isDark: isDark),
@@ -114,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           label: 'Change Password',
                           subtitle: 'Update your password',
                           onTap: () {
-                            // TODO: navigate to change password
+
                           },
                         ),
                         _Divider(isDark: isDark),
@@ -125,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           subtitle: 'Cards and Auto-Pay settings',
                           onTap: () {
                             Navigator.of(context).pop();
-                            // The wallet screen handles payment methods
+
                           },
                         ),
                         _Divider(isDark: isDark),
@@ -143,7 +145,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── APPEARANCE ────────────────────────────────────
                     _SectionTitle('APPEARANCE', textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
@@ -164,7 +165,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── NOTIFICATIONS ─────────────────────────────────
                     _SectionTitle('NOTIFICATIONS', textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
@@ -224,7 +224,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── AUTO-PAY ──────────────────────────────────────
                     _SectionTitle('AUTO-PAY', textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
@@ -262,7 +261,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── PRIVACY & SECURITY ────────────────────────────
                     _SectionTitle('PRIVACY & SECURITY', textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
@@ -310,7 +308,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── SUPPORT & LEGAL ───────────────────────────────
                     _SectionTitle('SUPPORT & LEGAL', textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
@@ -374,7 +371,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── DANGER ZONE ───────────────────────────────────
                     _SectionTitle('DANGER ZONE', textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
@@ -408,8 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── Actions ─────────────────────────────────────────────────────────────────
-
+  // Opens a URL in the device's default external browser.
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -421,6 +416,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Bottom sheet with a numeric input for the max Auto-Pay charge per session.
+  // viewInsets.bottom pushes the sheet above the keyboard when it opens.
   void _showSpendingLimitSheet(BuildContext context, bool isDark) {
     final controller = TextEditingController();
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
@@ -488,6 +485,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Bottom sheet listing email, phone and WhatsApp support channels.
   void _showContactSheet(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
@@ -558,6 +556,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Dialog showing app name, version, tagline and copyright.
   void _showAboutDialog(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
@@ -616,6 +615,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Confirmation dialog before wiping all saved search history — irreversible.
   void _confirmClearHistory(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
@@ -652,6 +652,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Confirmation dialog before logout — clears the nav stack and pushes /login.
   void _confirmLogout(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
@@ -679,7 +680,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              // Pop back to root and navigate to login
+
               Navigator.of(context).pushNamedAndRemoveUntil(
                 '/login',
                     (route) => false,
@@ -695,6 +696,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Confirmation dialog for permanent account deletion — all data is lost.
   void _confirmDeleteAccount(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final subColor =
@@ -721,7 +723,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              // TODO: call delete account API
+
             },
             child: const Text('Delete',
                 style: TextStyle(
@@ -734,7 +736,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-// ── Section title ─────────────────────────────────────────────────────────────
+// All-caps section label with letter spacing used above each settings group.
 class _SectionTitle extends StatelessWidget {
   final String text;
   final Color color;
@@ -754,7 +756,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ── Settings card container ───────────────────────────────────────────────────
+// Rounded card container that groups related settings rows with a border.
 class _SettingsCard extends StatelessWidget {
   final bool isDark;
   final List<Widget> children;
@@ -774,7 +776,7 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
-// ── Divider ───────────────────────────────────────────────────────────────────
+// Thin row divider indented to align with the row content, not the icon.
 class _Divider extends StatelessWidget {
   final bool isDark;
   const _Divider({required this.isDark});
@@ -789,7 +791,7 @@ class _Divider extends StatelessWidget {
   }
 }
 
-// ── Nav row (with subtitle) ───────────────────────────────────────────────────
+// Tappable settings row with icon, label, subtitle and optional chevron.
 class _NavRow extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -849,7 +851,7 @@ class _NavRow extends StatelessWidget {
   }
 }
 
-// ── Switch row (with subtitle) ────────────────────────────────────────────────
+// Settings row with icon, label, subtitle and a purple Switch toggle.
 class _SwitchRow extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -910,14 +912,16 @@ class _SwitchRow extends StatelessWidget {
   }
 }
 
-// ── Language row ──────────────────────────────────────────────────────────────
+// Language preference row with an EN/AR animated pill toggle.
+// Watches LocaleProvider directly so it rebuilds independently of the parent.
 class _LanguageRow extends StatelessWidget {
   final bool isDark;
   const _LanguageRow({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    // Watch directly so this widget rebuilds on every locale change
+
+    // Watch directly so language row rebuilds on locale change without rebuilding the full screen.
     final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
     final textPrimary =
@@ -1013,7 +1017,7 @@ class _LangOption extends StatelessWidget {
   }
 }
 
-// ── Danger row ────────────────────────────────────────────────────────────────
+// Red-coloured action row used in the Danger Zone section (logout, delete).
 class _DangerRow extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -1053,7 +1057,7 @@ class _DangerRow extends StatelessWidget {
   }
 }
 
-// ── Contact tile ──────────────────────────────────────────────────────────────
+// Tappable contact option tile used inside the contact support bottom sheet.
 class _ContactTile extends StatelessWidget {
   final bool isDark;
   final IconData icon;

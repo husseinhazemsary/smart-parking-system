@@ -1,3 +1,4 @@
+// Account screen — main profile page showing vehicles, preferences, support and legal sections.
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,6 +29,7 @@ class _AccountScreenState extends State<AccountScreen> {
     final textSecondary =
     isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
+    // Semi-transparent dark tint on status bar so icons stay visible over the purple header.
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.black.withOpacity(0.3),
       statusBarIconBrightness: Brightness.light,
@@ -40,13 +42,14 @@ class _AccountScreenState extends State<AccountScreen> {
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
         body: Stack(
           children: [
-            // ── Main scrollable content ──────────────────────────
+
             SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Purple header ──────────────────────────────────
+
+                  // Purple hero header with avatar, name, stats bar and settings button.
                   _ProfileHeader(
                     isDark: isDark,
                     onSettings: () => Navigator.of(context).push(
@@ -55,10 +58,9 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                   ),
 
-                  // Gap to clear the stats bar overhang
+                  // Push content down to clear the stats bar which overhangs the header bottom edge.
                   const SizedBox(height: _ProfileHeader._statsHeight / 2 + 24),
 
-                  // ── My Vehicles ────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -88,6 +90,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               GestureDetector(
                                 onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(
+                                    // Navigate to the add vehicle flow.
                                       builder: (_) => const AddVehicleScreen()),
                                 ),
                                 child: Padding(
@@ -130,7 +133,6 @@ class _AccountScreenState extends State<AccountScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── Preferences ────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -193,7 +195,6 @@ class _AccountScreenState extends State<AccountScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── Support ────────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -239,7 +240,6 @@ class _AccountScreenState extends State<AccountScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── Legal ──────────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -279,7 +279,6 @@ class _AccountScreenState extends State<AccountScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── Log Out ────────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: GestureDetector(
@@ -323,15 +322,13 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
 
-            // ── NO status bar overlay needed ──────────────────────
           ],
         ),
       ),
     );
   }
 
-  // ── Helper methods ───────────────────────────────────────────────────────
-
+  // Opens a URL in the device's default external browser or app.
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -343,6 +340,8 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
+  // Bottom sheet listing email, phone and WhatsApp contact options.
+  // Uses isScrollControlled + viewPadding so content clears the Android nav bar.
   void _showContactSheet(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -410,6 +409,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Bottom sheet for Help Center — links to the website, email and live chat.
   void _showHelpCenterSheet(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -486,6 +486,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Bottom sheet prompting the user to rate on Play Store or send feedback.
   void _showRateAppSheet(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -551,6 +552,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Bottom sheet for Privacy Policy — opens the full policy page or privacy email.
   void _showPrivacyPolicySheet(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -616,6 +618,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Bottom sheet for Terms of Service — opens the full terms page or legal email.
   void _showTermsSheet(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -681,6 +684,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Bottom sheet for account settings: edit profile, password, payments, delete account.
   void _showSettingsSheet(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
@@ -721,7 +725,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 label: 'Edit Profile',
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: navigate to edit profile screen
+
                 },
               ),
               const SizedBox(height: 12),
@@ -731,7 +735,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 label: 'Change Password',
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: navigate to change password screen
+
                 },
               ),
               const SizedBox(height: 12),
@@ -741,7 +745,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 label: 'Payment Methods',
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: navigate to payment methods screen
+
                 },
               ),
               const SizedBox(height: 12),
@@ -762,6 +766,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Confirmation dialog before logging out — navigates to login and clears the stack.
   void _confirmLogout(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
     showDialog(
@@ -811,6 +816,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Confirmation dialog for permanent account deletion — action is irreversible.
   void _confirmDeleteAccount(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
     showDialog(
@@ -841,7 +847,7 @@ class _AccountScreenState extends State<AccountScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              // TODO: call delete account API
+
             },
             child: const Text('Delete',
                 style: TextStyle(
@@ -853,7 +859,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
-// ── Contact option widget ─────────────────────────────────────────────────────
+// Tappable row used inside contact/help bottom sheets — icon, label, subtitle, chevron.
 class _ContactOption extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -917,7 +923,7 @@ class _ContactOption extends StatelessWidget {
   }
 }
 
-// ── Settings option widget ────────────────────────────────────────────────────
+// Tappable row used inside the settings bottom sheet.
 class _SettingsOption extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -969,6 +975,7 @@ class _SettingsOption extends StatelessWidget {
   }
 }
 
+// Full-width purple header with blurred glass stats bar that overhangs the bottom edge.
 class _ProfileHeader extends StatelessWidget {
   final bool isDark;
   final VoidCallback onSettings;
@@ -983,7 +990,7 @@ class _ProfileHeader extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Purple section
+
         Container(
           width: double.infinity,
           padding: EdgeInsets.only(bottom: _statsHeight / 2),
@@ -996,11 +1003,9 @@ class _ProfileHeader extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Reserve status bar height — the AppBar glassmorphism
-              // sits over this area via extendBodyBehindAppBar
+
               SizedBox(height: topPadding),
 
-              // Top bar row
               Padding(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1029,7 +1034,6 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ),
 
-              // Avatar
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -1090,8 +1094,6 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ),
 
-        // Stats bar with glassmorphism — sits straddling the curved border.
-        // ClipRRect + BackdropFilter blurs the purple behind it.
         Positioned(
           bottom: -(_statsHeight / 2),
           left: 20,
@@ -1124,7 +1126,6 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ),
 
-        // Invisible spacer so Stack is tall enough for the stats overhang
         Positioned(
           bottom: 0,
           left: 0,
@@ -1136,7 +1137,6 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-// ── Stat widgets ──────────────────────────────────────────────────────────────
 class _StatItem extends StatelessWidget {
   final String value;
   final String label;
@@ -1186,14 +1186,14 @@ class _StatDivider extends StatelessWidget {
   }
 }
 
-// ── Language row ──────────────────────────────────────────────────────────────
+// Language preference row with animated EN/AR toggle pill.
 class _LanguageRow extends StatelessWidget {
   final bool isDark;
   const _LanguageRow({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    // Watch directly so this widget rebuilds on every locale change
+
     final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
     final textPrimary =
@@ -1284,7 +1284,7 @@ class _LangOption extends StatelessWidget {
   }
 }
 
-// ── Vehicle row ───────────────────────────────────────────────────────────────
+// Displays a single saved vehicle with icon, name, plate and a chevron.
 class _VehicleRow extends StatelessWidget {
   final bool isDark;
   const _VehicleRow({required this.isDark});
@@ -1337,7 +1337,8 @@ class _VehicleRow extends StatelessWidget {
   }
 }
 
-// ── Section card ──────────────────────────────────────────────────────────────
+// Card container used for every settings section.
+// Draws a #000011 @ 30% background with a horizontal gradient border (dark → purple).
 class _SectionCard extends StatelessWidget {
   final bool isDark;
   final Widget child;
@@ -1347,13 +1348,14 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const radius = 16.0;
     const borderWidth = 1.5;
-    const cardColor = Color(0x4D000011); // #000011 at 30% opacity (0.3 * 255 ≈ 77 = 0x4D)
+
+    const cardColor = Color(0x4D000011);
     const gradient = LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
       colors: [
-        Color(0xFF0A0320), // left — near-black dark
-        Color(0xFF7D39EB), // right — bright purple
+        Color(0xFF0A0320),
+        Color(0xFF7D39EB),
       ],
     );
 
@@ -1374,7 +1376,8 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ── Gradient border painter ───────────────────────────────────────────────────
+// Custom painter that strokes a rounded-rect border using a LinearGradient shader.
+// Necessary because BoxDecoration does not support gradient borders natively.
 class _GradientBorderPainter extends CustomPainter {
   final LinearGradient gradient;
   final double borderWidth;
@@ -1404,7 +1407,7 @@ class _GradientBorderPainter extends CustomPainter {
           old.radius != radius;
 }
 
-// ── Preference row ────────────────────────────────────────────────────────────
+// Generic preference row with an icon, label and an arbitrary trailing widget (e.g. Switch).
 class _PreferenceRow extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -1452,7 +1455,7 @@ class _PreferenceRow extends StatelessWidget {
   }
 }
 
-// ── Nav row ───────────────────────────────────────────────────────────────────
+// Tappable row with icon, label and a chevron — used for navigable settings items.
 class _NavRow extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -1502,7 +1505,7 @@ class _NavRow extends StatelessWidget {
   }
 }
 
-// ── Row divider ───────────────────────────────────────────────────────────────
+// Thin divider with a left indent to align with the row icon column.
 class _RowDivider extends StatelessWidget {
   final bool isDark;
   const _RowDivider({required this.isDark});

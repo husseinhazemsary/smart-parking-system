@@ -1,3 +1,6 @@
+// Onboarding screen — 3-page introduction shown once after the splash screen.
+// Each page shows a looping video, a RichText title with a purple highlight word,
+// and a subtitle. Navigation uses a custom swipe button and a worm page indicator.
 import 'package:flutter/material.dart';
 import 'package:ezrakna/l10n/app_localizations.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -15,10 +18,12 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
+  // PageController drives both the PageView and the SmoothPageIndicator.
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final int _totalPages = 3;
 
+  // Advances to the next page or navigates to login if on the last page.
   void _goToNext() {
     if (_currentPage < _totalPages - 1) {
       _pageController.nextPage(
@@ -30,6 +35,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  // Returns to the previous page; no-op when already on the first page.
   void _goBack() {
     if (_currentPage > 0) {
       _pageController.previousPage(
@@ -39,6 +45,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  // Replaces the onboarding route with login so back button never returns here.
   void _navigateToLogin() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -85,7 +92,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top nav
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
@@ -120,7 +127,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Pages
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -131,7 +137,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Bottom bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
               child: Container(
@@ -173,9 +178,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Single onboarding page
-// ---------------------------------------------------------------------------
+// A single onboarding slide — video at the top, RichText title with one
+// purple-highlighted word, and a lighter subtitle below.
+// highlightFirst=true puts the purple word before the plain text (page 3).
 class _OnboardingPage extends StatelessWidget {
   final String videoAsset;
   final String titleStart;
@@ -217,6 +222,7 @@ class _OnboardingPage extends StatelessWidget {
                   color: Colors.white,
                   height: 1.3,
                 ),
+                // Build the title with the highlight either first or in the middle depending on page.
                 children: highlightFirst
                     ? [
                   TextSpan(
@@ -267,15 +273,9 @@ class _OnboardingPage extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Swipe button — drag the button itself to the right to trigger
-// ---------------------------------------------------------------------------
-// Replace the entire _SwipeButton and _SwipeButtonState classes with this:
-
-// Replace the entire _SwipeButton and _SwipeButtonState classes with this:
-// Also add this import at the top of the file if not already present:
-// import 'dart:ui' show lerpDouble;
-
+// Swipe-to-confirm button — drag right past 55% of its width to trigger onSwipeComplete.
+// Features an idle horizontal wobble, an expanding fill circle during drag,
+// and animated arrows that slide in/out to reinforce the swipe direction.
 class _SwipeButton extends StatefulWidget {
   final String label;
   final VoidCallback onSwipeComplete;
@@ -288,26 +288,26 @@ class _SwipeButton extends StatefulWidget {
 
 class _SwipeButtonState extends State<_SwipeButton>
     with TickerProviderStateMixin {
+  // Current horizontal drag position in logical pixels from the button's left edge.
   double _dragOffset = 0;
   double _startOffset = 0;
   bool _isDragging = false;
 
-  // Idle wobble
+  // Four animation controllers handle: idle wobble, elastic snap-back,
+  // smooth return after trigger, and drag-progress interpolation.
   late AnimationController _wobbleController;
   late Animation<double> _wobbleAnimation;
 
-  // Snap back
   late AnimationController _snapController;
   late Animation<double> _snapAnimation;
 
-  // Smooth return after trigger
   late AnimationController _returnController;
   late Animation<double> _returnAnimation;
 
-  // Drag progress (0=idle, 1=fully dragged) — drives circle + arrows + text
   late AnimationController _dragAnimController;
   late Animation<double> _dragAnim;
 
+  // Button dimensions and the fraction of width that must be crossed to trigger.
   static const double _buttonHeight = 50;
   static const double _triggerFraction = 0.55;
 
@@ -315,7 +315,6 @@ class _SwipeButtonState extends State<_SwipeButton>
   void initState() {
     super.initState();
 
-    // Wobble
     _wobbleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -325,19 +324,16 @@ class _SwipeButtonState extends State<_SwipeButton>
       CurvedAnimation(parent: _wobbleController, curve: Curves.easeInOut),
     );
 
-    // Snap back
     _snapController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
 
-    // Smooth return after trigger
     _returnController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 450),
     );
 
-    // Drag progress controller
     _dragAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -355,6 +351,8 @@ class _SwipeButtonState extends State<_SwipeButton>
     if (oldWidget.label != widget.label) _resetInstant();
   }
 
+  // Called when the label prop changes (Next→Get Started) to instantly reset
+  // all animations without any visible transition.
   void _resetInstant() {
     _returnController.reset();
     _snapController.reset();
@@ -363,6 +361,7 @@ class _SwipeButtonState extends State<_SwipeButton>
     _wobbleController.repeat(reverse: true);
   }
 
+  // Elastic snap-back when the drag falls short of the trigger threshold.
   void _snapBack() {
     final startOffset = _dragOffset;
     _snapAnimation = Tween<double>(begin: startOffset, end: 0).animate(
@@ -375,6 +374,7 @@ class _SwipeButtonState extends State<_SwipeButton>
     });
   }
 
+  // Eased return to zero used after a successful trigger — feels less abrupt than snap.
   void _smoothReturn(double fromOffset) {
     _dragAnimController.reverse();
     _returnAnimation = Tween<double>(begin: fromOffset, end: 0).animate(
@@ -401,6 +401,7 @@ class _SwipeButtonState extends State<_SwipeButton>
       height: _buttonHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // maxDrag is the full button width — drag is clamped to [0, maxDrag].
           final maxDrag = constraints.maxWidth;
 
           return GestureDetector(
@@ -423,6 +424,7 @@ class _SwipeButtonState extends State<_SwipeButton>
             },
             onHorizontalDragEnd: (_) {
               setState(() => _isDragging = false);
+              // If drag passes the threshold, fire the callback then animate back.
               if (_dragOffset >= maxDrag * _triggerFraction) {
                 final offsetAtTrigger = _dragOffset;
                 widget.onSwipeComplete();
@@ -441,6 +443,7 @@ class _SwipeButtonState extends State<_SwipeButton>
                 _returnController,
               ]),
               builder: (context, child) {
+                // Suppress wobble during drag and snap animations to avoid visual conflict.
                 final wobbleOffset = (!_isDragging &&
                     !_snapController.isAnimating &&
                     !_returnController.isAnimating)
@@ -449,19 +452,15 @@ class _SwipeButtonState extends State<_SwipeButton>
 
                 final t = _dragAnim.value;
 
-                // Circle grows from nothing to fill button
+                // Interpolate visual state based on drag progress t ∈ [0, 1].
                 final circleSize = lerpDouble(0, 200, t)!;
 
-                // Text shifts slightly right
                 final textShift = lerpDouble(0, 10, t)!;
 
-                // Right arrow slides out to the right
                 final arr1Right = lerpDouble(12.0, -30.0, t)!;
 
-                // Left arrow slides in from the left
                 final arr2Left = lerpDouble(-30.0, 12.0, t)!;
 
-                // Text and icon color flip to dark as circle fills
                 final contentColor = Color.lerp(
                     Colors.white, const Color(0xFF1A0A2E), t)!;
 
@@ -477,7 +476,7 @@ class _SwipeButtonState extends State<_SwipeButton>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Expanding white circle from center
+
                         Positioned(
                           left: 70 - circleSize / 2,
                           top: _buttonHeight / 2 - circleSize / 2,
@@ -491,7 +490,6 @@ class _SwipeButtonState extends State<_SwipeButton>
                           ),
                         ),
 
-                        // arr-2: arrow sliding in from the left
                         Positioned(
                           left: arr2Left,
                           child: Icon(
@@ -501,7 +499,6 @@ class _SwipeButtonState extends State<_SwipeButton>
                           ),
                         ),
 
-                        // Label text
                         Transform.translate(
                           offset: Offset(textShift, 0),
                           child: Text(
@@ -514,7 +511,6 @@ class _SwipeButtonState extends State<_SwipeButton>
                           ),
                         ),
 
-                        // arr-1: arrow sliding out to the right
                         Positioned(
                           right: arr1Right,
                           child: Icon(
@@ -536,9 +532,8 @@ class _SwipeButtonState extends State<_SwipeButton>
   }
 }
 
-// ---------------------------------------------------------------------------
-// Video player widget — loops silently, no controls
-// ---------------------------------------------------------------------------
+// Looping, muted, asset-backed video player used as the visual for each onboarding slide.
+// Shows a loading placeholder with a faint spinner until the controller is ready.
 class _VideoPlayer extends StatefulWidget {
   final String assetPath;
   const _VideoPlayer({required this.assetPath});
@@ -554,8 +549,11 @@ class _VideoPlayerState extends State<_VideoPlayer> {
   @override
   void initState() {
     super.initState();
+    // Initialize, then immediately set looping and muted before calling play.
     _controller = VideoPlayerController.asset(widget.assetPath)
       ..initialize().then((_) {
+        // Guard with mounted check — the widget may have been disposed
+        // before the async initialize() call completes.
         if (mounted) {
           setState(() => _initialized = true);
           _controller.setLooping(true);
@@ -573,6 +571,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    // Show a dark rounded placeholder while the video loads to avoid a blank flash.
     if (!_initialized) {
       return Container(
         width: double.infinity,

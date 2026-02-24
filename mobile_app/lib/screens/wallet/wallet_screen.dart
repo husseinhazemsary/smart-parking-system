@@ -1,3 +1,5 @@
+// Wallet screen — shows saved payment cards, the active parking session
+// and recent transaction history.
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'add_card_screen.dart';
@@ -23,7 +25,7 @@ class WalletScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top bar
+
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Row(
@@ -53,7 +55,6 @@ class WalletScreen extends StatelessWidget {
                 ),
               ),
 
-              // ── Payment Methods ────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -84,8 +85,9 @@ class WalletScreen extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              // Horizontally scrollable cards
               SizedBox(
+                // Horizontal card carousel — clips to none so the purple border shadow on the
+// primary card renders fully without being cut off.
                 height: 130,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
@@ -107,7 +109,7 @@ class WalletScreen extends StatelessWidget {
                       expiry: null,
                     ),
                     const SizedBox(width: 12),
-                    // Add card placeholder
+
                     GestureDetector(
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
@@ -149,7 +151,6 @@ class WalletScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // ── Active Session ─────────────────────────────────────
               Row(
                 children: [
                   Text(
@@ -167,9 +168,9 @@ class WalletScreen extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              // Glowing active session card (decreased glow)
               Container(
                 padding: const EdgeInsets.all(16),
+                // Active session card uses a layered box shadow to produce a soft purple glow effect.
                 decoration: BoxDecoration(
                   color: AppColors.purple.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(16),
@@ -266,7 +267,6 @@ class WalletScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // ── Recent Activity ────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -346,7 +346,7 @@ class WalletScreen extends StatelessWidget {
   }
 }
 
-// ── Pulsing active indicator ─────────────────────────────────────────────────
+// Animated green dot with a fading ring — indicates a live parking session.
 class _PulsingIndicator extends StatefulWidget {
   @override
   State<_PulsingIndicator> createState() => _PulsingIndicatorState();
@@ -360,6 +360,7 @@ class _PulsingIndicatorState extends State<_PulsingIndicator>
   @override
   void initState() {
     super.initState();
+    // 1.2s loop with reverse so the ring breathes in and out continuously.
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -423,7 +424,8 @@ class _PulsingIndicatorState extends State<_PulsingIndicator>
   }
 }
 
-// ── Payment card ─────────────────────────────────────────────────────────────
+// Horizontally scrollable payment card tile showing brand, masked number and expiry.
+// The primary card gets a purple border; secondary cards use the default border.
 class _PaymentCard extends StatelessWidget {
   final bool isDark;
   final bool isPrimary;
@@ -464,7 +466,7 @@ class _PaymentCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Top row: brand + primary badge
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -531,7 +533,6 @@ class _PaymentCard extends StatelessWidget {
             ],
           ),
 
-          // Card Number row: label on left, value on right
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -547,7 +548,6 @@ class _PaymentCard extends StatelessWidget {
             ],
           ),
 
-          // Expiry row: label on left, value on right
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -568,7 +568,8 @@ class _PaymentCard extends StatelessWidget {
   }
 }
 
-// ── Transaction row ──────────────────────────────────────────────────────────
+// Single row in the recent activity list.
+// Failed transactions use a red-tinted background; paid use a purple tint.
 class _TransactionRow extends StatelessWidget {
   final bool isDark;
   final String initial;
@@ -603,11 +604,10 @@ class _TransactionRow extends StatelessWidget {
     final textSecondary =
     isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-    // Purple 8% for normal, red 8% for failed
+    // Subtle tinted background helps users instantly distinguish paid vs failed.
     final bgColor = failed
         ? const Color(0xFFEF4444).withOpacity(0.05)
         : const Color(0xFF7D39EB).withOpacity(0.05);
-
 
     return Container(
       padding: const EdgeInsets.all(14),

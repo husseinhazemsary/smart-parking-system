@@ -1,3 +1,5 @@
+// Add Card screen — collects card number, expiry, CVV and name.
+// Auto-pay settings (default + backup) use plain background boxes with no border.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_colors.dart';
@@ -10,11 +12,13 @@ class AddCardScreen extends StatefulWidget {
 }
 
 class _AddCardScreenState extends State<AddCardScreen> {
+  // Text controllers for each card input field.
   final _cardNumberController = TextEditingController();
   final _expiryController = TextEditingController();
   final _cvvController = TextEditingController();
   final _nameController = TextEditingController();
 
+  // Tracks auto-pay preference toggles.
   bool _setAsDefault = true;
   bool _useAsBackup = false;
 
@@ -41,7 +45,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
+
             Padding(
               padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -83,12 +87,12 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   children: [
                     const SizedBox(height: 8),
 
-                    // Card Number
                     _FieldLabel('Card Number', textColor: textPrimary),
                     const SizedBox(height: 8),
                     _GradientFieldBox(
                       child: TextFormField(
                         controller: _cardNumberController,
+                        // Numeric-only input formatted as groups of 4 digits (e.g. 1234 5678 9012 3456).
                         keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
@@ -113,7 +117,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Expiry + CVV
                     Row(
                       children: [
                         Expanded(
@@ -126,6 +129,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                               _GradientFieldBox(
                                 child: TextFormField(
                                   controller: _expiryController,
+                                  // Auto-formats input as MM / YY as the user types.
                                   keyboardType: TextInputType.number,
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
@@ -157,6 +161,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                                 child: TextFormField(
                                   controller: _cvvController,
                                   keyboardType: TextInputType.number,
+                                  // CVV is masked for security.
                                   obscureText: true,
                                   maxLength: 4,
                                   inputFormatters: [
@@ -182,7 +187,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Name on card
                     _FieldLabel('Name on card', textColor: textPrimary),
                     const SizedBox(height: 8),
                     _GradientFieldBox(
@@ -211,7 +215,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Auto-Pay Settings section
                     Text(
                       'AUTO-PAY SETTINGS',
                       style: TextStyle(
@@ -224,7 +227,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Set as default checkbox
                     _PlainBox(
                       child: _CheckboxRow(
                         isDark: isDark,
@@ -238,7 +240,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Use as backup checkbox
                     _PlainBox(
                       child: _CheckboxRow(
                         isDark: isDark,
@@ -252,7 +253,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Security note
                     Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -271,7 +271,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Save Card button
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('Save Card'),
@@ -289,7 +288,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 }
 
-// ── Field label ──────────────────────────────────────────────────────────────
+// Bold label rendered above each input field.
 class _FieldLabel extends StatelessWidget {
   final String text;
   final Color textColor;
@@ -306,7 +305,7 @@ class _FieldLabel extends StatelessWidget {
   );
 }
 
-// ── Checkbox row ─────────────────────────────────────────────────────────────
+// Checkbox + label row used for auto-pay preference options.
 class _CheckboxRow extends StatelessWidget {
   final bool isDark;
   final bool value;
@@ -347,7 +346,7 @@ class _CheckboxRow extends StatelessWidget {
   }
 }
 
-// ── Input formatters ─────────────────────────────────────────────────────────
+// Inserts a space every 4 digits and caps input at 16 digits.
 class _CardNumberFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -367,6 +366,7 @@ class _CardNumberFormatter extends TextInputFormatter {
   }
 }
 
+// Formats expiry as MM / YY and caps input at 4 digits.
 class _ExpiryFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -386,17 +386,16 @@ class _ExpiryFormatter extends TextInputFormatter {
   }
 }
 
-// ── Gradient border box ───────────────────────────────────────────────────────
+// Wraps card input fields with a #000011 @ 30% background and left→right gradient border.
 class _GradientFieldBox extends StatelessWidget {
   final Widget child;
   const _GradientFieldBox({required this.child});
-
   static const _gradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     colors: [
-      Color(0xFF7D39EB), // left — bright purple
-      Color(0xFF0A0320), // right — near-black dark
+      Color(0xFF7D39EB),
+      Color(0xFF0A0320),
     ],
   );
 
@@ -419,7 +418,7 @@ class _GradientFieldBox extends StatelessWidget {
   }
 }
 
-// ── Plain background box (no border) ─────────────────────────────────────────
+// Plain container for checkbox rows — same #000011 @ 30% bg but no border.
 class _PlainBox extends StatelessWidget {
   final Widget child;
   const _PlainBox({required this.child});
@@ -437,7 +436,8 @@ class _PlainBox extends StatelessWidget {
   }
 }
 
-// ── Gradient border painter ───────────────────────────────────────────────────
+// Paints a rounded-rect stroke using a LinearGradient shader.
+// Required because BoxDecoration does not support gradient borders.
 class _GradientBorderPainter extends CustomPainter {
   final LinearGradient gradient;
   final double borderWidth;

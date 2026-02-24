@@ -1,3 +1,5 @@
+// Signup screen — collects name, email, phone, date of birth and password.
+// Includes a notification consent checkbox required before account creation.
 import 'package:flutter/material.dart';
 import 'package:ezrakna/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -13,11 +15,13 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  // All controllers disposed in dispose() to prevent memory leaks.
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController();
   final _passwordController = TextEditingController();
+  // Tracks password visibility and consent checkbox state.
   bool _obscurePassword = true;
   bool _consentChecked = false;
 
@@ -31,6 +35,7 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  // Opens a native date picker styled with the app's purple color scheme.
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -44,6 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
         child: child!,
       ),
     );
+    // Format: DD/MM/YYYY for display in the read-only DOB field.
     if (picked != null) {
       setState(() {
         _dobController.text =
@@ -64,7 +70,7 @@ class _SignupScreenState extends State<SignupScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar: EN toggle + theme toggle
+
             Padding(
               padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -84,7 +90,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back button
+
                     GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
                       child: Container(
@@ -107,7 +113,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Title
                     Text(
                       l10n.createAccount,
                       style: TextStyle(
@@ -119,7 +124,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 28),
 
-                    // Full Name
                     _FieldLabel(l10n.fullName, isDark: isDark),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -131,7 +135,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Email
                     _FieldLabel(l10n.email, isDark: isDark),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -143,7 +146,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Phone Number
                     _FieldLabel(l10n.phoneNumber, isDark: isDark),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -155,11 +157,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Date of Birth
                     _FieldLabel(l10n.dateOfBirth, isDark: isDark),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _dobController,
+                      // Read-only so the keyboard never appears; tapping opens the date picker.
                       readOnly: true,
                       onTap: () => _selectDate(context),
                       decoration: InputDecoration(
@@ -174,11 +176,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Password
                     _FieldLabel(l10n.password, isDark: isDark),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
+                      // Toggle visibility via the suffix icon to avoid typos.
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         hintText: l10n.passwordHint,
@@ -197,7 +199,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Consent checkbox
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -227,17 +228,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Create Account button
                     ElevatedButton(
                       onPressed: () {
-                        // TODO: implement create account logic
+
                       },
                       child: Text(l10n.createAccount),
                     ),
 
                     const SizedBox(height: 20),
 
-                    // Already have an account? Sign In
                     Center(
                       child: GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
@@ -276,11 +275,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Reusable small widgets (duplicated here to keep files self-contained;
-// feel free to extract to a shared widgets file)
-// ---------------------------------------------------------------------------
-
+// Bold section label shown above each form field.
 class _FieldLabel extends StatelessWidget {
   final String text;
   final bool isDark;
@@ -299,6 +294,7 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
+// Language toggle pill shown in the top bar — EN/AR switch.
 class _LangToggle extends StatelessWidget {
   final LocaleProvider localeProvider;
   const _LangToggle({required this.localeProvider});
@@ -324,6 +320,7 @@ class _LangToggle extends StatelessWidget {
   }
 }
 
+// Dark/light mode toggle button shown in the top bar.
 class _ThemeToggle extends StatelessWidget {
   final ThemeProvider themeProvider;
   const _ThemeToggle({required this.themeProvider});

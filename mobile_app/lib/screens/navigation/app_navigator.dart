@@ -1,3 +1,5 @@
+// App-level bottom navigation shell — wraps all four main tabs.
+// Uses IndexedStack to keep each tab's state alive when switching between them.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ezrakna/l10n/app_localizations.dart';
@@ -16,6 +18,7 @@ class AppNavigator extends StatefulWidget {
 }
 
 class _AppNavigatorState extends State<AppNavigator> {
+  // Tracks the currently active tab index; initialised from widget.initialIndex.
   late int _currentIndex;
 
   @override
@@ -24,6 +27,7 @@ class _AppNavigatorState extends State<AppNavigator> {
     _currentIndex = widget.initialIndex;
   }
 
+  // All four tab screens are kept alive simultaneously via IndexedStack.
   final List<Widget> _screens = const [
     HomeScreen(),
     HistoryScreen(),
@@ -35,6 +39,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Keep status bar icons light in dark mode, dark in light mode.
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness:
@@ -44,12 +49,14 @@ class _AppNavigatorState extends State<AppNavigator> {
     return Scaffold(
       backgroundColor:
       isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      // IndexedStack preserves scroll position and state for all tabs.
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      // Directionality.ltr locks the nav bar layout regardless of app locale.
-      // Icons stay in the same order, labels still render in Arabic if needed.
+
+      // Directionality.ltr locks nav bar icon order regardless of app locale.
+      // Icons always appear Home→History→Wallet→Account left-to-right.
       bottomNavigationBar: Directionality(
         textDirection: TextDirection.ltr,
         child: _BottomNavBar(
@@ -61,6 +68,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   }
 }
 
+// Custom bottom nav bar — 60px tall with a top border and accentGreen active state.
 class _BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -93,6 +101,7 @@ class _BottomNavBar extends StatelessWidget {
           label: 'Account'),
     ];
 
+    // Solid background so content below the nav bar doesn't bleed through.
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0A0A1A) : Colors.white,
@@ -113,6 +122,7 @@ class _BottomNavBar extends StatelessWidget {
               final isActive = currentIndex == index;
               return GestureDetector(
                 onTap: () => onTap(index),
+                // opaque ensures the full 72px tap area is interactive, not just the icon.
                 behavior: HitTestBehavior.opaque,
                 child: SizedBox(
                   width: 72,
@@ -155,6 +165,7 @@ class _BottomNavBar extends StatelessWidget {
   }
 }
 
+// Simple data class holding the icon pair and label for each nav tab.
 class _NavItem {
   final IconData icon;
   final IconData activeIcon;

@@ -1,3 +1,5 @@
+// Add Vehicle screen — collects plate number, nickname, type and make/model.
+// Includes toggles for default vehicle and auto-pay settings.
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 
@@ -9,14 +11,18 @@ class AddVehicleScreen extends StatefulWidget {
 }
 
 class _AddVehicleScreenState extends State<AddVehicleScreen> {
+  // Text controllers for each input field.
   final _plateController = TextEditingController();
   final _nicknameController = TextEditingController();
   final _makeController = TextEditingController();
 
+  // Tracks which vehicle type chip is active.
   String _selectedType = 'Sedan';
+  // Toggle states for default vehicle and auto-pay.
   bool _setAsDefault = true;
   bool _autoPay = true;
 
+  // Vehicle type options shown as selectable chips.
   final List<Map<String, dynamic>> _vehicleTypes = [
     {'label': 'Sedan', 'icon': Icons.directions_car},
     {'label': 'SUV', 'icon': Icons.directions_car_filled},
@@ -45,7 +51,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
+
             Padding(
               padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -85,7 +91,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Subtitle
+
                     Center(
                       child: Text(
                         'Used for entry/exit recognition and Auto-Pay.',
@@ -97,7 +103,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 24),
 
-                    // License Plate
                     _FieldLabel('License Plate Number',
                         textColor: textPrimary),
                     const SizedBox(height: 8),
@@ -118,7 +123,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Nickname
                     Row(
                       children: [
                         _FieldLabel('Vehicle Nickname',
@@ -149,7 +153,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Vehicle Type
                     _FieldLabel('Vehicle Type', textColor: textPrimary),
                     const SizedBox(height: 12),
                     Row(
@@ -205,7 +208,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Make & Model
                     _FieldLabel('Make & Model', textColor: textPrimary),
                     const SizedBox(height: 8),
                     _GradientFieldBox(
@@ -227,7 +229,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 28),
 
-                    // Set as default toggle
                     _ToggleRow(
                       isDark: isDark,
                       label: 'Set as default vehicle',
@@ -238,7 +239,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 4),
 
-                    // Auto-Pay Settings
                     Container(
                       decoration: const BoxDecoration(
                         color: Color(0x4D000011),
@@ -335,7 +335,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 28),
 
-                    // Save button
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('Save Vehicle'),
@@ -353,6 +352,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   }
 }
 
+// Bold section label displayed above each input field.
 class _FieldLabel extends StatelessWidget {
   final String text;
   final Color textColor;
@@ -369,6 +369,7 @@ class _FieldLabel extends StatelessWidget {
   );
 }
 
+// Toggle row used for Set as Default and Auto-Pay — #000011 bg, no border.
 class _ToggleRow extends StatelessWidget {
   final bool isDark;
   final String label;
@@ -422,17 +423,16 @@ class _ToggleRow extends StatelessWidget {
   }
 }
 
-// ── Gradient border box for input fields ─────────────────────────────────────
+// Wraps a TextFormField with a #000011 @ 30% background and a left→right gradient border.
 class _GradientFieldBox extends StatelessWidget {
   final Widget child;
   const _GradientFieldBox({required this.child});
-
   static const _gradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     colors: [
-      Color(0xFF7D39EB), // left — bright purple
-      Color(0xFF0A0320), // right — near-black dark
+      Color(0xFF7D39EB),
+      Color(0xFF0A0320),
     ],
   );
 
@@ -455,7 +455,8 @@ class _GradientFieldBox extends StatelessWidget {
   }
 }
 
-// ── Gradient border box for chip buttons (unselected only) ───────────────────
+// Wraps unselected vehicle type chips with the gradient border.
+// Selected chips keep their solid purple fill and skip the border entirely.
 class _GradientChipBox extends StatelessWidget {
   final bool isSelected;
   final Widget child;
@@ -465,13 +466,14 @@ class _GradientChipBox extends StatelessWidget {
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     colors: [
-      Color(0xFF7D39EB), // left — bright purple
-      Color(0xFF0A0320), // right — near-black dark
+      Color(0xFF7D39EB),
+      Color(0xFF0A0320),
     ],
   );
 
   @override
   Widget build(BuildContext context) {
+    // Skip painting the gradient border when the chip is selected (solid purple handles styling).
     if (isSelected) return child;
     return CustomPaint(
       painter: _GradientBorderPainter(
@@ -484,7 +486,8 @@ class _GradientChipBox extends StatelessWidget {
   }
 }
 
-// ── Gradient border painter ───────────────────────────────────────────────────
+// Paints a rounded-rect stroke using a LinearGradient shader.
+// Required because BoxDecoration does not support gradient borders.
 class _GradientBorderPainter extends CustomPainter {
   final LinearGradient gradient;
   final double borderWidth;

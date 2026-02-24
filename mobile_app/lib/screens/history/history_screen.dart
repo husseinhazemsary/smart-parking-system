@@ -1,3 +1,5 @@
+// History screen — shows past parking sessions and transactions.
+// Currently a placeholder; replace body with a paginated session list.
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 

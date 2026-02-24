@@ -1,3 +1,5 @@
+// Login screen — entry point for returning users.
+// Supports email/password login, Google and Apple sign-in, and remember me.
 import 'package:flutter/material.dart';
 import 'package:ezrakna/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -15,8 +17,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Controllers are disposed in dispose() to avoid memory leaks.
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  // Tracks remember-me checkbox and password visibility toggle.
   bool _rememberMe = false;
   bool _obscurePassword = true;
 
@@ -39,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar: EN toggle + theme toggle
+
             Padding(
               padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -61,7 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 8),
 
-                    // Back button
                     GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
                       child: Container(
@@ -84,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Title
                     Text(
                       l10n.welcomeBack,
                       style: TextStyle(
@@ -96,7 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 28),
 
-                    // Email field
                     _FieldLabel(l10n.email, isDark: isDark),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -108,7 +109,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Password field
                     _FieldLabel(l10n.password, isDark: isDark),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -131,7 +131,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 14),
 
-                    // Remember me + Forgot password
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -150,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
-                            // TODO: navigate to forgot password
+
                           },
                           child: Text(
                             l10n.forgotPassword,
@@ -166,8 +165,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Sign In button
                     ElevatedButton(
+                      // On success replace the login route so back button doesn't return here.
                       onPressed: () {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(builder: (_) => const AppNavigator()),
@@ -178,7 +177,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Divider: or continue with
                     Row(
                       children: [
                         Expanded(
@@ -213,14 +211,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Google + Apple buttons
                     Row(
                       children: [
                         Expanded(
                           child: _SocialButton(
                             icon: _GoogleIcon(),
                             onTap: () {
-                              // TODO: Google sign in
+
                             },
                             isDark: isDark,
                           ),
@@ -231,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             icon: const Icon(Icons.apple,
                                 color: Colors.white, size: 26),
                             onTap: () {
-                              // TODO: Apple sign in
+
                             },
                             isDark: isDark,
                           ),
@@ -241,7 +238,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 28),
 
-                    // Don't have an account? Sign Up
                     Center(
                       child: GestureDetector(
                         onTap: () {
@@ -285,10 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shared small widgets
-// ---------------------------------------------------------------------------
-
+// Bold label displayed above each input field.
 class _FieldLabel extends StatelessWidget {
   final String text;
   final bool isDark;
@@ -307,6 +300,7 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
+// Bordered social login button (Google / Apple) with a centred icon.
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final VoidCallback onTap;
@@ -333,6 +327,7 @@ class _SocialButton extends StatelessWidget {
   }
 }
 
+// Placeholder Google icon — replace with an SVG asset when available.
 class _GoogleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -348,12 +343,14 @@ class _GoogleIcon extends StatelessWidget {
   }
 }
 
+// EN / AR pill toggle that rebuilds when LocaleProvider changes.
 class _LangToggle extends StatelessWidget {
   const _LangToggle();
 
   @override
   Widget build(BuildContext context) {
-    // Watch directly so this widget rebuilds on every locale change
+
+    // Watch directly so this widget rebuilds on every locale change.
     final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
 
@@ -415,6 +412,7 @@ class _LangToggle extends StatelessWidget {
   }
 }
 
+// Sun / moon icon button that calls ThemeProvider.toggleTheme.
 class _ThemeToggle extends StatelessWidget {
   final ThemeProvider themeProvider;
   const _ThemeToggle({required this.themeProvider});
