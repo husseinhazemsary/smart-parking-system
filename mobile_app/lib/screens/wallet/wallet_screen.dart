@@ -5,8 +5,271 @@ import '../../theme/app_colors.dart';
 import 'add_card_screen.dart';
 import '../account/settings_screen.dart';
 
-class WalletScreen extends StatelessWidget {
+class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
+
+  @override
+  State<WalletScreen> createState() => _WalletScreenState();
+}
+
+class _WalletScreenState extends State<WalletScreen> {
+  // Opens the full transactions list bottom sheet.
+  void _showAllTransactionsSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    const transactions = [
+      ('P', Color(0xFF7D39EB), 'Cairo Airport Terminal 2', 'Yesterday', '4h 20m', '-EGP 50', 'PAID', Color(0xFF22C55E), false),
+      ('X', Color(0xFFEF4444), 'Galleria 40', 'Dec 25', '4h 20m', '-EGP 50', 'FAILED', Color(0xFFEF4444), true),
+      ('P', Color(0xFF7D39EB), 'NGU Parking Lot', 'Dec 23', '4h 20m', '-EGP 0', 'PAID', Color(0xFF22C55E), false),
+      ('P', Color(0xFF7D39EB), 'Arkan Mall Parking', 'Dec 18', '2h 15m', '-EGP 65', 'PAID', Color(0xFF22C55E), false),
+      ('P', Color(0xFF3B82F6), 'Cairo Festival City', 'Dec 15', '3h 45m', '-EGP 90', 'PAID', Color(0xFF22C55E), false),
+      ('X', Color(0xFFEF4444), 'Smart Village Hub', 'Dec 10', '8h 00m', '-EGP 160', 'FAILED', Color(0xFFEF4444), true),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomPadding),
+              child: Column(
+                children: [
+                  // Drag handle
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 12),
+                    child: Center(
+                      child: Container(
+                        width: 40, height: 4,
+                        decoration: BoxDecoration(color: divColor, borderRadius: BorderRadius.circular(2)),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.purple.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.receipt_long_outlined, color: AppColors.purple, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('All Transactions',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      itemCount: transactions.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) {
+                        final t = transactions[i];
+                        final bgTint = t.$9
+                            ? const Color(0xFFEF4444).withOpacity(0.05)
+                            : const Color(0xFF7D39EB).withOpacity(0.05);
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: bgTint,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: t.$2.withOpacity(0.15),
+                                child: Text(t.$1,
+                                    style: TextStyle(color: t.$2, fontWeight: FontWeight.w700, fontSize: 16)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(t.$3,
+                                        style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 14)),
+                                    const SizedBox(height: 2),
+                                    Text('${t.$4}  •  ${t.$5}',
+                                        style: TextStyle(color: subColor, fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(t.$6,
+                                      style: const TextStyle(
+                                          color: Color(0xFFB2A8D2),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14)),
+                                  const SizedBox(height: 2),
+                                  Text(t.$7,
+                                      style: TextStyle(color: t.$8, fontSize: 12, fontWeight: FontWeight.w500)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Opens the active session detail bottom sheet — mirrors the one on the home screen.
+  void _showActiveSessionSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: divColor, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.purple.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.local_parking, color: AppColors.purple, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Arkan Mall Parking',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+                      const SizedBox(height: 2),
+                      Text('Sheikh Zayed, Giza',
+                          style: TextStyle(fontSize: 12, color: subColor)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.purple.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.purple.withOpacity(0.2)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Elapsed Time', style: TextStyle(fontSize: 11, color: subColor)),
+                        const SizedBox(height: 2),
+                        const Text('01:23:45',
+                            style: TextStyle(color: AppColors.purple, fontSize: 26, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Started at', style: TextStyle(fontSize: 11, color: subColor)),
+                        const SizedBox(height: 2),
+                        Text('09:30 PM',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _WalletDetailRow(label: 'Slot', value: 'B4', icon: Icons.local_parking, textColor: textColor, subColor: subColor),
+              Divider(height: 24, color: divColor),
+              _WalletDetailRow(label: 'Level & Gate', value: 'Level 2  •  Gate B', icon: Icons.layers_outlined, textColor: textColor, subColor: subColor),
+              Divider(height: 24, color: divColor),
+              _WalletDetailRow(label: 'Vehicle', value: 'Toyota Corolla  •  BG 4567', icon: Icons.directions_car_outlined, textColor: textColor, subColor: subColor),
+              Divider(height: 24, color: divColor),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Est. Cost', style: TextStyle(fontSize: 13, color: subColor)),
+                  const Text('EGP 50.00',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF22C55E))),
+                ],
+              ),
+              const SizedBox(height: 28),
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 20),
+                      SizedBox(width: 8),
+                      Text('End Session',
+                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 15)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,10 +331,10 @@ class WalletScreen extends StatelessWidget {
                       MaterialPageRoute(
                           builder: (_) => const AddCardScreen()),
                     ),
-                    child: const Text(
+                    child: Text(
                       '+ Add new card',
                       style: TextStyle(
-                        color: AppColors.accentGreen,
+                        color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -120,19 +383,19 @@ class WalletScreen extends StatelessWidget {
                               : AppColors.surfaceLight,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.accentGreen.withOpacity(0.4),
+                            color: (isDark ? AppColors.accentGreen : const Color(0xFF16A34A)).withOpacity(0.4),
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.add, color: AppColors.accentGreen, size: 26),
-                              SizedBox(height: 6),
+                              Icon(Icons.add, color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A), size: 26),
+                              const SizedBox(height: 6),
                               Text(
                                 'Add card',
                                 style: TextStyle(
-                                  color: AppColors.accentGreen,
+                                  color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -167,22 +430,17 @@ class WalletScreen extends StatelessWidget {
 
               Container(
                 padding: const EdgeInsets.all(16),
-                // Active session card uses a layered box shadow to produce a soft purple glow effect.
+                // Reduced glow — single subtle shadow.
                 decoration: BoxDecoration(
-                  color: AppColors.purple.withOpacity(0.12),
+                  color: AppColors.purple.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color: AppColors.purple.withOpacity(0.4), width: 1),
+                      color: AppColors.purple.withOpacity(0.3), width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.purple.withOpacity(0.18),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                    ),
-                    BoxShadow(
                       color: AppColors.purple.withOpacity(0.08),
-                      blurRadius: 24,
-                      spreadRadius: 3,
+                      blurRadius: 14,
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
@@ -236,27 +494,33 @@ class WalletScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 38,
-                      child: ElevatedButton.icon(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.purple,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _showActiveSessionSheet(context, isDark),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'View Details',
+                                style: TextStyle(
+                                  color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Icon(
+                                Icons.arrow_forward,
+                                color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
+                                size: 12,
+                              ),
+                            ],
                           ),
                         ),
-                        icon: const Icon(Icons.arrow_forward, size: 14),
-                        label: const Text('View Details'),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -275,12 +539,15 @@ class WalletScreen extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const Text(
-                    'View all transactions',
-                    style: TextStyle(
-                      color: AppColors.accentGreen,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                  GestureDetector(
+                    onTap: () => _showAllTransactionsSheet(context, isDark),
+                    child: Text(
+                      'View all transactions',
+                      style: TextStyle(
+                        color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -677,6 +944,37 @@ class _TransactionRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+// Label/value detail row used inside the active session sheet in WalletScreen.
+class _WalletDetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color textColor;
+  final Color subColor;
+  const _WalletDetailRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.textColor,
+    required this.subColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFFB2A8D2)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(label, style: TextStyle(fontSize: 13, color: subColor)),
+        ),
+        Text(value,
+            style: TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+      ],
     );
   }
 }

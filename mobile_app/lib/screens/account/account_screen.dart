@@ -103,19 +103,19 @@ class _AccountScreenState extends State<AccountScreen> {
                                         height: 28,
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                              color: AppColors.accentGreen,
+                                              color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                                               width: 1.5),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
-                                        child: const Icon(Icons.add,
-                                            color: AppColors.accentGreen,
+                                        child: Icon(Icons.add,
+                                            color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                                             size: 18),
                                       ),
                                       const SizedBox(width: 12),
-                                      const Text(
+                                      Text(
                                         'Add Vehicle',
                                         style: TextStyle(
-                                          color: AppColors.accentGreen,
+                                          color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                                           fontWeight: FontWeight.w600,
                                           fontSize: 15,
                                         ),
@@ -1334,7 +1334,8 @@ class _VehicleRow extends StatelessWidget {
 }
 
 // Card container used for every settings section.
-// Draws a #000011 @ 30% background with a horizontal gradient border (dark → purple).
+// Dark mode: semi-transparent dark fill with gradient border.
+// Light mode: white fill with a subtle purple gradient border.
 class _SectionCard extends StatelessWidget {
   final bool isDark;
   final Widget child;
@@ -1345,14 +1346,17 @@ class _SectionCard extends StatelessWidget {
     const radius = 16.0;
     const borderWidth = 1.5;
 
-    const cardColor = Color(0x4D000011);
-    const gradient = LinearGradient(
+    final cardColor = isDark ? const Color(0x4D000011) : Colors.white;
+    final gradient = isDark
+        ? const LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
-      colors: [
-        Color(0xFF0A0320),
-        Color(0xFF7D39EB),
-      ],
+      colors: [Color(0xFF0A0320), Color(0xFF7D39EB)],
+    )
+        : const LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [Color(0xFFE9E2FA), Color(0xFF7D39EB)],
     );
 
     return CustomPaint(

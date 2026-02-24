@@ -222,165 +222,187 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: allParkingLocations.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, __) => const SizedBox(height: 20),
                 itemBuilder: (_, i) {
                   final loc = allParkingLocations[i];
                   final (availLabel, availColor) = _availability(loc);
                   final spotsLeft = loc.availableSpots;
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: border, width: 2),
+                  return CustomPaint(
+                    painter: _GradientBorderPainter(
+                      gradient: isDark
+                          ? const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [Color(0xFF7D39EB), Color(0xFF0A0320)],
+                      )
+                          : const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [Color(0xFFE9E2FA), Color(0xFF7D39EB)],
+                      ),
+                      borderWidth: 1.5,
+                      radius: 16,
                     ),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Thumbnail with distance badge.
-                              Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.asset(
-                                      loc.imageAsset,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x4D000011) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Thumbnail with distance badge.
+                                Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.asset(
+                                        loc.imageAsset,
                                         width: 80,
                                         height: 80,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.purple.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: const Icon(Icons.local_parking,
-                                            color: AppColors.purple, size: 32),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 6,
-                                    left: 6,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.65),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text('${loc.distanceKm} km',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(width: 12),
-
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(loc.name,
-                                              style: TextStyle(
-                                                  color: textPrimary,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 16)),
-                                        ),
-                                        Text(
-                                          loc.ratePerHour == 0
-                                              ? 'EGP 0 /hr'
-                                              : 'EGP ${loc.ratePerHour} /hr',
-                                          style: const TextStyle(
-                                              color: AppColors.accentGreen,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(loc.address,
-                                        style: TextStyle(color: textSecondary, fontSize: 11),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis),
-                                    const SizedBox(height: 8),
-                                    // Availability label.
-                                    Text(availLabel,
-                                        style: TextStyle(
-                                            color: availColor,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500)),
-                                    const SizedBox(height: 4),
-                                    // Availability progress bar.
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(4),
-                                            child: LinearProgressIndicator(
-                                              value: 1 - (loc.availableSpots / loc.totalSpots),
-                                              backgroundColor: const Color(0xFF1E1E3A),
-                                              valueColor: AlwaysStoppedAnimation<Color>(availColor),
-                                              minHeight: 5,
-                                            ),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.purple.withOpacity(0.15),
+                                            borderRadius: BorderRadius.circular(10),
                                           ),
+                                          child: const Icon(Icons.local_parking,
+                                              color: AppColors.purple, size: 32),
                                         ),
-                                        const SizedBox(width: 8),
-                                        Text('$spotsLeft spots',
-                                            style: TextStyle(
-                                                color: textSecondary, fontSize: 11)),
-                                      ],
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 6,
+                                      left: 6,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.65),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text('${loc.distanceKm} km',
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600)),
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
 
-                        // View Details button — semi-transparent purple, smaller height.
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ParkingDetailsScreen(location: loc),
-                            ),
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 9),
-                            decoration: BoxDecoration(
-                              color: AppColors.purple.withOpacity(0.2),
-                              borderRadius: const BorderRadius.vertical(
-                                  bottom: Radius.circular(16)),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('View Details',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600)),
-                                SizedBox(width: 6),
-                                Icon(Icons.arrow_forward, color: Colors.white, size: 14),
+                                const SizedBox(width: 12),
+
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(loc.name,
+                                                style: TextStyle(
+                                                    color: textPrimary,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 16)),
+                                          ),
+                                          Text(
+                                            loc.ratePerHour == 0
+                                                ? 'EGP 0 /hr'
+                                                : 'EGP ${loc.ratePerHour} /hr',
+                                            style: TextStyle(
+                                                color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(loc.address,
+                                          style: TextStyle(color: textSecondary, fontSize: 11),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      const SizedBox(height: 8),
+                                      // Availability label.
+                                      Text(availLabel,
+                                          style: TextStyle(
+                                              color: availColor,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500)),
+                                      const SizedBox(height: 4),
+                                      // Availability progress bar.
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: LinearProgressIndicator(
+                                                value: 1 - (loc.availableSpots / loc.totalSpots),
+                                                backgroundColor: const Color(0xFF1E1E3A),
+                                                valueColor: AlwaysStoppedAnimation<Color>(availColor),
+                                                minHeight: 5,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text('$spotsLeft spots',
+                                              style: TextStyle(
+                                                  color: textSecondary, fontSize: 11)),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
+
+                          // View Details button — transparent with top divider line.
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ParkingDetailsScreen(location: loc),
+                              ),
+                            ),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 9),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border(
+                                  top: BorderSide(
+                                    color: const Color(0xFF7D39EB).withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                borderRadius: const BorderRadius.vertical(
+                                    bottom: Radius.circular(16)),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('View Details',
+                                      style: TextStyle(
+                                          color: Color(0xFF7D39EB),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600)),
+                                  SizedBox(width: 6),
+                                  Icon(Icons.arrow_forward, color: Color(0xFF7D39EB), size: 14),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ), // Container
+                  ); // CustomPaint
                 },
               ),
             ),
@@ -389,4 +411,34 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
       ),
     );
   }
+}
+
+// Strokes a rounded-rect border with a LinearGradient shader.
+class _GradientBorderPainter extends CustomPainter {
+  final LinearGradient gradient;
+  final double borderWidth;
+  final double radius;
+
+  const _GradientBorderPainter({
+    required this.gradient,
+    required this.borderWidth,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..strokeWidth = borderWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_GradientBorderPainter old) =>
+      old.gradient != gradient ||
+          old.borderWidth != borderWidth ||
+          old.radius != radius;
 }

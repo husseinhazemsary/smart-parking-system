@@ -41,6 +41,462 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$h:$m:$s';
   }
 
+  // Opens the active session detail bottom sheet.
+  void _showActiveSessionSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: divColor, borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.purple.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.local_parking, color: AppColors.purple, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Mall of Egypt',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+                      const SizedBox(height: 2),
+                      Text('El Wahat Rd, 6th of October',
+                          style: TextStyle(fontSize: 12, color: subColor)),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Live timer row
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.purple.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.purple.withOpacity(0.2)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Elapsed Time',
+                            style: TextStyle(fontSize: 11, color: subColor)),
+                        const SizedBox(height: 2),
+                        StatefulBuilder(
+                          builder: (_, __) => Text(
+                            _formatElapsed(_elapsed),
+                            style: const TextStyle(
+                              color: AppColors.purple,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Started at', style: TextStyle(fontSize: 11, color: subColor)),
+                        const SizedBox(height: 2),
+                        Text('09:30 PM',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Detail rows
+              _SheetDetailRow(label: 'Slot', value: 'A2', icon: Icons.local_parking, textColor: textColor, subColor: subColor),
+              Divider(height: 24, color: divColor),
+              _SheetDetailRow(label: 'Level & Gate', value: 'Level C  •  Gate A', icon: Icons.layers_outlined, textColor: textColor, subColor: subColor),
+              Divider(height: 24, color: divColor),
+              _SheetDetailRow(label: 'Vehicle', value: 'Toyota Corolla  •  BG 4567', icon: Icons.directions_car_outlined, textColor: textColor, subColor: subColor),
+              Divider(height: 24, color: divColor),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Est. Cost', style: TextStyle(fontSize: 13, color: subColor)),
+                  Text('EGP 50.00',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF22C55E))),
+                ],
+              ),
+
+              const SizedBox(height: 28),
+
+              // End session button
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 20),
+                      SizedBox(width: 8),
+                      Text('End Session',
+                          style: TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Opens the saved / favourite locations bottom sheet.
+  void _showSavedSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    // Sample saved locations — replace with real data.
+    const saved = [
+      ('Arkan Mall', 'Sheikh Zayed, Giza', '0.5 km'),
+      ('Cairo Airport T2', 'Cairo International Airport', '1.2 km'),
+      ('City Stars', 'Nasr City, Cairo', '3.4 km'),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: divColor, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Saved Places',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+              const SizedBox(height: 4),
+              Text('Your favourite parking locations',
+                  style: TextStyle(fontSize: 13, color: subColor)),
+              const SizedBox(height: 20),
+              ...saved.map((s) => Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEC4899).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.favorite, color: Color(0xFFEC4899), size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(s.$1,
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+                            Text(s.$2,
+                                style: TextStyle(fontSize: 12, color: subColor)),
+                          ],
+                        ),
+                      ),
+                      Text(s.$3, style: TextStyle(fontSize: 12, color: subColor)),
+                    ],
+                  ),
+                  if (s != saved.last) Divider(height: 20, color: divColor),
+                ],
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Opens the notifications bottom sheet.
+  void _showNotificationsSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    // Sample notifications — replace with real data.
+    const notifications = [
+      (Icons.access_time, Color(0xFF7D39EB), 'Session reminder', 'Your session at Mall of Egypt ends in 30 minutes.', '2m ago'),
+      (Icons.local_offer_outlined, Color(0xFF22C55E), 'Promo available', 'Get 20% off your next booking at Arkan Mall.', '1h ago'),
+      (Icons.receipt_long_outlined, Color(0xFF3B82F6), 'Receipt ready', 'Your receipt for Cairo Airport is ready to download.', 'Yesterday'),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: divColor, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Notifications',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.purple.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('3 new',
+                        style: TextStyle(color: AppColors.purple, fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              ...notifications.map((n) => Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: n.$2.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(n.$1, color: n.$2, size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(n.$3,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+                            const SizedBox(height: 2),
+                            Text(n.$4,
+                                style: TextStyle(fontSize: 12, color: subColor),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(n.$5, style: TextStyle(fontSize: 11, color: subColor)),
+                    ],
+                  ),
+                  if (n != notifications.last) Divider(height: 20, color: divColor),
+                ],
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Opens the monthly snapshot detail bottom sheet.
+  void _showMonthlySnapshotSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    // Sample monthly breakdown — replace with real data.
+    const breakdown = [
+      ('Arkan Mall Parking', 'Dec 24', '2h 15m', 'EGP 65'),
+      ('Cairo Festival City', 'Dec 18', '3h 45m', 'EGP 90'),
+      ('City Stars Parking', 'Nov 28', '2h 00m', 'EGP 55'),
+      ('Dandy Mega Mall', 'Nov 15', '4h 00m', 'EGP 100'),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: divColor, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.purple.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.bar_chart_outlined, color: AppColors.purple, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Monthly Snapshot',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+                      const SizedBox(height: 2),
+                      Text('December 2025',
+                          style: TextStyle(fontSize: 12, color: subColor)),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Summary stat row
+              Row(
+                children: [
+                  _SnapshotPill(label: 'Hours', value: '42h', icon: Icons.access_time_outlined),
+                  const SizedBox(width: 10),
+                  _SnapshotPill(label: 'Spent', value: 'EGP 300', icon: Icons.account_balance_wallet_outlined),
+                  const SizedBox(width: 10),
+                  _SnapshotPill(label: 'Sessions', value: '18', icon: Icons.history_outlined),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              Text('Recent Sessions',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+              const SizedBox(height: 12),
+
+              // Breakdown list
+              ...breakdown.map((b) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.purple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: Text('P',
+                            style: TextStyle(
+                                color: AppColors.purple,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(b.$1,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+                          Text('${b.$2}  •  ${b.$3}',
+                              style: TextStyle(fontSize: 11, color: subColor)),
+                        ],
+                      ),
+                    ),
+                    Text(b.$4,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFB2A8D2))),
+                  ],
+                ),
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // Nearby parking data — images come from assets/images/.
   final List<ParkingLocation> _nearby = const [
     ParkingLocation(
@@ -156,9 +612,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   // Favourite and notification action buttons.
-                  _IconBtn(icon: Icons.favorite_border, isDark: isDark),
+                  GestureDetector(
+                    onTap: () => _showSavedSheet(context, isDark),
+                    child: _IconBtn(icon: Icons.favorite_border, isDark: isDark),
+                  ),
                   const SizedBox(width: 8),
-                  _IconBtn(icon: Icons.notifications_outlined, isDark: isDark),
+                  GestureDetector(
+                    onTap: () => _showNotificationsSheet(context, isDark),
+                    child: _IconBtn(icon: Icons.notifications_outlined, isDark: isDark),
+                  ),
                 ],
               ),
 
@@ -204,10 +666,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 18,
                           fontWeight: FontWeight.w700)),
                   GestureDetector(
-                    onTap: () {},
-                    child: const Text('View Details',
+                    onTap: () => _showActiveSessionSheet(context, isDark),
+                    child: Text('View Details',
                         style: TextStyle(
-                            color: AppColors.accentGreen,
+                            color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
                   ),
@@ -216,26 +678,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 12),
 
-              // Active session card — transparent background, layered purple glow to signal importance.
+              // Active session card — transparent background, subtle purple glow.
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  // Very light purple tint so content beneath subtly shows.
                   color: AppColors.purple.withOpacity(0.04),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.purple.withOpacity(0.8), width: 1.5),
+                  border: Border.all(color: AppColors.purple.withOpacity(0.5), width: 1.5),
                   boxShadow: [
-                    // Wide soft outer glow — gives the floating, important feel.
                     BoxShadow(
-                      color: AppColors.purple.withOpacity(0.18),
-                      blurRadius: 24,
-                      spreadRadius: 2,
-                    ),
-                    // Tight inner glow — sharpens the border edge so it looks lit.
-                    BoxShadow(
-                      color: AppColors.purple.withOpacity(0.28),
-                      blurRadius: 6,
-                      spreadRadius: 0,
+                      color: AppColors.purple.withOpacity(0.08),
+                      blurRadius: 14,
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
@@ -324,9 +778,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SelectLocationScreen()),
                     ),
-                    child: const Text('View all',
+                    child: Text('View all',
                         style: TextStyle(
-                            color: AppColors.accentGreen,
+                            color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
                   ),
@@ -369,10 +823,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 18,
                           fontWeight: FontWeight.w700)),
                   GestureDetector(
-                    onTap: () {},
-                    child: const Text('View Details',
+                    onTap: () => _showMonthlySnapshotSheet(context, isDark),
+                    child: Text('View Details',
                         style: TextStyle(
-                            color: AppColors.accentGreen,
+                            color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
                   ),
@@ -381,38 +835,54 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 12),
 
-              // Three-stat snapshot card.
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: border),
+              // Three-stat snapshot card with gradient border.
+              CustomPaint(
+                painter: _GradientBorderPainter(
+                  gradient: isDark
+                      ? const LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [Color(0x887D39EB), Color(0xCC0A0320)],
+                  )
+                      : const LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [Color(0xFFE9E2FA), Color(0xFF7D39EB)],
+                  ),
+                  borderWidth: 1.5,
+                  radius: 16,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _SnapshotStat(
-                      icon: Icons.access_time_outlined,
-                      value: '42h',
-                      label: 'HOURS',
-                      isDark: isDark,
-                    ),
-                    Container(width: 1, height: 40, color: border),
-                    _SnapshotStat(
-                      icon: Icons.photo_camera_outlined,
-                      value: '300 EGP',
-                      label: 'SPENT',
-                      isDark: isDark,
-                    ),
-                    Container(width: 1, height: 40, color: border),
-                    _SnapshotStat(
-                      icon: Icons.history_outlined,
-                      value: '18',
-                      label: 'SESSIONS',
-                      isDark: isDark,
-                    ),
-                  ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: (isDark ? AppColors.surfaceDark : AppColors.surfaceLight).withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _SnapshotStat(
+                        icon: Icons.access_time_outlined,
+                        value: '42h',
+                        label: 'HOURS',
+                        isDark: isDark,
+                      ),
+                      Container(width: 1, height: 40, color: border),
+                      _SnapshotStat(
+                        icon: Icons.photo_camera_outlined,
+                        value: '300 EGP',
+                        label: 'SPENT',
+                        isDark: isDark,
+                      ),
+                      Container(width: 1, height: 40, color: border),
+                      _SnapshotStat(
+                        icon: Icons.history_outlined,
+                        value: '18',
+                        label: 'SESSIONS',
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -444,6 +914,38 @@ class _IconBtn extends StatelessWidget {
       child: Icon(icon,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           size: 20),
+    );
+  }
+}
+
+// Label/value row with an icon used inside the active session detail sheet.
+class _SheetDetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color textColor;
+  final Color subColor;
+  const _SheetDetailRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.textColor,
+    required this.subColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFFB2A8D2)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(label, style: TextStyle(fontSize: 13, color: subColor)),
+        ),
+        Text(value,
+            style: TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+      ],
     );
   }
 }
@@ -650,4 +1152,68 @@ class _SnapshotStat extends StatelessWidget {
       ],
     );
   }
+}
+// Compact pill used in the monthly snapshot sheet to show a key stat.
+class _SnapshotPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _SnapshotPill({required this.label, required this.value, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        decoration: BoxDecoration(
+          color: AppColors.purple.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.purple.withOpacity(0.2)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.purple, size: 18),
+            const SizedBox(height: 4),
+            Text(value,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor)),
+            const SizedBox(height: 1),
+            Text(label,
+                style: const TextStyle(fontSize: 10, color: Color(0xFFB2A8D2))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Strokes a rounded-rect border with a LinearGradient shader.
+class _GradientBorderPainter extends CustomPainter {
+  final LinearGradient gradient;
+  final double borderWidth;
+  final double radius;
+
+  const _GradientBorderPainter({
+    required this.gradient,
+    required this.borderWidth,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..strokeWidth = borderWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_GradientBorderPainter old) =>
+      old.gradient != gradient ||
+          old.borderWidth != borderWidth ||
+          old.radius != radius;
 }
