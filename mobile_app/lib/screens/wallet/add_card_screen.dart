@@ -86,19 +86,27 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     // Card Number
                     _FieldLabel('Card Number', textColor: textPrimary),
                     const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _cardNumberController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        _CardNumberFormatter(),
-                      ],
-                      decoration: InputDecoration(
-                        hintText: '0000 0000 0000 0000',
-                        suffixIcon: Icon(
-                          Icons.credit_card_outlined,
-                          color: textSecondary,
-                          size: 20,
+                    _GradientFieldBox(
+                      child: TextFormField(
+                        controller: _cardNumberController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          _CardNumberFormatter(),
+                        ],
+                        decoration: InputDecoration(
+                          hintText: '0000 0000 0000 0000',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          suffixIcon: Icon(
+                            Icons.credit_card_outlined,
+                            color: textSecondary,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
@@ -115,15 +123,23 @@ class _AddCardScreenState extends State<AddCardScreen> {
                               _FieldLabel('Expiry Date',
                                   textColor: textPrimary),
                               const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _expiryController,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  _ExpiryFormatter(),
-                                ],
-                                decoration: const InputDecoration(
-                                  hintText: 'MM / YY',
+                              _GradientFieldBox(
+                                child: TextFormField(
+                                  controller: _expiryController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    _ExpiryFormatter(),
+                                  ],
+                                  decoration: const InputDecoration(
+                                    hintText: 'MM / YY',
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  ),
                                 ),
                               ),
                             ],
@@ -137,17 +153,25 @@ class _AddCardScreenState extends State<AddCardScreen> {
                               _FieldLabel('CVC / CVV',
                                   textColor: textPrimary),
                               const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _cvvController,
-                                keyboardType: TextInputType.number,
-                                obscureText: true,
-                                maxLength: 4,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                decoration: const InputDecoration(
-                                  hintText: '123',
-                                  counterText: '',
+                              _GradientFieldBox(
+                                child: TextFormField(
+                                  controller: _cvvController,
+                                  keyboardType: TextInputType.number,
+                                  obscureText: true,
+                                  maxLength: 4,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: const InputDecoration(
+                                    hintText: '123',
+                                    counterText: '',
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  ),
                                 ),
                               ),
                             ],
@@ -161,11 +185,20 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     // Name on card
                     _FieldLabel('Name on card', textColor: textPrimary),
                     const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _nameController,
-                      textCapitalization: TextCapitalization.words,
-                      decoration:
-                      const InputDecoration(hintText: 'John Doe'),
+                    _GradientFieldBox(
+                      child: TextFormField(
+                        controller: _nameController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          hintText: 'John Doe',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 28),
@@ -192,25 +225,29 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     const SizedBox(height: 16),
 
                     // Set as default checkbox
-                    _CheckboxRow(
-                      isDark: isDark,
-                      value: _setAsDefault,
-                      label: 'Set as default Auto-Pay card',
-                      onChanged: (v) =>
-                          setState(() => _setAsDefault = v ?? false),
-                      textColor: textPrimary,
+                    _PlainBox(
+                      child: _CheckboxRow(
+                        isDark: isDark,
+                        value: _setAsDefault,
+                        label: 'Set as default Auto-Pay card',
+                        onChanged: (v) =>
+                            setState(() => _setAsDefault = v ?? false),
+                        textColor: textPrimary,
+                      ),
                     ),
 
                     const SizedBox(height: 12),
 
                     // Use as backup checkbox
-                    _CheckboxRow(
-                      isDark: isDark,
-                      value: _useAsBackup,
-                      label: 'Use as backup payment method',
-                      onChanged: (v) =>
-                          setState(() => _useAsBackup = v ?? false),
-                      textColor: textPrimary,
+                    _PlainBox(
+                      child: _CheckboxRow(
+                        isDark: isDark,
+                        value: _useAsBackup,
+                        label: 'Use as backup payment method',
+                        onChanged: (v) =>
+                            setState(() => _useAsBackup = v ?? false),
+                        textColor: textPrimary,
+                      ),
                     ),
 
                     const SizedBox(height: 24),
@@ -347,4 +384,85 @@ class _ExpiryFormatter extends TextInputFormatter {
       selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
+}
+
+// ── Gradient border box ───────────────────────────────────────────────────────
+class _GradientFieldBox extends StatelessWidget {
+  final Widget child;
+  const _GradientFieldBox({required this.child});
+
+  static const _gradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [
+      Color(0xFF7D39EB), // left — bright purple
+      Color(0xFF0A0320), // right — near-black dark
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _GradientBorderPainter(
+        gradient: _gradient,
+        borderWidth: 1.5,
+        radius: 12,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0x4D000011),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ── Plain background box (no border) ─────────────────────────────────────────
+class _PlainBox extends StatelessWidget {
+  final Widget child;
+  const _PlainBox({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0x4D000011),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ── Gradient border painter ───────────────────────────────────────────────────
+class _GradientBorderPainter extends CustomPainter {
+  final LinearGradient gradient;
+  final double borderWidth;
+  final double radius;
+
+  const _GradientBorderPainter({
+    required this.gradient,
+    required this.borderWidth,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..strokeWidth = borderWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_GradientBorderPainter old) =>
+      old.gradient != gradient ||
+          old.borderWidth != borderWidth ||
+          old.radius != radius;
 }

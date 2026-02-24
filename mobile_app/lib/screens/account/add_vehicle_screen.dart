@@ -101,10 +101,19 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     _FieldLabel('License Plate Number',
                         textColor: textPrimary),
                     const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _plateController,
-                      decoration:
-                      const InputDecoration(hintText: 'ABC   1234'),
+                    _GradientFieldBox(
+                      child: TextFormField(
+                        controller: _plateController,
+                        decoration: const InputDecoration(
+                          hintText: 'ABC   1234',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 20),
@@ -123,10 +132,19 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _nicknameController,
-                      decoration:
-                      const InputDecoration(hintText: 'Daily Driver'),
+                    _GradientFieldBox(
+                      child: TextFormField(
+                        controller: _nicknameController,
+                        decoration: const InputDecoration(
+                          hintText: 'Daily Driver',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 20),
@@ -142,48 +160,42 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           child: GestureDetector(
                             onTap: () => setState(
                                     () => _selectedType = type['label']),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.purple
-                                    : isDark
-                                    ? AppColors.surfaceDark
-                                    : AppColors.surfaceLight,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
+                            child: _GradientChipBox(
+                              isSelected: isSelected,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
                                   color: isSelected
                                       ? AppColors.purple
-                                      : isDark
-                                      ? AppColors.borderDark
-                                      : AppColors.borderLight,
+                                      : const Color(0x4D000011),
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    type['icon'] as IconData,
-                                    size: 16,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : textSecondary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    type['label'] as String,
-                                    style: TextStyle(
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      type['icon'] as IconData,
+                                      size: 16,
                                       color: isSelected
                                           ? Colors.white
                                           : textSecondary,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.w400,
-                                      fontSize: 14,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      type['label'] as String,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : textSecondary,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -196,12 +208,20 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     // Make & Model
                     _FieldLabel('Make & Model', textColor: textPrimary),
                     const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _makeController,
-                      decoration: InputDecoration(
-                        hintText: 'Search make...',
-                        suffixIcon: Icon(Icons.search,
-                            color: textSecondary, size: 20),
+                    _GradientFieldBox(
+                      child: TextFormField(
+                        controller: _makeController,
+                        decoration: InputDecoration(
+                          hintText: 'Search make...',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          suffixIcon: Icon(Icons.search,
+                              color: textSecondary, size: 20),
+                        ),
                       ),
                     ),
 
@@ -220,16 +240,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     // Auto-Pay Settings
                     Container(
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.surfaceDark
-                            : AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isDark
-                              ? AppColors.borderDark
-                              : AppColors.borderLight,
-                        ),
+                      decoration: const BoxDecoration(
+                        color: Color(0x4D000011),
+                        borderRadius: BorderRadius.all(Radius.circular(14)),
                       ),
                       child: Column(
                         children: [
@@ -379,17 +392,9 @@ class _ToggleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: noBorder
-          ? null
-          : BoxDecoration(
-        color:
-        isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      decoration: BoxDecoration(
+        color: const Color(0x4D000011),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark
-              ? AppColors.borderDark
-              : AppColors.borderLight,
-        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -415,4 +420,96 @@ class _ToggleRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Gradient border box for input fields ─────────────────────────────────────
+class _GradientFieldBox extends StatelessWidget {
+  final Widget child;
+  const _GradientFieldBox({required this.child});
+
+  static const _gradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [
+      Color(0xFF7D39EB), // left — bright purple
+      Color(0xFF0A0320), // right — near-black dark
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _GradientBorderPainter(
+        gradient: _gradient,
+        borderWidth: 1.5,
+        radius: 12,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0x4D000011),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ── Gradient border box for chip buttons (unselected only) ───────────────────
+class _GradientChipBox extends StatelessWidget {
+  final bool isSelected;
+  final Widget child;
+  const _GradientChipBox({required this.isSelected, required this.child});
+
+  static const _gradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [
+      Color(0xFF7D39EB), // left — bright purple
+      Color(0xFF0A0320), // right — near-black dark
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (isSelected) return child;
+    return CustomPaint(
+      painter: _GradientBorderPainter(
+        gradient: _gradient,
+        borderWidth: 1.5,
+        radius: 24,
+      ),
+      child: child,
+    );
+  }
+}
+
+// ── Gradient border painter ───────────────────────────────────────────────────
+class _GradientBorderPainter extends CustomPainter {
+  final LinearGradient gradient;
+  final double borderWidth;
+  final double radius;
+
+  _GradientBorderPainter({
+    required this.gradient,
+    required this.borderWidth,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..strokeWidth = borderWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_GradientBorderPainter old) =>
+      old.gradient != gradient ||
+          old.borderWidth != borderWidth ||
+          old.radius != radius;
 }

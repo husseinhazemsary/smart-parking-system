@@ -28,8 +28,8 @@ class _AccountScreenState extends State<AccountScreen> {
     final textSecondary =
     isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.black.withOpacity(0.3),
       statusBarIconBrightness: Brightness.light,
     ));
 
@@ -217,7 +217,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                   isDark: isDark,
                                   icon: Icons.help_outline,
                                   label: 'Help Center',
-                                  onTap: () => _launchUrl('https://ezrakna.com/help')),
+                                  onTap: () => _showHelpCenterSheet(context, isDark)),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
@@ -229,7 +229,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                   isDark: isDark,
                                   icon: Icons.star_outline,
                                   label: 'Rate the App',
-                                  onTap: () => _rateApp()),
+                                  onTap: () => _showRateAppSheet(context, isDark)),
                             ],
                           ),
                         ),
@@ -263,13 +263,13 @@ class _AccountScreenState extends State<AccountScreen> {
                                   isDark: isDark,
                                   icon: Icons.privacy_tip_outlined,
                                   label: 'Privacy Policy',
-                                  onTap: () => _launchUrl('https://ezrakna.com/privacy')),
+                                  onTap: () => _showPrivacyPolicySheet(context, isDark)),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.description_outlined,
                                   label: 'Terms of Service',
-                                  onTap: () => _launchUrl('https://ezrakna.com/terms')),
+                                  onTap: () => _showTermsSheet(context, isDark)),
                             ],
                           ),
                         ),
@@ -343,12 +343,6 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  Future<void> _rateApp() async {
-    // Replace with your actual App Store / Play Store URL
-    const storeUrl = 'https://play.google.com/store/apps/details?id=com.ezrakna.app';
-    await _launchUrl(storeUrl);
-  }
-
   void _showContactSheet(BuildContext context, bool isDark) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -357,58 +351,333 @@ class _AccountScreenState extends State<AccountScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: bgColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text('Contact Us',
-                style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
-            const SizedBox(height: 6),
-            Text('Reach out to us through any of these channels:',
-                style: TextStyle(fontSize: 14, color: subColor)),
-            const SizedBox(height: 20),
-            _ContactOption(
-              isDark: isDark,
-              icon: Icons.email_outlined,
-              label: 'Email Support',
-              subtitle: 'support@ezrakna.com',
-              onTap: () => _launchUrl('mailto:support@ezrakna.com'),
-            ),
-            const SizedBox(height: 12),
-            _ContactOption(
-              isDark: isDark,
-              icon: Icons.phone_outlined,
-              label: 'Call Us',
-              subtitle: '+20 100 000 0000',
-              onTap: () => _launchUrl('tel:+201000000000'),
-            ),
-            const SizedBox(height: 12),
-            _ContactOption(
-              isDark: isDark,
-              icon: Icons.chat_outlined,
-              label: 'WhatsApp',
-              subtitle: 'Chat on WhatsApp',
-              onTap: () => _launchUrl('https://wa.me/201000000000'),
-            ),
-          ],
-        ),
+              const SizedBox(height: 20),
+              Text('Contact Us',
+                  style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+              const SizedBox(height: 6),
+              Text('Reach out to us through any of these channels:',
+                  style: TextStyle(fontSize: 14, color: subColor)),
+              const SizedBox(height: 20),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.email_outlined,
+                label: 'Email Support',
+                subtitle: 'support@ezrakna.com',
+                onTap: () => _launchUrl('mailto:support@ezrakna.com'),
+              ),
+              const SizedBox(height: 12),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.phone_outlined,
+                label: 'Call Us',
+                subtitle: '+20 100 000 0000',
+                onTap: () => _launchUrl('tel:+201000000000'),
+              ),
+              const SizedBox(height: 12),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.chat_outlined,
+                label: 'WhatsApp',
+                subtitle: 'Chat on WhatsApp',
+                onTap: () => _launchUrl('https://wa.me/201000000000'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showHelpCenterSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Help Center',
+                  style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+              const SizedBox(height: 6),
+              Text('Find answers or get in touch with our team.',
+                  style: TextStyle(fontSize: 14, color: subColor)),
+              const SizedBox(height: 20),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.language_outlined,
+                label: 'Visit Help Center',
+                subtitle: 'ezrakna.com/help',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('https://ezrakna.com/help');
+                },
+              ),
+              const SizedBox(height: 12),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.email_outlined,
+                label: 'Email Support',
+                subtitle: 'support@ezrakna.com',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('mailto:support@ezrakna.com');
+                },
+              ),
+              const SizedBox(height: 12),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.chat_bubble_outline,
+                label: 'Live Chat',
+                subtitle: 'Chat with our support team',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showContactSheet(context, isDark);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRateAppSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Enjoying EzRakna?',
+                  style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+              const SizedBox(height: 6),
+              Text('Your feedback helps us improve the app for everyone.',
+                  style: TextStyle(fontSize: 14, color: subColor)),
+              const SizedBox(height: 20),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.star_outline,
+                label: 'Rate on Google Play',
+                subtitle: 'Leave a review on the Play Store',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('https://play.google.com/store/apps/details?id=com.ezrakna.app');
+                },
+              ),
+              const SizedBox(height: 12),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.chat_outlined,
+                label: 'Send Feedback',
+                subtitle: 'Tell us what you think',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('mailto:feedback@ezrakna.com');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPrivacyPolicySheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Privacy Policy',
+                  style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+              const SizedBox(height: 6),
+              Text('Learn how we collect, use, and protect your data.',
+                  style: TextStyle(fontSize: 14, color: subColor)),
+              const SizedBox(height: 20),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.privacy_tip_outlined,
+                label: 'Read Full Privacy Policy',
+                subtitle: 'ezrakna.com/privacy',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('https://ezrakna.com/privacy');
+                },
+              ),
+              const SizedBox(height: 12),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.email_outlined,
+                label: 'Privacy Inquiries',
+                subtitle: 'privacy@ezrakna.com',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('mailto:privacy@ezrakna.com');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTermsSheet(BuildContext context, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Terms of Service',
+                  style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+              const SizedBox(height: 6),
+              Text('Review the terms that govern your use of EzRakna.',
+                  style: TextStyle(fontSize: 14, color: subColor)),
+              const SizedBox(height: 20),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.description_outlined,
+                label: 'Read Full Terms',
+                subtitle: 'ezrakna.com/terms',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('https://ezrakna.com/terms');
+                },
+              ),
+              const SizedBox(height: 12),
+              _ContactOption(
+                isDark: isDark,
+                icon: Icons.email_outlined,
+                label: 'Legal Inquiries',
+                subtitle: 'legal@ezrakna.com',
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('mailto:legal@ezrakna.com');
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -420,72 +689,76 @@ class _AccountScreenState extends State<AccountScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: bgColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) {
+        final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text('Settings',
-                style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
-            const SizedBox(height: 20),
-            _SettingsOption(
-              isDark: isDark,
-              icon: Icons.person_outline,
-              label: 'Edit Profile',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: navigate to edit profile screen
-              },
-            ),
-            const SizedBox(height: 12),
-            _SettingsOption(
-              isDark: isDark,
-              icon: Icons.lock_outline,
-              label: 'Change Password',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: navigate to change password screen
-              },
-            ),
-            const SizedBox(height: 12),
-            _SettingsOption(
-              isDark: isDark,
-              icon: Icons.payment_outlined,
-              label: 'Payment Methods',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: navigate to payment methods screen
-              },
-            ),
-            const SizedBox(height: 12),
-            _SettingsOption(
-              isDark: isDark,
-              icon: Icons.delete_outline,
-              label: 'Delete Account',
-              labelColor: Colors.redAccent,
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDeleteAccount(context);
-              },
-            ),
-          ],
-        ),
-      ),
+              const SizedBox(height: 20),
+              Text('Settings',
+                  style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+              const SizedBox(height: 20),
+              _SettingsOption(
+                isDark: isDark,
+                icon: Icons.person_outline,
+                label: 'Edit Profile',
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: navigate to edit profile screen
+                },
+              ),
+              const SizedBox(height: 12),
+              _SettingsOption(
+                isDark: isDark,
+                icon: Icons.lock_outline,
+                label: 'Change Password',
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: navigate to change password screen
+                },
+              ),
+              const SizedBox(height: 12),
+              _SettingsOption(
+                isDark: isDark,
+                icon: Icons.payment_outlined,
+                label: 'Payment Methods',
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: navigate to payment methods screen
+                },
+              ),
+              const SizedBox(height: 12),
+              _SettingsOption(
+                isDark: isDark,
+                icon: Icons.delete_outline,
+                label: 'Delete Account',
+                labelColor: Colors.redAccent,
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteAccount(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -830,21 +1103,12 @@ class _ProfileHeader extends StatelessWidget {
               child: Container(
                 height: _statsHeight,
                 decoration: BoxDecoration(
-                  // Dark glass — enough opacity to look dark like image 2
-                  // but still lets the blur/tint show subtly through
-                  color: Colors.black.withOpacity(0.55),
+                  color: Colors.black.withOpacity(0.06),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.12),
+                    color: AppColors.accentGreen.withOpacity(0.5),
                     width: 1,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.18),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                 ),
                 child: Row(
                   children: [
@@ -1081,16 +1345,63 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.borderLight),
+    const radius = 16.0;
+    const borderWidth = 1.5;
+    const cardColor = Color(0x4D000011); // #000011 at 30% opacity (0.3 * 255 ≈ 77 = 0x4D)
+    const gradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        Color(0xFF0A0320), // left — near-black dark
+        Color(0xFF7D39EB), // right — bright purple
+      ],
+    );
+
+    return CustomPaint(
+      painter: _GradientBorderPainter(
+        gradient: gradient,
+        borderWidth: borderWidth,
+        radius: radius,
       ),
-      child: child,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+        child: child,
+      ),
     );
   }
+}
+
+// ── Gradient border painter ───────────────────────────────────────────────────
+class _GradientBorderPainter extends CustomPainter {
+  final LinearGradient gradient;
+  final double borderWidth;
+  final double radius;
+
+  const _GradientBorderPainter({
+    required this.gradient,
+    required this.borderWidth,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..strokeWidth = borderWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_GradientBorderPainter old) =>
+      old.gradient != gradient ||
+          old.borderWidth != borderWidth ||
+          old.radius != radius;
 }
 
 // ── Preference row ────────────────────────────────────────────────────────────
