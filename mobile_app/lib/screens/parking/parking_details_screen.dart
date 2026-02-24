@@ -3,6 +3,9 @@
 // and a Reserve button. Navigated to from HomeScreen or SelectLocationScreen.
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
+import 'alerts_setup_sheet.dart';
+import 'view_slots_screen.dart';
+import 'reservation_sheet.dart';
 
 // Data model passed in from the calling screen.
 class ParkingLocation {
@@ -184,7 +187,12 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {},
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => ViewSlotsScreen(
+                                  locationName: location.name,
+                                  zone: 'Zone A • Level B1',
+                                )),
+                              ),
                               icon: const Icon(Icons.map_outlined, size: 18),
                               label: const Text('View Slots'),
                               style: ElevatedButton.styleFrom(
@@ -201,7 +209,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () {},
+                              onPressed: () => showAlertsSetupSheet(context, location.name),
                               icon: Icon(Icons.notifications_outlined,
                                   size: 18, color: textPrimary),
                               label: Text('Set Alerts',
@@ -502,7 +510,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () => showReservationSheet(context, success: true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.purple,
                 foregroundColor: Colors.white,

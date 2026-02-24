@@ -232,7 +232,7 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                     decoration: BoxDecoration(
                       color: surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: border),
+                      border: Border.all(color: border, width: 2),
                     ),
                     child: Column(
                       children: [
@@ -296,7 +296,7 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                                               style: TextStyle(
                                                   color: textPrimary,
                                                   fontWeight: FontWeight.w600,
-                                                  fontSize: 14)),
+                                                  fontSize: 16)),
                                         ),
                                         Text(
                                           loc.ratePerHour == 0

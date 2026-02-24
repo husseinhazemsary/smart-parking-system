@@ -216,18 +216,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 12),
 
-              // Active session card with purple glow border.
+              // Active session card — transparent background, layered purple glow to signal importance.
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.purple.withOpacity(0.08),
+                  // Very light purple tint so content beneath subtly shows.
+                  color: AppColors.purple.withOpacity(0.04),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.purple.withOpacity(0.5), width: 1.2),
+                  border: Border.all(color: AppColors.purple.withOpacity(0.8), width: 1.5),
                   boxShadow: [
+                    // Wide soft outer glow — gives the floating, important feel.
                     BoxShadow(
-                      color: AppColors.purple.withOpacity(0.15),
-                      blurRadius: 16,
-                      spreadRadius: 1,
+                      color: AppColors.purple.withOpacity(0.18),
+                      blurRadius: 24,
+                      spreadRadius: 2,
+                    ),
+                    // Tight inner glow — sharpens the border edge so it looks lit.
+                    BoxShadow(
+                      color: AppColors.purple.withOpacity(0.28),
+                      blurRadius: 6,
+                      spreadRadius: 0,
                     ),
                   ],
                 ),
@@ -554,7 +562,7 @@ class _NearbyCard extends StatelessWidget {
                     Text(location.name,
                         style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700)),
                     Text(location.address,
                         style: const TextStyle(color: Colors.white70, fontSize: 10),
