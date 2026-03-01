@@ -9,7 +9,7 @@ smart-parking-system/
 │   └── slot-detection/   # Parking slot detection system
 ├── backend/              # API server 
 ├── mobile-app/           # Mobile application
-├── user-website/         # User web interface
+├── web-app/              # User web interface
 ├── admin-dashboard/      # Admin web interface 
 ```
 
