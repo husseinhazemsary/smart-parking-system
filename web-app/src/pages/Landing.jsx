@@ -108,6 +108,173 @@ function Badge({ children, color=T.purple }){
   );
 }
 
+/* ─── Floating Ambient Availability Mini-Cards ─── */
+const AMBIENT_CARDS = [
+  // Left column — three cards descending, slight depth recession via scale
+  { id:1, location:"Nasr City",   spots:12, total:18, top:"13%", left:"4%",  animDur:9,  animDel:0,   parallaxX:"-10px", scale:1    },
+  { id:3, location:"Maadi",       spots:27, total:40, top:"52%", left:"3%",  animDur:10, animDel:1.2, parallaxX:"-14px", scale:0.88 },
+  { id:5, location:"6th October", spots:19, total:25, top:"76%", left:"6%",  animDur:13, animDel:5.1, parallaxX:"-8px",  scale:0.76 },
+  // Right column — mirrored, staggered so no card sits at the same height as its pair
+  { id:2, location:"Zamalek",     spots:4,  total:20, top:"19%", right:"4%", animDur:11, animDel:2.5, parallaxX:"12px",  scale:1    },
+  { id:4, location:"Heliopolis",  spots:8,  total:30, top:"44%", right:"3%", animDur:12, animDel:3.8, parallaxX:"16px",  scale:0.88 },
+  { id:6, location:"New Cairo",   spots:34, total:50, top:"72%", right:"5%", animDur:14, animDel:6.4, parallaxX:"10px",  scale:0.76 },
+];
+
+function AmbientMiniCard({ location, spots, total, top, left, right, animDur, animDel, parallaxX, scale=1 }){
+  const [tick, setTick] = useState(spots);
+
+  // Simulate live updates with minor fluctuations
+  useEffect(()=>{
+    const id = setInterval(()=>{
+      setTick(prev => Math.min(total, Math.max(1, prev + (Math.random() > 0.5 ? 1 : -1))));
+    }, 9000 + Math.random() * 6000);
+    return ()=> clearInterval(id);
+  }, [total]);
+
+  const pct     = Math.round((tick / total) * 100);
+  const isLow   = pct <= 30;
+  const isMid   = pct > 30 && pct <= 60;
+
+  // Colour shifts: green → amber → red-ish as availability drops
+  const accentColor  = isLow ? "#F59E0B" : isMid ? "#7DD3FC" : "#22C55E";
+  const trackColor   = isLow ? "rgba(245,158,11,0.12)" : isMid ? "rgba(125,200,252,0.12)" : "rgba(34,197,94,0.12)";
+  const progressColor= isLow ? "rgba(245,158,11,0.7)"  : isMid ? "rgba(125,200,252,0.65)" : "rgba(34,197,94,0.7)";
+
+  // SVG progress ring maths (r=17 → circumference ≈ 106.8)
+  const R   = 17;
+  const C   = 2 * Math.PI * R;
+  const arc = C * (pct / 100);
+
+  const posStyle = { top, ...(left ? { left } : { right }) };
+
+  return (
+    <div style={{
+      position:"absolute",
+      ...posStyle,
+      zIndex:2,
+      animation:`ambientFloat ${animDur}s ease-in-out ${animDel}s infinite`,
+      transform:`translateX(${parallaxX}) scale(${scale})`,
+      transformOrigin: left ? "left center" : "right center",
+      display:"none",         // revealed on ≥768 px via CSS
+      pointerEvents:"none",   // fully non-interactive — pure ambient
+    }} className="ambient-card-wrap">
+
+      {/* Card shell — opacity also scales down with depth */}
+      <div style={{
+        background:"rgba(12,0,36,0.55)",
+        backdropFilter:"blur(10px)",
+        WebkitBackdropFilter:"blur(10px)",
+        border:"1px solid rgba(125,57,235,0.14)",
+        borderRadius:13,
+        padding:"10px 14px",
+        minWidth:160,
+        opacity: 0.72 * scale,   // deeper cards fade further back
+        boxShadow:"0 6px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.03)",
+        display:"flex",
+        flexDirection:"column",
+        gap:9,
+        position:"relative",
+        overflow:"hidden",
+      }}>
+
+        {/* Very faint top-edge glow */}
+        <div style={{
+          position:"absolute",top:0,left:"25%",right:"25%",height:1,
+          background:`linear-gradient(90deg,transparent,${progressColor},transparent)`,
+          opacity:0.5,
+        }}/>
+
+        {/* Header: location label + live pulse dot */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+          <span style={{fontSize:10,fontWeight:600,color:"rgba(190,175,220,0.6)",letterSpacing:0.5,textTransform:"uppercase"}}>
+            📍 {location}
+          </span>
+          <span style={{
+            width:6,height:6,borderRadius:"50%",
+            background:accentColor,
+            flexShrink:0,
+            display:"inline-block",
+            animation:"ambientPulse 2.4s ease-in-out infinite",
+            boxShadow:`0 0 5px ${accentColor}`,
+            opacity:0.85,
+          }}/>
+        </div>
+
+        {/* Body: progress ring + text label */}
+        <div style={{display:"flex",alignItems:"center",gap:11}}>
+
+          {/* ── SVG Progress Ring ── */}
+          <div style={{position:"relative",width:44,height:44,flexShrink:0}}>
+            <svg
+              width={44} height={44}
+              style={{position:"absolute",inset:0,transform:"rotate(-90deg)"}}
+              viewBox="0 0 44 44"
+            >
+              {/* Track circle */}
+              <circle
+                cx={22} cy={22} r={R}
+                fill="none"
+                stroke={trackColor}
+                strokeWidth={2.5}
+              />
+              {/* Progress arc — animates via CSS transition on stroke-dasharray */}
+              <circle
+                cx={22} cy={22} r={R}
+                fill="none"
+                stroke={progressColor}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeDasharray={`${arc} ${C}`}
+                style={{transition:"stroke-dasharray 1.4s cubic-bezier(.4,0,.2,1), stroke .6s"}}
+              />
+            </svg>
+
+            {/* Percentage label inside ring */}
+            <div style={{
+              position:"absolute",inset:0,
+              display:"flex",alignItems:"center",justifyContent:"center",
+              flexDirection:"column",
+            }}>
+              <span style={{
+                fontSize:11,fontWeight:800,lineHeight:1,
+                color:accentColor,
+                letterSpacing:-0.3,
+                opacity:0.9,
+              }}>{pct}%</span>
+            </div>
+          </div>
+
+          {/* Spots text — unchanged external label */}
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:"rgba(230,220,245,0.78)",lineHeight:1.25}}>
+              {tick} Spot{tick !== 1 ? "s" : ""} Available
+            </div>
+            <div style={{fontSize:10,color:"rgba(150,130,190,0.5)",marginTop:3,display:"flex",alignItems:"center",gap:3}}>
+              <span style={{
+                width:4,height:4,borderRadius:"50%",
+                background:accentColor,display:"inline-block",
+                animation:"ambientPulse 2.4s ease-in-out infinite",
+                opacity:0.8,
+              }}/>
+              Live
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FloatingAmbientCards(){
+  return(
+    <>
+      {AMBIENT_CARDS.map(c=>(
+        <AmbientMiniCard key={c.id} {...c}/>
+      ))}
+    </>
+  );
+}
+
 function HeroBg(){
   return(
     <>
@@ -470,6 +637,22 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
 
         .glow-btn-wrap{transition:transform .2s cubic-bezier(.22,1,.36,1),filter .2s;}
         .glow-btn-wrap:hover{transform:translateY(-2px);filter:brightness(1.1);}
+
+        /* Ambient mini-card keyframes */
+        @keyframes ambientFloat{
+          0%,100%{transform:translateY(0px)}
+          30%{transform:translateY(-9px)}
+          65%{transform:translateY(-3px)}
+        }
+        @keyframes ambientPulse{
+          0%,100%{opacity:1;transform:scale(1)}
+          50%{opacity:0.45;transform:scale(0.72)}
+        }
+
+        /* Show ambient cards on tablet and desktop only */
+        @media(min-width:768px){
+          .ambient-card-wrap{display:block!important;}
+        }
       `}</style>
 
       <Navbar
@@ -483,6 +666,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
       {}
       <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",padding:isMobile?"110px 20px 80px":"120px 5% 80px",position:"relative",overflow:"hidden"}}>
         <HeroBg/>
+        <FloatingAmbientCards/>
         <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
           <span className="hero-badge" style={{padding:"4px 14px",borderRadius:999,fontSize:12,fontWeight:700,background:`${T.purple}22`,color:T.purple}}>
             🚀 Live across Cairo & Giza
