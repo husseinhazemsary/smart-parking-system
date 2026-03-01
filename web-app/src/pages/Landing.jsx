@@ -108,7 +108,7 @@ function Badge({ children, color=T.purple }){
   );
 }
 
-/* ─── Floating Ambient Availability Mini-Cards ─── */
+// Floating Ambient Availability Mini-Cards
 const AMBIENT_CARDS = [
   // Left column — three cards descending, slight depth recession via scale
   { id:1, location:"NGU Parking",   spots:12, total:18, top:"13%", left:"4%",  animDur:9,  animDel:0,   parallaxX:"-10px", scale:1    },
@@ -739,9 +739,9 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
               </>
             )}
             {[
-              {n:"1",title:"Search", body:"Browse spots across Cairo. Filter by price, category or distance from your destination."},
-              {n:"2",title:"Reserve",body:"Pick your slot, confirm your vehicle, and lock it in — under 30 seconds."},
-              {n:"3",title:"Park",   body:"Drive in, track your session live, and end it remotely whenever you're done."},
+              {n:"1",title:"Search",  body:"Browse parking locations across Cairo and pick the one that suits you best."},
+              {n:"2",title:"Navigate",body:"See all available spots in real time and navigate directly to the one you prefer - no more circling."},
+              {n:"3",title:"Park",    body:"Reserve a spot to guarantee your place, or simply drive in and track your session live. "},
             ].map((s,i)=>(
               <AnimatedStep key={s.n} n={s.n} title={s.title} body={s.body} delay={i*170}/>
             ))}
