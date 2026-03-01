@@ -11,7 +11,6 @@ import WalletTab from "../../pages/WalletTab";
 import HistoryTab from "../../pages/HistoryTab";
 import AccountTab from "../../pages/AccountTab";
 
-/* ─── App shell ──────────────────────────────────────────────── */
 export default function AppShell({ user, onLogout, onBack, onAuthOpen }){
   const [tab,setTab]=useState("find");
   const [booked,setBooked]=useState(null);

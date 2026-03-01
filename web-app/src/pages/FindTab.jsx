@@ -5,13 +5,13 @@ import { SPOTS, availColor, availLabel } from "../data/spots";
 import ProgressBar from "../components/ui/ProgressBar";
 import GlowBtn from "../components/ui/GlowBtn";
 
-/* ─── Seeded random (stable across renders) ──────────────────── */
+// Seeded random — stable across renders so slot states are consistent
 function seededRand(seed) {
   let s = seed;
   return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
 }
 
-/* ─── Slot generation ────────────────────────────────────────── */
+// Generates deterministic slot data for a parking spot
 function generateSlots(spotId, total) {
   const rand = seededRand(spotId * 9973);
   const levels = total > 100 ? 3 : total > 50 ? 2 : 1;
@@ -28,8 +28,8 @@ function generateSlots(spotId, total) {
         level: lv,
         type: r2 < 0.05 ? "ev" : r2 < 0.1 ? "accessible" : "standard",
         status: r1 < 0.3 ? "available" : "occupied",
-        predictedMinutes: Math.floor(r3 * 50 + 5),   // 5–55 min
-        confidence: Math.floor(r3 * 25 + 68),         // 68–93 %
+        predictedMinutes: Math.floor(r3 * 50 + 5),   
+        confidence: Math.floor(r3 * 25 + 68),         
       });
       id++;
     }
@@ -40,7 +40,7 @@ function generateSlots(spotId, total) {
 const SPOT_SLOTS = {};
 SPOTS.forEach(s => { SPOT_SLOTS[s.id] = generateSlots(s.id, s.total); });
 
-/* ─── Constants ──────────────────────────────────────────────── */
+// Category icons, colors, and slot status config
 const CAT_ICONS  = { Mall:"🏬", University:"🎓", Airport:"✈️", Street:"🚗", All:"📍" };
 const CAT_COLORS = { Mall:"#C084FC", University:T.green, Airport:"#F59E0B", Street:"#38BDF8" };
 
@@ -50,12 +50,12 @@ const SLOT_CONFIG = {
   reserved:  { color:"#F59E0B", bg:"rgba(245,158,11,.15)", border:"rgba(245,158,11,.4)", icon:"⊡" },
 };
 const TYPE_BADGES = {
-  ev:         { color:"#F59E0B", icon:"⚡", label:"EV Charging" },  // yellow
-  accessible: { color:"#60A5FA", icon:"♿", label:"Accessible"  },  // blue
+  ev:         { color:"#F59E0B", icon:"⚡", label:"EV Charging" },  
+  accessible: { color:"#60A5FA", icon:"♿", label:"Accessible"  },  
   standard:   { color:"",        icon:"",   label:""            },
 };
 
-// For the slot tile, type overrides colour when special
+// For EV and accessible slots, type overrides default status color
 function slotTileColor(sl) {
   if (sl.type === "ev")         return { color:"#F59E0B", bg:"rgba(245,158,11,.18)", border:"rgba(245,158,11,.45)" };
   if (sl.type === "accessible") return { color:"#60A5FA", bg:"rgba(96,165,250,.18)", border:"rgba(96,165,250,.45)" };
@@ -68,7 +68,7 @@ const inputStyle = {
   fontSize:14, padding:"0 16px", outline:"none", boxSizing:"border-box",
 };
 
-/* ─── CSS ─────────────────────────────────────────────────────── */
+// Component-scoped styles
 const CSS = `
   .ft-card {
     border-radius:18px; border:1.5px solid rgba(125,57,235,.2);
@@ -119,9 +119,7 @@ const CSS = `
   @keyframes pls { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(2.2);opacity:0} }
 `;
 
-/* ════════════════════════════════════════════════════════════════
-   MAIN
-════════════════════════════════════════════════════════════════ */
+// Main FindTab component — search, filter, and view parking spots.
 export default function FindTab({ onReserve, user, onAuthOpen }) {
   const [search,     setSearch]     = useState("");
   const [cat,        setCat]        = useState("All");
@@ -273,11 +271,7 @@ export default function FindTab({ onReserve, user, onAuthOpen }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SPOT CARD
-   — Shows: name, address, rate, availability (# of free spots)
-   — Removed: hours, distance, slots count stat boxes
-════════════════════════════════════════════════════════════════ */
+// SpotCard — compact listing card with availability bar and action buttons.
 function SpotCard({ spot:s, onViewDetail, onViewSlots }) {
   const ac = availColor(s.available, s.total);
   const al = availLabel(s.available, s.total);
@@ -344,11 +338,7 @@ function SpotCard({ spot:s, onViewDetail, onViewSlots }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   DETAIL MODAL
-   — "Reserve This Spot" → "Reserve"
-   — Auth nudge only in the modal, not in cards
-════════════════════════════════════════════════════════════════ */
+// DetailModal — full spot info with reserve CTA and maps link.
 function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen }) {
   const ac = availColor(s.available, s.total);
   const al = availLabel(s.available, s.total);
@@ -474,9 +464,7 @@ function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SLOT MAP MODAL
-════════════════════════════════════════════════════════════════ */
+// SlotMapModal — interactive floor-plan view with per-slot selection.
 function SlotMapModal({ spot:s, slots, user, onClose, onBack, onReserve, onAuthOpen }) {
   const [activeLevel,  setActiveLevel]  = useState(1);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -598,7 +586,7 @@ function SlotMapModal({ spot:s, slots, user, onClose, onBack, onReserve, onAuthO
                 style={{
                   display: "flex",
                   gap: 6,
-                  justifyContent: "center",   // centers horizontally
+                  justifyContent: "center",
                   flexWrap: "wrap",
                   marginBottom: 6
                 }}
@@ -745,17 +733,13 @@ function SlotMapModal({ spot:s, slots, user, onClose, onBack, onReserve, onAuthO
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SLOT INFO PANEL
-   — Available : slot details (distance to lift, hourly rate) + Navigate + Reserve
-   — Occupied  : ML prediction + warning
-════════════════════════════════════════════════════════════════ */
+// SlotInfoPanel — shows details for the selected slot, or ML prediction if occupied.
 function SlotInfoPanel({ slot:sl, spot:s, user, gmapsUrl, onAuthOpen, onReserve }) {
   const cfg = slotTileColor(sl);
   const statusCfg = SLOT_CONFIG[sl.status];
 
-  // Deterministic distance-to-lift per slot (1–4 min walk based on slot number)
-  const distToLift = ((sl.slotNum % 4) + 1) * 15; // 15–60 m
+  // Deterministic walk distance to lift based on slot number
+  const distToLift = ((sl.slotNum % 4) + 1) * 15; 
 
   return (
     <div style={{

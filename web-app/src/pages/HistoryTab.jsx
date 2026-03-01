@@ -5,7 +5,6 @@ import { HISTORY_DATA } from "../data/history";
 import GlowBtn from "../components/ui/GlowBtn";
 import Modal from "../components/ui/Modal";
 
-/* ─── Status config ──────────────────────────────────────────── */
 const SC = {
   completed: { color:T.green,  bg:"rgba(34,197,94,.1)",  border:"rgba(34,197,94,.22)",  icon:"✓",  label:"Completed" },
   cancelled: { color:T.red,    bg:"rgba(239,68,68,.1)",  border:"rgba(239,68,68,.22)",  icon:"✕",  label:"Cancelled"  },
@@ -34,7 +33,7 @@ const CSS = `
   }
 `;
 
-/* ─── Receipt Modal ──────────────────────────────────────────── */
+// Receipt modal — shown when user clicks "View Receipt" on a session row.
 function ReceiptModal({ item, onClose }) {
   if (!item) return null;
   const sc = SC[item.status];
@@ -51,7 +50,6 @@ function ReceiptModal({ item, onClose }) {
   return (
     <Modal open={!!item} onClose={onClose} maxWidth={440}>
       <div style={{padding:"26px 22px"}}>
-        {/* Header */}
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
           <div style={{width:46,height:46,borderRadius:13,
             background:"rgba(125,57,235,.1)",
@@ -66,7 +64,6 @@ function ReceiptModal({ item, onClose }) {
           </span>
         </div>
 
-        {/* Detail rows */}
         <div style={{borderRadius:12,border:`1px solid ${T.border}`,overflow:"hidden",marginBottom:16}}>
           {rows.map(([l,v],i)=>(
             <div key={l}>
@@ -82,7 +79,6 @@ function ReceiptModal({ item, onClose }) {
           ))}
         </div>
 
-        {/* Total */}
         <div style={{
           display:"flex",justifyContent:"space-between",alignItems:"center",
           padding:"14px 15px",borderRadius:12,marginBottom:18,
@@ -104,13 +100,12 @@ function ReceiptModal({ item, onClose }) {
   );
 }
 
-/* ─── Session row card ───────────────────────────────────────── */
+// Single session row with status badge, info chips, and receipt button.
 function SessionRow({ item, onReceipt }) {
   const sc = SC[item.status];
   return (
     <div className="ht-row">
       <div style={{padding:"16px 18px"}}>
-        {/* Top */}
         <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:14}}>
           <div style={{width:44,height:44,borderRadius:12,flexShrink:0,
             background:"rgba(125,57,235,.12)",
@@ -126,7 +121,6 @@ function SessionRow({ item, onReceipt }) {
           }}>{sc.icon} {sc.label}</span>
         </div>
 
-        {/* Info chips */}
         <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:14}}>
           {[
             {icon:"📅", val:item.date},
@@ -145,7 +139,6 @@ function SessionRow({ item, onReceipt }) {
           ))}
         </div>
 
-        {/* Footer */}
         <div style={{
           display:"flex",justifyContent:"space-between",alignItems:"center",
           paddingTop:12,borderTop:"1px solid rgba(125,57,235,.1)",
@@ -168,9 +161,7 @@ function SessionRow({ item, onReceipt }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN
-═══════════════════════════════════════════════════════════════ */
+// History tab — filterable list of past sessions with aggregate stats.
 export default function HistoryTab() {
   const [filter,  setFilter]  = useState("All");
   const [receipt, setReceipt] = useState(null);
@@ -180,7 +171,6 @@ export default function HistoryTab() {
   const shown = filter==="All" ? HISTORY_DATA
     : HISTORY_DATA.filter(h=>h.status===filter.toLowerCase());
 
-  /* stats */
   const completed = HISTORY_DATA.filter(h=>h.status==="completed");
   const totalEGP  = completed.reduce((a,h)=>a+parseInt(h.cost.replace(/\D/g,"")||"0"),0);
   const totalMins = HISTORY_DATA.reduce((a,h)=>{
@@ -193,13 +183,12 @@ export default function HistoryTab() {
     <div className="ht-wrap" style={{maxWidth:780,margin:"0 auto",padding:isMobile?"20px 16px":"32px 28px"}}>
       <style dangerouslySetInnerHTML={{__html:CSS}}/>
 
-      {/* Header */}
       <div style={{marginBottom:22}}>
         <div style={{fontSize:22,fontWeight:800,marginBottom:3}}>Parking History</div>
         <div style={{fontSize:13,color:T.sub}}>{HISTORY_DATA.length} sessions recorded</div>
       </div>
 
-      {/* Stats */}
+      {/* Aggregate stats row */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:24}}>
         {[
           {icon:"✅", label:"Completed",    val:completed.length,         color:T.green   },
@@ -214,7 +203,6 @@ export default function HistoryTab() {
         ))}
       </div>
 
-      {/* Filters */}
       <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
         {filters.map(f=>{
           const count = f==="All" ? HISTORY_DATA.length
@@ -236,7 +224,6 @@ export default function HistoryTab() {
         })}
       </div>
 
-      {/* List */}
       {shown.length===0 ? (
         <div style={{textAlign:"center",padding:"60px 0",color:T.sub}}>
           <div style={{fontSize:36,marginBottom:12}}>🕐</div>

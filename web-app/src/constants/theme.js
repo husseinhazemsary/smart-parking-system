@@ -1,4 +1,4 @@
-/* ─── Tokens ─────────────────────────────────────────────────── */
+// Design System: Global Theme Tokens (Colors & UI Variables)
 export const T = {
   purple:"#7D39EB", purpleDim:"#4A1A9E", dark:"#07001A",
   surface:"#110030", accent:"#B2A8D2", green:"#22C55E",

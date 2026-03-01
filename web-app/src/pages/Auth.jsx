@@ -3,7 +3,7 @@ import { T } from "../constants/theme";
 import Modal from "../components/ui/Modal";
 import GlowBtn from "../components/ui/GlowBtn";
 
-/* ─── Auth screens ───────────────────────────────────────────── */
+// Auth modal handling both login and signup modes.
 export default function AuthModal({ open, onClose, onAuth }){
   const [mode,setMode]=useState("login");
   const [form,setForm]=useState({ name:"",email:"",password:"" });
@@ -13,7 +13,6 @@ export default function AuthModal({ open, onClose, onAuth }){
   return(
     <Modal open={open} onClose={onClose} maxWidth={440}>
       <div style={{ padding:"36px 32px" }}>
-        {/* Logo */}
         <div style={{ textAlign:"center",marginBottom:28 }}>
           <div style={{ fontSize:28,fontWeight:800,letterSpacing:-1 }}>
             <span style={{ color:T.purple }}>ez</span>rakna
@@ -23,6 +22,7 @@ export default function AuthModal({ open, onClose, onAuth }){
           </div>
         </div>
 
+        {/* Login / Sign Up tab switcher */}
         <div style={{ display:"flex",gap:0,marginBottom:28,borderRadius:12,overflow:"hidden",border:`1px solid ${T.border}` }}>
           {["login","signup"].map(m=>(
             <button key={m} onClick={()=>setMode(m)} style={{

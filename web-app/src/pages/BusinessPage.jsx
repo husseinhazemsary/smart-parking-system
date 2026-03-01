@@ -3,24 +3,22 @@ import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
 import GlowBtn from "../components/ui/GlowBtn";
 
-/* ─── Theme ──────────────────────────────────────────────────── */
 const BT = {
   ...T,
-  gold: "#F0B429",
-  goldDim: "rgba(240,180,41,0.12)",
+  accent: "#C6FF33",
+  accentDim: "rgba(198,255,51,.12)",
   teal: "#14B8A6",
   tealDim: "rgba(20,184,166,0.1)",
   surface2: "#130035",
 };
 
-/* ─── Data ───────────────────────────────────────────────────── */
 const CORE_FEATURES = [
   { icon:"🎯", tag:"AI Vision",   title:"License Plate Recognition",   body:"Computer-vision models read plates in under 200ms — day, night, rain or motion blur. No hardware beyond a standard IP camera.", stat:"99.4%", statLabel:"Recognition accuracy", color:BT.purple },
   { icon:"📡", tag:"Real-Time",   title:"Live Occupancy Monitoring",    body:"Sensor fusion + overhead cameras give you slot-level truth: occupied, free, or reserved. Update frequency under 1 second.",       stat:"<1s",   statLabel:"Update latency",        color:BT.teal   },
-  { icon:"⚡", tag:"Billing",     title:"Automated Billing Engine",     body:"Entry-to-exit billing with dynamic pricing rules, overstay penalties, subscription discounts and EGP / card / wallet settlement.", stat:"0",     statLabel:"Manual steps",          color:BT.gold   },
+  { icon:"⚡", tag:"Billing",     title:"Automated Billing Engine",     body:"Entry-to-exit billing with dynamic pricing rules, overstay penalties, subscription discounts and EGP / card / wallet settlement.", stat:"0",     statLabel:"Manual steps",          color:BT.accent   },
   { icon:"📊", tag:"Analytics",   title:"Operator Dashboard",           body:"Hourly heatmaps, revenue trends, vehicle dwell-times and peak prediction — exportable to CSV or pushed to your BI stack via API.", stat:"30+",   statLabel:"Metrics tracked",        color:"#C084FC" },
   { icon:"🔗", tag:"Integration", title:"API & Webhooks",               body:"REST + WebSocket API with OpenAPI docs. Connect your gate controllers, POS, ERP, or any cloud platform in hours.",              stat:"REST",  statLabel:"+ WebSocket API",        color:BT.teal   },
-  { icon:"🛡", tag:"Security",    title:"Incident Alerts",              body:"Real-time alerts for unauthorized vehicles, tailgating, wrong-way entry and capacity breaches — delivered via SMS, email or webhook.", stat:"24/7", statLabel:"Monitoring",            color:BT.gold   },
+  { icon:"🛡", tag:"Security",    title:"Incident Alerts",              body:"Real-time alerts for unauthorized vehicles, tailgating, wrong-way entry and capacity breaches — delivered via SMS, email or webhook.", stat:"24/7", statLabel:"Monitoring",            color:BT.accent   },
 ];
 
 const HOW_IT_WORKS = [
@@ -57,7 +55,6 @@ const INTEGRATIONS = [
   {name:"Slack",icon:"💬"},{name:"WhatsApp",icon:"📱"},
 ];
 
-/* ─── Shared styles ──────────────────────────────────────────── */
 const formInputStyle = {
   width:"100%", height:48, borderRadius:12,
   border:`1px solid ${BT.border}`, background:"rgba(255,255,255,.04)",
@@ -71,7 +68,6 @@ const glowBtnStyle = {
   cursor:"pointer", boxShadow:`0 4px 24px rgba(125,57,235,.4)`,
 };
 
-/* ─── Scroll-reveal (repeating) ─────────────────────────────── */
 function Reveal({ children, delay=0, direction="up", style={} }){
   const ref = useRef(null);
   const [vis, setVis] = useState(false);
@@ -90,7 +86,6 @@ function Reveal({ children, delay=0, direction="up", style={} }){
   );
 }
 
-/* ─── Small UI atoms ─────────────────────────────────────────── */
 function Tag({ children, color }){
   return(
     <span style={{ display:"inline-block", padding:"3px 10px", borderRadius:999,
@@ -111,7 +106,6 @@ function Modal({ open, onClose, children, maxWidth=520 }){
   );
 }
 
-/* ─── Demo Form ──────────────────────────────────────────────── */
 function DemoForm({ onClose }){
   const [form,setForm] = useState({name:"",email:"",org:"",slots:"",role:""});
   const [sent,setSent] = useState(false);
@@ -153,7 +147,6 @@ function DemoForm({ onClose }){
   );
 }
 
-/* ─── Hero ───────────────────────────────────────────────────── */
 function BusinessHero({ onDemo, isMobile }){
   const scrollToPricing = () =>
     document.getElementById("business-pricing")?.scrollIntoView({behavior:"smooth"});
@@ -172,7 +165,7 @@ function BusinessHero({ onDemo, isMobile }){
 
       <h1 style={{fontSize:"clamp(36px,6.5vw,82px)",fontWeight:800,lineHeight:1.05,letterSpacing:-2,margin:"0 0 22px",maxWidth:900,animation:"bFadeUp .7s .2s both cubic-bezier(.22,1,.36,1)"}}>
         Turn your parking lot<br/>into a{" "}
-        <span style={{WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundImage:`linear-gradient(270deg,${BT.gold},#FFD97D,${BT.gold})`,backgroundSize:"200% auto",animation:"bGradShift 3s linear infinite"}}>
+        <span style={{WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundImage:`linear-gradient(270deg,${BT.accent},#D8FF70,${BT.accent})`,backgroundSize:"200% auto",animation:"bGradShift 3s linear infinite"}}>
           smart revenue machine.
         </span>
       </h1>
@@ -199,7 +192,6 @@ function BusinessHero({ onDemo, isMobile }){
   );
 }
 
-/* ─── How It Works ───────────────────────────────────────────── */
 function HowItWorks({ isMobile }){
   return(
     <section style={{padding:isMobile?"64px 20px":"96px 5%",background:"rgba(125,57,235,.04)",borderTop:`1px solid ${BT.border}`,borderBottom:`1px solid ${BT.border}`}}>
@@ -238,7 +230,6 @@ function HowItWorks({ isMobile }){
   );
 }
 
-/* ─── Core Features ──────────────────────────────────────────── */
 function CoreFeatures({ isMobile }){
   return(
     <section style={{padding:isMobile?"64px 20px":"100px 5%"}}>
@@ -286,7 +277,6 @@ function CoreFeatures({ isMobile }){
   );
 }
 
-/* ─── Dashboard Preview ──────────────────────────────────────── */
 function DashboardPreview({ isMobile }){
   const [tick,setTick]=useState(0);
   useEffect(()=>{ const id=setInterval(()=>setTick(v=>v+1),2600); return()=>clearInterval(id); },[]);
@@ -301,7 +291,7 @@ function DashboardPreview({ isMobile }){
     <section style={{padding:isMobile?"64px 20px":"96px 5%",background:"rgba(125,57,235,.04)",borderTop:`1px solid ${BT.border}`,borderBottom:`1px solid ${BT.border}`}}>
       <div style={{maxWidth:1100,margin:"0 auto",display:"flex",gap:56,alignItems:"center",flexDirection:isMobile?"column":"row"}}>
         <Reveal direction="left" style={{flex:1}}>
-          <Tag color={BT.gold}>📊 Analytics</Tag>
+          <Tag color={BT.accent}>📊 Analytics</Tag>
           <h2 style={{fontSize:"clamp(24px,3.5vw,46px)",fontWeight:800,letterSpacing:-1,margin:"16px 0 16px",lineHeight:1.1}}>Your parking lot,<br/>fully visible.</h2>
           <p style={{color:BT.sub,fontSize:15,lineHeight:1.8,marginBottom:28}}>The operator dashboard surfaces everything from live slot maps to 12-month revenue forecasts. Drill from the big picture down to a single transaction in two clicks.</p>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -316,9 +306,9 @@ function DashboardPreview({ isMobile }){
                 animation:`bFloat ${4+i*.5}s ease-in-out ${i*.7}s infinite`,
                 transition:"border-color .25s,background .25s",cursor:"default",
               }}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor=BT.gold+"55";e.currentTarget.style.background="rgba(240,180,41,.05)";}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=BT.accent+"55";e.currentTarget.style.background="rgba(240,180,41,.05)";}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=BT.border;e.currentTarget.style.background="rgba(255,255,255,.03)";}}>
-                <div style={{width:40,height:40,borderRadius:10,background:BT.goldDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{it.icon}</div>
+                <div style={{width:40,height:40,borderRadius:10,background:BT.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{it.icon}</div>
                 <div>
                   <div style={{fontSize:14,fontWeight:700,marginBottom:2}}>{it.label}</div>
                   <div style={{fontSize:12,color:BT.sub,lineHeight:1.6}}>{it.sub}</div>
@@ -350,7 +340,7 @@ function DashboardPreview({ isMobile }){
               </div>
             ))}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:16}}>
-              {[{l:"Revenue today",v:"EGP 4,280",c:BT.green},{l:"Sessions today",v:"142",c:BT.purple},{l:"Avg. dwell",v:"48 min",c:BT.gold}].map((s,i)=>(
+              {[{l:"Revenue today",v:"EGP 4,280",c:BT.green},{l:"Sessions today",v:"142",c:BT.purple},{l:"Avg. dwell",v:"48 min",c:BT.accent}].map((s,i)=>(
                 <div key={s.l} style={{padding:"10px 8px",borderRadius:10,background:"rgba(255,255,255,.03)",border:`1px solid ${BT.border}`,textAlign:"center",animation:`bPulse ${3.2+i*.4}s ease-in-out ${i*.6}s infinite`}}>
                   <div style={{fontSize:14,fontWeight:800,color:s.c}}>{s.v}</div>
                   <div style={{fontSize:9,color:BT.sub,marginTop:2}}>{s.l}</div>
@@ -364,7 +354,6 @@ function DashboardPreview({ isMobile }){
   );
 }
 
-/* ─── Integrations ───────────────────────────────────────────── */
 function Integrations({ isMobile }){
   return(
     <section style={{padding:isMobile?"64px 20px":"80px 5%"}}>
@@ -399,7 +388,6 @@ function Integrations({ isMobile }){
   );
 }
 
-/* ─── Pricing ────────────────────────────────────────────────── */
 function Pricing({ onDemo, isMobile }){
   return(
     <section id="business-pricing" style={{padding:isMobile?"64px 20px":"100px 5%",background:"rgba(125,57,235,.04)",borderTop:`1px solid ${BT.border}`,borderBottom:`1px solid ${BT.border}`}}>
@@ -464,7 +452,6 @@ function Pricing({ onDemo, isMobile }){
   );
 }
 
-/* ─── CTA ────────────────────────────────────────────────────── */
 function BusinessCTA({ onDemo, isMobile }){
   return(
     <section style={{padding:isMobile?"64px 20px":"100px 5%",textAlign:"center"}}>
@@ -485,7 +472,6 @@ function BusinessCTA({ onDemo, isMobile }){
   );
 }
 
-/* ─── Main Export ────────────────────────────────────────────── */
 export default function BusinessPage({ onBack }){
   const { isMobile } = useBreakpoint();
   const [demoOpen, setDemoOpen] = useState(false);
@@ -520,7 +506,7 @@ export default function BusinessPage({ onBack }){
           <div style={{width:1,height:18,background:BT.border}}/>
           <div style={{fontWeight:800,fontSize:18,letterSpacing:-0.5}}>
             <span style={{color:BT.purple}}>ez</span>rakna{" "}
-            <span style={{fontSize:12,fontWeight:600,color:BT.gold,verticalAlign:"middle",padding:"2px 8px",borderRadius:6,background:BT.goldDim}}>for Business</span>
+            <span style={{fontSize:12,fontWeight:600,color:BT.accent,verticalAlign:"middle",padding:"2px 8px",borderRadius:6,background:BT.accentDim}}>for Business</span>
           </div>
         </div>
         <GlowBtn small noArrow onClick={()=>setDemoOpen(true)}>Book Demo</GlowBtn>

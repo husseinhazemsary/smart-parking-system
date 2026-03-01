@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { T } from "../../constants/theme";
 import GlowBtn from "../ui/GlowBtn";
 
+// Top navigation bar — sticky, blurs background on scroll.
+// Collapses to hamburger on mobile with an animated slide-down menu.
 export default function Navbar({ scrolled, isMobile, user, onEnter, onAuthOpen, onBusiness, onLocations, onForBusiness }){
   const [menuOpen, setMenuOpen] = useState(false);
 
   const links = [
     { label:"Features",     action:()=>{ document.getElementById("features")?.scrollIntoView({behavior:"smooth"}); setMenuOpen(false); } },
     { label:"Locations",    action:()=>{ onLocations?.(); setMenuOpen(false); } },
-    { label:"For Business", action:()=>{ onForBusiness?.(); setMenuOpen(false); }, gold:true },
+    { label:"For Business", action:()=>{ onForBusiness?.(); setMenuOpen(false); }, accent:true },
   ];
 
   return(
@@ -36,24 +38,18 @@ export default function Navbar({ scrolled, isMobile, user, onEnter, onAuthOpen, 
                   background:"none", border:"none", cursor:"pointer",
                   padding:"8px 14px", borderRadius:10,
                   fontSize:14, fontWeight:600,
-                  color: l.gold ? "#F0B429" : T.sub,
+                  color: l.accent ? "#C6FF33" : T.sub,
                   fontFamily:"inherit",
                   transition:"color .2s, background .2s",
                 }}
-                  onMouseEnter={e=>{ e.currentTarget.style.color=l.gold?"#FFD97D":T.text; e.currentTarget.style.background="rgba(125,57,235,.08)"; }}
-                  onMouseLeave={e=>{ e.currentTarget.style.color=l.gold?"#F0B429":T.sub; e.currentTarget.style.background="transparent"; }}
+                  onMouseEnter={e=>{ e.currentTarget.style.color=l.accent?"#D8FF70":T.text; e.currentTarget.style.background="rgba(125,57,235,.08)"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.color=l.accent?"#C6FF33":T.sub; e.currentTarget.style.background="transparent"; }}
                 >{l.label}</button>
               ))}
             </div>
           )}
 
           <div style={{display:"flex",gap:10,alignItems:"center",flexShrink:0}}>
-            {/* Business button — temporarily hidden
-            {!isMobile && (
-              <GlowBtn small gold noArrow onClick={onBusiness}>Business</GlowBtn>
-            )}
-            */}
-
             {user ? (
               <GlowBtn small noArrow onClick={onEnter}>Dashboard</GlowBtn>
             ) : (
@@ -87,6 +83,7 @@ export default function Navbar({ scrolled, isMobile, user, onEnter, onAuthOpen, 
         </div>
       </nav>
 
+      {/* Mobile slide-down menu */}
       {isMobile && (
         <div style={{
           position:"fixed", top:68, left:0, right:0, zIndex:99,
@@ -104,7 +101,7 @@ export default function Navbar({ scrolled, isMobile, user, onEnter, onAuthOpen, 
                 background:"none", border:"none", cursor:"pointer",
                 padding:"14px 12px", borderRadius:10, textAlign:"left",
                 fontSize:15, fontWeight:600,
-                color: l.gold ? "#F0B429" : T.text,
+                color: l.accent ? "#C6FF33" : T.text,
                 fontFamily:"inherit",
                 borderBottom:`1px solid rgba(125,57,235,.1)`,
               }}>{l.label}</button>

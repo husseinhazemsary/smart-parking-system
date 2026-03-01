@@ -5,12 +5,8 @@ import { SPOTS, availColor, availLabel } from "../data/spots";
 
 import Navbar from "../components/layout/Navbar";
 import GlowBtn from "../components/ui/GlowBtn";
-import Card from "../components/ui/Card";
 import ProgressBar from "../components/ui/ProgressBar";
 
-/* ═══════════════════════════════════════════════════════════════
-   DATA
-═══════════════════════════════════════════════════════════════ */
 const FEATURES = [
   { icon:"📡", title:"Real-Time Availability",  body:"See every spot update live — occupancy changes the moment a car enters or exits. No refresh needed." },
   { icon:"🧭", title:"Navigate to Your Spot",   body:"Get turn-by-turn directions straight to your reserved bay. No wandering, no guessing which level." },
@@ -41,9 +37,6 @@ const SPOT_IMAGES = {
   6: new URL("../assets/dandy.jpg",    import.meta.url).href,
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   SCROLL-REVEAL  (repeating — no disconnect)
-═══════════════════════════════════════════════════════════════ */
 function Reveal({ children, delay=0, direction="up", style={} }){
   const ref = useRef(null);
   const [vis, setVis] = useState(false);
@@ -75,9 +68,6 @@ function Reveal({ children, delay=0, direction="up", style={} }){
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ANIMATED COUNTER  (repeating too)
-═══════════════════════════════════════════════════════════════ */
 function Counter({ target, suffix, duration=1600 }){
   const ref = useRef(null);
   const [count, setCount] = useState(0);
@@ -109,9 +99,6 @@ function Counter({ target, suffix, duration=1600 }){
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BADGE
-═══════════════════════════════════════════════════════════════ */
 function Badge({ children, color=T.purple }){
   return(
     <span style={{
@@ -121,9 +108,6 @@ function Badge({ children, color=T.purple }){
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HERO BACKGROUND — clean drifting geometry (no canvas)
-═══════════════════════════════════════════════════════════════ */
 function HeroBg(){
   return(
     <>
@@ -161,62 +145,7 @@ function HeroBg(){
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HERO AVAILABILITY CARD
-═══════════════════════════════════════════════════════════════ */
-function HeroAvailabilityCard(){
-  const [tick,setTick] = useState(0);
-  useEffect(()=>{ const id=setInterval(()=>setTick(v=>v+1),2800); return()=>clearInterval(id); },[]);
-  const rows=[
-    {name:"Arkan Mall",      base:28,total:80, rate:15},
-    {name:"NGU Parking Lot", base:12,total:60, rate:0 },
-    {name:"Cairo Airport T2",base:3, total:200,rate:25},
-    {name:"Tahrir St.",      base:45,total:100,rate:10},
-  ].map((r,i)=>({...r, available:Math.max(r.base===0?0:1, r.base+Math.round(Math.sin(tick*(0.8+i*0.15))*Math.min(r.base,5)))}));
 
-  return(
-    <Card glow style={{padding:22,textAlign:"left",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",top:-40,right:-40,width:160,height:160,borderRadius:"50%",background:"radial-gradient(circle,rgba(125,57,235,.2),transparent 70%)",pointerEvents:"none"}}/>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style={{fontSize:11,color:T.sub,letterSpacing:1}}>LIVE AVAILABILITY</div>
-        <div style={{display:"flex",alignItems:"center",gap:5}}>
-          <div style={{width:7,height:7,borderRadius:"50%",background:T.green,animation:"pls 1.5s infinite"}}/>
-          <span style={{fontSize:11,color:T.green,fontWeight:600}}>Updating</span>
-        </div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
-        {rows.map(s=>{
-          const ac=availColor(s.available,s.total);
-          const pct=Math.round((1-s.available/s.total)*100);
-          return(
-            <div key={s.name} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:10,background:"rgba(255,255,255,.03)",border:"1px solid rgba(125,57,235,.12)"}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:ac,flexShrink:0,boxShadow:`0 0 6px ${ac}66`,transition:"background .5s"}}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div>
-                <div style={{height:3,borderRadius:2,background:"rgba(255,255,255,.06)",marginTop:4,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${pct}%`,background:ac,borderRadius:2,transition:"width 1s ease"}}/>
-                </div>
-              </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                <div style={{fontSize:12,fontWeight:700,color:ac,transition:"color .5s"}}>{s.available} free</div>
-                <div style={{fontSize:10,color:T.sub}}>{s.rate===0?"Free":`EGP ${s.rate}/hr`}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.sub,borderTop:"1px solid rgba(125,57,235,.1)",paddingTop:10}}>
-        <span>Cairo & Giza · 6 zones</span>
-        <span style={{color:T.purple,fontWeight:600}}>50+ locations →</span>
-      </div>
-    </Card>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   FEATURE CARD — auto-playing animations (float + icon pulse)
-   + extra shimmer/lift on hover
-═══════════════════════════════════════════════════════════════ */
 function FeatureCard({icon,title,body,delay,index}){
   const [hov,setHov]=useState(false);
   // Stagger each card's float cycle so they don't all move in sync
@@ -292,9 +221,6 @@ function FeatureCard({icon,title,body,delay,index}){
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HOW-IT-WORKS STEP  (repeating scroll reveal)
-═══════════════════════════════════════════════════════════════ */
 function AnimatedStep({n,title,body,delay}){
   const ref=useRef(null);
   const [vis,setVis]=useState(false);
@@ -361,10 +287,6 @@ function AnimatedStep({n,title,body,delay}){
     </div>
   );
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   LOCATION CARD — simple 3-col grid
-═══════════════════════════════════════════════════════════════ */
 
 function LandingCard({s, onReserve, delay, index=0}){
   const ac = availColor(s.available, s.total);
@@ -464,9 +386,6 @@ function LandingCard({s, onReserve, delay, index=0}){
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   B2B FEATURE CARD
-═══════════════════════════════════════════════════════════════ */
 function B2BCard({icon,title,body,delay}){
   const [hov,setHov]=useState(false);
   return(
@@ -475,34 +394,31 @@ function B2BCard({icon,title,body,delay}){
         onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
         style={{
           padding:22,borderRadius:18,
-          border:hov?"1px solid rgba(240,180,41,.45)":"1px solid rgba(240,180,41,.15)",
-          background:hov?"rgba(240,180,41,.08)":"rgba(240,180,41,.03)",
+          border:hov?"1px solid rgba(198,255,51,.45)":"1px solid rgba(198,255,51,.15)",
+          background:hov?"rgba(198,255,51,.08)":"rgba(198,255,51,.03)",
           position:"relative",overflow:"hidden",
           transform:hov?"translateY(-5px)":"translateY(0)",
-          boxShadow:hov?"0 16px 44px rgba(240,180,41,.18)":"none",
+          boxShadow:hov?"0 16px 44px rgba(198,255,51,.18)":"none",
           transition:"all .3s cubic-bezier(.22,1,.36,1)",
           cursor:"default",
         }}>
-        <div style={{position:"absolute",top:-24,right:-24,width:80,height:80,borderRadius:"50%",background:"radial-gradient(circle,rgba(240,180,41,.12),transparent 70%)"}}/>
+        <div style={{position:"absolute",top:-24,right:-24,width:80,height:80,borderRadius:"50%",background:"radial-gradient(circle,rgba(198,255,51,.12),transparent 70%)"}}/>
         <div style={{
           width:46,height:46,borderRadius:12,
-          background:hov?"rgba(240,180,41,.2)":"rgba(240,180,41,.12)",
+          background:hov?"rgba(198,255,51,.2)":"rgba(198,255,51,.12)",
           display:"flex",alignItems:"center",justifyContent:"center",
           fontSize:20,marginBottom:14,
           transform:hov?"scale(1.14) rotate(-6deg)":"scale(1) rotate(0)",
-          boxShadow:hov?"0 6px 18px rgba(240,180,41,.3)":"none",
+          boxShadow:hov?"0 6px 18px rgba(198,255,51,.3)":"none",
           transition:"transform .35s cubic-bezier(.34,1.56,.64,1), background .25s, box-shadow .3s",
         }}>{icon}</div>
-        <div style={{fontSize:15,fontWeight:700,marginBottom:8,color:hov?"#F0B429":T.text,transition:"color .25s"}}>{title}</div>
+        <div style={{fontSize:15,fontWeight:700,marginBottom:8,color:hov?"#C6FF33":T.text,transition:"color .25s"}}>{title}</div>
         <div style={{color:T.sub,fontSize:13,lineHeight:1.7}}>{body}</div>
       </div>
     </Reveal>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CTA EMOJI
-═══════════════════════════════════════════════════════════════ */
 function CTAEmoji(){
   const [hov,setHov]=useState(false);
   return(
@@ -514,9 +430,6 @@ function CTAEmoji(){
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LANDING PAGE
-═══════════════════════════════════════════════════════════════ */
 export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
   const [scrolled,setScrolled]=useState(false);
   const {isMobile}=useBreakpoint();
@@ -545,7 +458,6 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         .hero-h1{animation:heroFadeUp .7s .25s both cubic-bezier(.22,1,.36,1);}
         .hero-p{animation:heroFadeUp .7s .4s both cubic-bezier(.22,1,.36,1);}
         .hero-btns{animation:heroFadeUp .7s .55s both cubic-bezier(.22,1,.36,1);}
-        .hero-card{animation:heroFadeUp .8s .7s both cubic-bezier(.22,1,.36,1);}
 
         .stat-item{transition:transform .25s cubic-bezier(.22,1,.36,1);}
         .stat-item:hover{transform:translateY(-5px);}
@@ -554,7 +466,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         .footer-link:hover{color:${T.purple}!important;transform:translateX(3px);}
 
         .b2b-cta-btn{transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s!important;}
-        .b2b-cta-btn:hover{transform:translateY(-3px) scale(1.03)!important;box-shadow:0 10px 40px rgba(240,180,41,.5)!important;}
+        .b2b-cta-btn:hover{transform:translateY(-3px) scale(1.03)!important;box-shadow:0 10px 40px rgba(198,255,51,.5)!important;}
 
         .glow-btn-wrap{transition:transform .2s cubic-bezier(.22,1,.36,1),filter .2s;}
         .glow-btn-wrap:hover{transform:translateY(-2px);filter:brightness(1.1);}
@@ -568,7 +480,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         onForBusiness={()=>scrollTo("for-business")}
       />
 
-      {/* ══ HERO ══════════════════════════════════════════════════ */}
+      {}
       <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",padding:isMobile?"110px 20px 80px":"120px 5% 80px",position:"relative",overflow:"hidden"}}>
         <HeroBg/>
         <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
@@ -590,13 +502,11 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
             <div className="glow-btn-wrap"><GlowBtn onClick={onEnter}>{user?"Go to Dashboard":"Find Parking Now"}</GlowBtn></div>
             <div className="glow-btn-wrap"><GlowBtn outline onClick={()=>scrollTo("features")}>How It Works</GlowBtn></div>
           </div>
-          <div className="hero-card" style={{marginTop:72,width:"100%",maxWidth:440,animation:"float 4s ease-in-out infinite"}}>
-            <HeroAvailabilityCard/>
-          </div>
+
         </div>
       </section>
 
-      {/* ══ STATS ═════════════════════════════════════════════════ */}
+      {}
       <div style={{borderTop:`1px solid ${T.border}`,borderBottom:`1px solid ${T.border}`,padding:"36px 5%"}}>
         <div style={{maxWidth:960,margin:"0 auto",display:"grid",gridTemplateColumns:`repeat(${isMobile?2:4},1fr)`,gap:24}}>
           {STATS.map((s,i)=>(
@@ -612,7 +522,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         </div>
       </div>
 
-      {/* ══ FEATURES ══════════════════════════════════════════════ */}
+      {}
       <section id="features" style={{padding:isMobile?"64px 20px":"100px 5%"}}>
         <div style={{maxWidth:1240,margin:"0 auto"}}>
           <Reveal>
@@ -630,7 +540,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         </div>
       </section>
 
-      {/* ══ HOW IT WORKS ══════════════════════════════════════════ */}
+      {}
       <section style={{padding:isMobile?"64px 20px":"80px 5%",background:"rgba(125,57,235,.04)",borderTop:`1px solid ${T.border}`,borderBottom:`1px solid ${T.border}`}}>
         <div style={{maxWidth:900,margin:"0 auto",textAlign:"center"}}>
           <Reveal>
@@ -655,7 +565,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         </div>
       </section>
 
-      {/* ══ LOCATIONS ═════════════════════════════════════════════ */}
+      {}
       <section id="locations" style={{padding:isMobile?"64px 20px":"100px 5%"}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
           <Reveal>
@@ -678,20 +588,20 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         </div>
       </section>
 
-      {/* ══ B2B TEASER ════════════════════════════════════════════ */}
+      {}
       <section id="for-business" style={{padding:isMobile?"64px 20px":"100px 5%",background:"linear-gradient(160deg,rgba(17,0,48,.95),rgba(7,0,26,1))",borderTop:`1px solid ${T.border}`,borderBottom:`1px solid ${T.border}`,position:"relative",overflow:"hidden"}}>
         {/* Subtle gold orb */}
-        <div style={{position:"absolute",top:"15%",right:"5%",width:440,height:440,borderRadius:"50%",background:"radial-gradient(circle,rgba(240,180,41,.06),transparent 70%)",pointerEvents:"none",animation:"heroDrift2 18s ease-in-out infinite"}}/>
+        <div style={{position:"absolute",top:"15%",right:"5%",width:440,height:440,borderRadius:"50%",background:"radial-gradient(circle,rgba(198,255,51,.06),transparent 70%)",pointerEvents:"none",animation:"heroDrift2 18s ease-in-out infinite"}}/>
         <div style={{position:"absolute",bottom:"-10%",left:0,width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle,rgba(125,57,235,.08),transparent 70%)",pointerEvents:"none",animation:"heroDrift1 20s ease-in-out infinite"}}/>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
 
           <div style={{display:"flex",flexDirection:isMobile?"column":"row",justifyContent:"space-between",alignItems:isMobile?"flex-start":"flex-end",marginBottom:52,gap:24}}>
             <Reveal direction="left">
               <div>
-                <Badge color="#F0B429">⚙️ For Parking Operators</Badge>
+                <Badge color="#C6FF33">⚙️ For Parking Operators</Badge>
                 <h2 style={{fontSize:"clamp(26px,4vw,52px)",fontWeight:800,letterSpacing:-1.5,margin:"16px 0 10px",maxWidth:600}}>
                   Own a parking facility?<br/>
-                  <span style={{WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundImage:"linear-gradient(270deg,#F0B429,#FFD97D,#F0B429)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite"}}>Make it smart.</span>
+                  <span style={{WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundImage:"linear-gradient(270deg,#C6FF33,#D8FF70,#C6FF33)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite"}}>Make it smart.</span>
                 </h2>
                 <p style={{color:T.sub,fontSize:15,maxWidth:500,lineHeight:1.8}}>
                   Deploy AI-powered license plate recognition, real-time occupancy and automated billing across your entire lot — in days, not months.
@@ -710,11 +620,11 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
           </div>
 
           <Reveal>
-            <div style={{display:"flex",gap:isMobile?20:48,flexWrap:"wrap",padding:"24px",borderRadius:16,background:"rgba(255,255,255,.02)",border:"1px solid rgba(240,180,41,.12)",justifyContent:"center"}}>
+            <div style={{display:"flex",gap:isMobile?20:48,flexWrap:"wrap",padding:"24px",borderRadius:16,background:"rgba(255,255,255,.02)",border:"1px solid rgba(198,255,51,.12)",justifyContent:"center"}}>
               {[["50+","Partner facilities"],["99.4%","LPR accuracy"],["< 3 days","Avg. go-live"],["EGP 0","Setup fee on Starter"]].map(([v,l],i)=>(
                 <Reveal key={l} delay={i*70}>
                   <div className="stat-item" style={{textAlign:"center"}}>
-                    <div style={{fontSize:"clamp(20px,2.5vw,28px)",fontWeight:800,color:"#F0B429",letterSpacing:-0.5}}>{v}</div>
+                    <div style={{fontSize:"clamp(20px,2.5vw,28px)",fontWeight:800,color:"#C6FF33",letterSpacing:-0.5}}>{v}</div>
                     <div style={{fontSize:12,color:T.sub,marginTop:3}}>{l}</div>
                   </div>
                 </Reveal>
@@ -724,7 +634,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         </div>
       </section>
 
-      {/* ══ CTA ═══════════════════════════════════════════════════ */}
+      {}
       <section id="cta" style={{padding:isMobile?"64px 20px":"100px 5%",textAlign:"center",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 60%,rgba(125,57,235,.08),transparent 70%)",pointerEvents:"none"}}/>
         <Reveal>
@@ -743,7 +653,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
         </Reveal>
       </section>
 
-      {/* ══ FOOTER ════════════════════════════════════════════════ */}
+      {}
       <footer style={{borderTop:`1px solid ${T.border}`,padding:`20px ${isMobile?"20px":"5%"}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
         <Reveal direction="left">
           <div style={{fontWeight:800,fontSize:18}}><span style={{color:T.purple}}>ez</span>rakna</div>

@@ -7,7 +7,8 @@ import Card from "../components/ui/Card";
 import Divider from "../components/ui/Divider";
 import SectionLabel from "../components/ui/SectionLabel";
 
-/* ─── Session Tab ────────────────────────────────────────────── */
+// Active parking session view — shows live elapsed time, running cost,
+// slot details, and an end-session confirmation flow.
 export default function SessionTab({ spot, onEnd }){
   const elapsed=useTimer();
   const [ending,setEnding]=useState(false);
@@ -26,6 +27,7 @@ export default function SessionTab({ spot, onEnd }){
 
   return(
     <div style={{ maxWidth:780,margin:"0 auto",padding:isMobile?"20px 16px":"40px 28px" }}>
+      {/* Session active indicator */}
       <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:28,padding:"12px 18px",borderRadius:14,background:"rgba(34,197,94,.07)",border:`1px solid rgba(34,197,94,.18)` }}>
         <div style={{ width:10,height:10,borderRadius:5,background:T.green,animation:"pls 1.5s infinite",flexShrink:0 }} />
         <span style={{ fontWeight:700,color:T.green,fontSize:14 }}>Session Active</span>
@@ -40,6 +42,7 @@ export default function SessionTab({ spot, onEnd }){
         </div>
       </div>
 
+      {/* Live elapsed time and running cost */}
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20 }}>
         <Card style={{ padding:isMobile?18:24,textAlign:"center" }} glow>
           <div style={{ fontSize:11,color:T.sub,letterSpacing:1,marginBottom:8 }}>ELAPSED TIME</div>
@@ -55,7 +58,7 @@ export default function SessionTab({ spot, onEnd }){
 
       <Card style={{ padding:22,marginBottom:20 }}>
         <SectionLabel>Session Details</SectionLabel>
-        [["Parking Slot","B4"],["Level & Gate","Level 2  •  Gate B"],["Vehicle","Toyota Corolla  •  BG 4567"],["Rate",`EGP ${spot.rate}/hr`],["Hours",spot.hours]].map(([l,v],i,arr)=>(
+        {[["Parking Slot","B4"],["Level & Gate","Level 2  •  Gate B"],["Vehicle","Toyota Corolla  •  BG 4567"],["Rate",`EGP ${spot.rate}/hr`],["Hours",spot.hours]].map(([l,v],i,arr)=>(
           <div key={l}>
             <div style={{ display:"flex",justifyContent:"space-between",padding:"10px 0" }}>
               <span style={{ color:T.sub,fontSize:14 }}>{l}</span>
@@ -63,7 +66,7 @@ export default function SessionTab({ spot, onEnd }){
             </div>
             {i<arr.length-1&&<Divider />}
           </div>
-        ))
+        ))}
       </Card>
 
       {!ending

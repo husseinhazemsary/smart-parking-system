@@ -28,7 +28,6 @@ const CSS = `
     font-size:17px; background:rgba(125,57,235,.1);
   }
 
-  /* Toggle switch */
   .tog-track {
     width:44px; height:24px; border-radius:12px; cursor:pointer;
     transition:background .25s; position:relative; flex-shrink:0; border:none;
@@ -56,7 +55,6 @@ const CSS = `
   .acc-field:focus { border-color:${T.purple}; }
   .acc-label { font-size:11px; color:${T.sub}; letter-spacing:.6px; margin-bottom:5px; }
 
-  /* Web layout helpers (desktop only) */
   .acc-container { padding:22px 16px; }
   @media (min-width: 880px) {
     .acc-container { padding:28px 22px; }
@@ -65,7 +63,6 @@ const CSS = `
   }
 `;
 
-/* ─── Toggle component ───────────────────────────────────────── */
 function Toggle({ on, onChange }) {
   return (
     <button
@@ -78,7 +75,6 @@ function Toggle({ on, onChange }) {
   );
 }
 
-/* ─── Edit Profile Modal ─────────────────────────────────────── */
 function EditProfileModal({ open, onClose, user }) {
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -87,57 +83,29 @@ function EditProfileModal({ open, onClose, user }) {
   return (
     <Modal open={open} onClose={onClose} maxWidth={420}>
       <div style={{ padding: "26px 22px" }}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>
-          Edit Profile
-        </div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>Edit Profile</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div className="acc-label">FULL NAME</div>
-            <input
-              className="acc-field"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <input className="acc-field" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
             <div className="acc-label">EMAIL</div>
-            <input
-              className="acc-field"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <input className="acc-field" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div>
             <div className="acc-label">PHONE NUMBER</div>
-            <input
-              className="acc-field"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+            <input className="acc-field" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: 12,
-              borderRadius: 11,
-              border: `1px solid ${T.border}`,
-              background: "transparent",
-              color: T.sub,
-              fontFamily: "inherit",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
+          <button onClick={onClose} style={{
+            flex: 1, padding: 12, borderRadius: 11,
+            border: `1px solid ${T.border}`, background: "transparent",
+            color: T.sub, fontFamily: "inherit", fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}>Cancel</button>
           <div style={{ flex: 2 }}>
-            <GlowBtn full noArrow onClick={onClose}>
-              Save Changes
-            </GlowBtn>
+            <GlowBtn full noArrow onClick={onClose}>Save Changes</GlowBtn>
           </div>
         </div>
       </div>
@@ -145,7 +113,7 @@ function EditProfileModal({ open, onClose, user }) {
   );
 }
 
-/* ─── Add Vehicle Modal ──────────────────────────────────────── */
+// Add vehicle modal with emoji icon picker and plate input.
 function AddVehicleModal({ open, onClose, onAdd }) {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
@@ -156,39 +124,23 @@ function AddVehicleModal({ open, onClose, onAdd }) {
   const handleAdd = () => {
     if (!make || !model || !plate) return;
     onAdd({ icon, label: `${make} ${model}`, sub: plate.toUpperCase() });
-    setMake("");
-    setModel("");
-    setPlate("");
-    setIcon("🚗");
+    setMake(""); setModel(""); setPlate(""); setIcon("🚗");
     onClose();
   };
 
   return (
     <Modal open={open} onClose={onClose} maxWidth={420}>
       <div style={{ padding: "26px 22px" }}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>
-          Add Vehicle
-        </div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>Add Vehicle</div>
 
-        {/* Icon picker */}
         <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
           {icons.map((i) => (
-            <button
-              key={i}
-              onClick={() => setIcon(i)}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 11,
-                fontSize: 20,
-                border: `1.5px solid ${icon === i ? T.purple : T.border}`,
-                background: icon === i ? "rgba(125,57,235,.12)" : "transparent",
-                cursor: "pointer",
-                transition: "all .15s",
-              }}
-            >
-              {i}
-            </button>
+            <button key={i} onClick={() => setIcon(i)} style={{
+              width: 44, height: 44, borderRadius: 11, fontSize: 20,
+              border: `1.5px solid ${icon === i ? T.purple : T.border}`,
+              background: icon === i ? "rgba(125,57,235,.12)" : "transparent",
+              cursor: "pointer", transition: "all .15s",
+            }}>{i}</button>
           ))}
         </div>
 
@@ -196,57 +148,28 @@ function AddVehicleModal({ open, onClose, onAdd }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
               <div className="acc-label">MAKE</div>
-              <input
-                className="acc-field"
-                value={make}
-                onChange={(e) => setMake(e.target.value)}
-                placeholder="Toyota"
-              />
+              <input className="acc-field" value={make} onChange={(e) => setMake(e.target.value)} placeholder="Toyota" />
             </div>
             <div>
               <div className="acc-label">MODEL</div>
-              <input
-                className="acc-field"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="Corolla"
-              />
+              <input className="acc-field" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Corolla" />
             </div>
           </div>
           <div>
             <div className="acc-label">PLATE NUMBER</div>
-            <input
-              className="acc-field"
-              value={plate}
-              onChange={(e) => setPlate(e.target.value)}
-              placeholder="BG 4567"
-              style={{ textTransform: "uppercase" }}
-            />
+            <input className="acc-field" value={plate} onChange={(e) => setPlate(e.target.value)}
+              placeholder="BG 4567" style={{ textTransform: "uppercase" }} />
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: 12,
-              borderRadius: 11,
-              border: `1px solid ${T.border}`,
-              background: "transparent",
-              color: T.sub,
-              fontFamily: "inherit",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
+          <button onClick={onClose} style={{
+            flex: 1, padding: 12, borderRadius: 11,
+            border: `1px solid ${T.border}`, background: "transparent",
+            color: T.sub, fontFamily: "inherit", fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}>Cancel</button>
           <div style={{ flex: 2 }}>
-            <GlowBtn full noArrow onClick={handleAdd}>
-              Add Vehicle
-            </GlowBtn>
+            <GlowBtn full noArrow onClick={handleAdd}>Add Vehicle</GlowBtn>
           </div>
         </div>
       </div>
@@ -254,13 +177,10 @@ function AddVehicleModal({ open, onClose, onAdd }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN
-═══════════════════════════════════════════════════════════════ */
+// Account tab — user profile hero, vehicle list, preferences toggles, settings, and sign out.
 export default function AccountTab({ user, onLogout }) {
   const { isMobile } = useBreakpoint();
 
-  /* State */
   const [editOpen, setEditOpen] = useState(false);
   const [addVehicle, setAddVehicle] = useState(false);
   const [vehicles, setVehicles] = useState([
@@ -275,7 +195,7 @@ export default function AccountTab({ user, onLogout }) {
   });
   const toggle = (k) => setPrefs((p) => ({ ...p, [k]: !p[k] }));
 
-  /* Derived stats from history */
+  // Derived from history data for the profile stats strip
   const completed = HISTORY_DATA.filter((h) => h.status === "completed");
   const totalMins = HISTORY_DATA.reduce((a, h) => {
     const m = h.duration.match(/(\d+)h\s*(\d+)?m?/);
@@ -286,105 +206,57 @@ export default function AccountTab({ user, onLogout }) {
     <div className="acc-wrap acc-container">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      {/* Page width (web container) */}
       <div style={{ maxWidth: 1040, margin: "0 auto" }}>
-        {/* ══ HERO ══ */}
-        <div
-          style={{
-            borderRadius: 18,
-            overflow: "hidden",
-            border: `1px solid ${T.border}`,
-            background: `linear-gradient(135deg,#2A0070,${T.purple} 55%,#4A0E9E)`,
-          }}
-        >
-          <div
-            style={{
-              padding: isMobile ? "28px 18px 24px" : "34px 26px 26px",
-            }}
-          >
+        {/* Profile hero card */}
+        <div style={{
+          borderRadius: 18, overflow: "hidden",
+          border: `1px solid ${T.border}`,
+          background: `linear-gradient(135deg,#2A0070,${T.purple} 55%,#4A0E9E)`,
+        }}>
+          <div style={{ padding: isMobile ? "28px 18px 24px" : "34px 26px 26px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-              {/* Avatar */}
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 36,
-                  flexShrink: 0,
-                  background: "rgba(255,255,255,.15)",
-                  border: "2px solid rgba(255,255,255,.3)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 30,
-                }}
-              >
+              <div style={{
+                width: 72, height: 72, borderRadius: 36, flexShrink: 0,
+                background: "rgba(255,255,255,.15)", border: "2px solid rgba(255,255,255,.3)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30,
+              }}>
                 {(user?.name || "?")[0].toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: "#fff", marginBottom: 2 }}>
                   {user?.name || "User"}
                 </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,.65)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+                <div style={{
+                  fontSize: 13, color: "rgba(255,255,255,.65)",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
                   {user?.email || "user@email.com"}
                 </div>
               </div>
-              <button
-                onClick={() => setEditOpen(true)}
-                style={{
-                  padding: "7px 14px",
-                  borderRadius: 9,
-                  flexShrink: 0,
-                  border: "1px solid rgba(255,255,255,.3)",
-                  background: "rgba(255,255,255,.1)",
-                  color: "#fff",
-                  fontFamily: "inherit",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "background .2s",
-                }}
+              <button onClick={() => setEditOpen(true)} style={{
+                padding: "7px 14px", borderRadius: 9, flexShrink: 0,
+                border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.1)",
+                color: "#fff", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                cursor: "pointer", transition: "background .2s",
+              }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,.2)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,.1)")}
-              >
-                Edit
-              </button>
+              >Edit</button>
             </div>
 
-            {/* Stats */}
-            <div
-              style={{
-                display: "flex",
-                gap: 0,
-                paddingTop: 18,
-                borderTop: "1px solid rgba(255,255,255,.15)",
-              }}
-            >
+            <div style={{ display: "flex", gap: 0, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,.15)" }}>
               {[
                 { val: HISTORY_DATA.length, label: "Sessions" },
                 { val: `${Math.floor(totalMins / 60)}h`, label: "Parked" },
                 { val: vehicles.length, label: "Vehicles" },
                 { val: completed.length, label: "Completed" },
               ].map((s, i) => (
-                <div
-                  key={s.label}
-                  style={{
-                    flex: 1,
-                    textAlign: "center",
-                    borderLeft: i > 0 ? "1px solid rgba(255,255,255,.15)" : "none",
-                    padding: "0 8px",
-                  }}
-                >
-                  <div style={{ fontSize: isMobile ? 17 : 20, fontWeight: 800, color: "#fff", marginBottom: 2 }}>
-                    {s.val}
-                  </div>
+                <div key={s.label} style={{
+                  flex: 1, textAlign: "center",
+                  borderLeft: i > 0 ? "1px solid rgba(255,255,255,.15)" : "none",
+                  padding: "0 8px",
+                }}>
+                  <div style={{ fontSize: isMobile ? 17 : 20, fontWeight: 800, color: "#fff", marginBottom: 2 }}>{s.val}</div>
                   <div style={{ fontSize: 10, color: "rgba(255,255,255,.55)" }}>{s.label}</div>
                 </div>
               ))}
@@ -392,73 +264,47 @@ export default function AccountTab({ user, onLogout }) {
           </div>
         </div>
 
-        {/* Web-like layout: stack on mobile, 2 columns on desktop */}
+        {/* Two-column grid on desktop, stacked on mobile */}
         <div style={{ marginTop: 16 }} className={isMobile ? "" : "acc-grid"}>
           <div className="acc-col">
-            {/* ══ MY VEHICLES ══ */}
             <div className="acc-section">
               <div style={{ padding: "13px 18px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: T.sub, letterSpacing: 0.5 }}>MY VEHICLES</div>
-                <button
-                  onClick={() => setAddVehicle(true)}
-                  style={{
-                    padding: "5px 12px",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    border: `1px solid rgba(34,197,94,.35)`,
-                    background: "rgba(34,197,94,.07)",
-                    color: T.green,
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    transition: "background .2s",
-                  }}
+                <button onClick={() => setAddVehicle(true)} style={{
+                  padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  border: `1px solid rgba(34,197,94,.35)`, background: "rgba(34,197,94,.07)",
+                  color: T.green, fontFamily: "inherit", cursor: "pointer", transition: "background .2s",
+                }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(34,197,94,.14)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(34,197,94,.07)")}
-                >
-                  + Add Vehicle
-                </button>
+                >+ Add Vehicle</button>
               </div>
               {vehicles.map((v, i) => (
-                <div
-                  key={v.sub}
-                  className="acc-vehicle"
-                  style={{ borderBottom: i < vehicles.length - 1 ? "1px solid rgba(125,57,235,.1)" : "none" }}
-                >
+                <div key={v.sub} className="acc-vehicle"
+                  style={{ borderBottom: i < vehicles.length - 1 ? "1px solid rgba(125,57,235,.1)" : "none" }}>
                   <div className="acc-icon">{v.icon}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{v.label}</div>
                     <div style={{ fontSize: 12, color: T.sub }}>{v.sub}</div>
                   </div>
-                  <button
-                    style={{
-                      padding: "5px 10px",
-                      borderRadius: 7,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      border: `1px solid ${T.border}`,
-                      background: "transparent",
-                      color: T.sub,
-                      fontFamily: "inherit",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Edit
-                  </button>
+                  <button style={{
+                    padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600,
+                    border: `1px solid ${T.border}`, background: "transparent",
+                    color: T.sub, fontFamily: "inherit", cursor: "pointer",
+                  }}>Edit</button>
                 </div>
               ))}
             </div>
 
-            {/* ══ PREFERENCES ══ */}
             <div className="acc-section">
               <div style={{ padding: "13px 18px 10px" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: T.sub, letterSpacing: 0.5 }}>PREFERENCES</div>
               </div>
               {[
                 { key: "notifications", icon: "🔔", label: "Push Notifications", sub: "Session alerts & reminders" },
-                { key: "location", icon: "📍", label: "Location Services", sub: "GPS for nearby parking" },
-                { key: "emailAlerts", icon: "📧", label: "Email Alerts", sub: "Receipts & booking confirmations" },
-                { key: "darkMode", icon: "🌙", label: "Dark Mode", sub: "Always on for best experience" },
+                { key: "location",      icon: "📍", label: "Location Services",  sub: "GPS for nearby parking" },
+                { key: "emailAlerts",   icon: "📧", label: "Email Alerts",       sub: "Receipts & booking confirmations" },
+                { key: "darkMode",      icon: "🌙", label: "Dark Mode",          sub: "Always on for best experience" },
               ].map((item) => (
                 <div key={item.key} className="acc-row" style={{ cursor: "default" }}>
                   <div className="acc-icon">{item.icon}</div>
@@ -473,16 +319,15 @@ export default function AccountTab({ user, onLogout }) {
           </div>
 
           <div className="acc-col">
-            {/* ══ ACCOUNT SETTINGS ══ */}
             <div className="acc-section">
               <div style={{ padding: "13px 18px 10px" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: T.sub, letterSpacing: 0.5 }}>ACCOUNT</div>
               </div>
               {[
-                { icon: "👤", label: "Edit Profile", sub: "Name, email & phone", action: () => setEditOpen(true) },
-                { icon: "🔒", label: "Security", sub: "Password & PIN settings", action: () => {} },
-                { icon: "💳", label: "Payment Methods", sub: "Cards & saved payments", action: () => {} },
-                { icon: "🛡", label: "Privacy", sub: "Data & permissions", action: () => {} },
+                { icon: "👤", label: "Edit Profile",     sub: "Name, email & phone",    action: () => setEditOpen(true) },
+                { icon: "🔒", label: "Security",         sub: "Password & PIN settings", action: () => {} },
+                { icon: "💳", label: "Payment Methods",  sub: "Cards & saved payments",  action: () => {} },
+                { icon: "🛡", label: "Privacy",          sub: "Data & permissions",      action: () => {} },
               ].map((item) => (
                 <div key={item.label} className="acc-row" onClick={item.action}>
                   <div className="acc-icon">{item.icon}</div>
@@ -495,15 +340,14 @@ export default function AccountTab({ user, onLogout }) {
               ))}
             </div>
 
-            {/* ══ SUPPORT ══ */}
             <div className="acc-section">
               <div style={{ padding: "13px 18px 10px" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: T.sub, letterSpacing: 0.5 }}>SUPPORT</div>
               </div>
               {[
-                { icon: "❓", label: "Help Center", sub: "FAQs & guides", action: () => {} },
-                { icon: "💬", label: "Contact Us", sub: "Chat or email support", action: () => {} },
-                { icon: "⭐", label: "Rate the App", sub: "Share your feedback", action: () => {} },
+                { icon: "❓", label: "Help Center", sub: "FAQs & guides",          action: () => {} },
+                { icon: "💬", label: "Contact Us",  sub: "Chat or email support",  action: () => {} },
+                { icon: "⭐", label: "Rate the App",sub: "Share your feedback",    action: () => {} },
               ].map((item) => (
                 <div key={item.label} className="acc-row" onClick={item.action}>
                   <div className="acc-icon">{item.icon}</div>
@@ -516,35 +360,22 @@ export default function AccountTab({ user, onLogout }) {
               ))}
             </div>
 
-            {/* App version */}
             <div style={{ textAlign: "center", fontSize: 11, color: "rgba(125,57,235,.4)", marginBottom: 6 }}>
               ezrakna v1.0.0 · Cairo Parking Platform
             </div>
 
-            {/* Sign out */}
-            <button
-              onClick={onLogout}
-              style={{
-                padding: 14,
-                borderRadius: 14,
-                background: "rgba(239,68,68,.07)",
-                border: `1px solid rgba(239,68,68,.2)`,
-                color: T.red,
-                fontFamily: "inherit",
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "background .2s",
-              }}
+            <button onClick={onLogout} style={{
+              padding: 14, borderRadius: 14, width: "100%",
+              background: "rgba(239,68,68,.07)", border: `1px solid rgba(239,68,68,.2)`,
+              color: T.red, fontFamily: "inherit", fontSize: 15, fontWeight: 700,
+              cursor: "pointer", transition: "background .2s",
+            }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,.13)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(239,68,68,.07)")}
-            >
-              Sign Out
-            </button>
+            >Sign Out</button>
           </div>
         </div>
 
-        {/* Modals */}
         <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} user={user} />
         <AddVehicleModal
           open={addVehicle}

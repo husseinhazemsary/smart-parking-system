@@ -5,7 +5,6 @@ import { TRANSACTIONS } from "../data/transactions";
 import GlowBtn from "../components/ui/GlowBtn";
 import Modal from "../components/ui/Modal";
 
-/* ─── Mock saved cards ───────────────────────────────────────── */
 const INITIAL_CARDS = [
   { id:1, type:"visa",       last4:"4582", holder:"Nour Ahmed", expiry:"09/28", gradient:["#5B21B6","#7C3AED"] },
   { id:2, type:"mastercard", last4:"1197", holder:"Nour Ahmed", expiry:"03/27", gradient:["#1E3A5F","#1D4ED8"] },
@@ -54,7 +53,6 @@ const CSS = `
   .wlt-label { font-size:11px; color:${T.sub}; letter-spacing:.6px; margin-bottom:5px; }
 `;
 
-/* ─── Visa / MC logos ────────────────────────────────────────── */
 function VisaLogo() {
   return (
     <span style={{fontSize:13,fontWeight:900,fontStyle:"italic",color:"rgba(255,255,255,.9)",letterSpacing:-.5,fontFamily:"serif"}}>
@@ -62,6 +60,7 @@ function VisaLogo() {
     </span>
   );
 }
+
 function MCLogo() {
   return (
     <div style={{display:"flex",position:"relative",width:28,height:18}}>
@@ -71,18 +70,16 @@ function MCLogo() {
   );
 }
 
-/* ─── Single payment card visual ────────────────────────────── */
+// Visual card tile — highlights when selected.
 function PayCard({ card, active, onClick }) {
   return (
     <div className={`wlt-card${active?" active":""}`} onClick={onClick}
       style={{background:`linear-gradient(135deg,${card.gradient[0]},${card.gradient[1]})`}}>
-      {/* bg circles */}
       <div style={{position:"absolute",width:110,height:110,borderRadius:"50%",
         background:"rgba(255,255,255,.07)",top:-28,right:-28,pointerEvents:"none"}}/>
       <div style={{position:"absolute",width:70,height:70,borderRadius:"50%",
         background:"rgba(255,255,255,.05)",bottom:-18,left:-18,pointerEvents:"none"}}/>
 
-      {/* chip + brand */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
         <div style={{width:28,height:20,borderRadius:4,
           background:"linear-gradient(135deg,rgba(255,220,80,.7),rgba(255,180,30,.5))",
@@ -90,13 +87,11 @@ function PayCard({ card, active, onClick }) {
         {card.type==="visa" ? <VisaLogo/> : <MCLogo/>}
       </div>
 
-      {/* number */}
       <div style={{fontSize:13,fontWeight:600,letterSpacing:2,color:"rgba(255,255,255,.88)",
         marginBottom:14,fontFamily:"monospace"}}>
         •••• •••• •••• {card.last4}
       </div>
 
-      {/* holder / expiry */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
         <div>
           <div style={{fontSize:8,color:"rgba(255,255,255,.5)",letterSpacing:1,marginBottom:1}}>CARDHOLDER</div>
@@ -108,7 +103,6 @@ function PayCard({ card, active, onClick }) {
         </div>
       </div>
 
-      {/* check mark if selected */}
       {active && (
         <div style={{position:"absolute",top:10,right:10,
           width:20,height:20,borderRadius:"50%",
@@ -121,7 +115,7 @@ function PayCard({ card, active, onClick }) {
   );
 }
 
-/* ─── Add Card Modal ─────────────────────────────────────────── */
+// Add Card modal — auto-detects Visa vs Mastercard from first digit.
 function AddCardModal({ open, onClose, onAdd }) {
   const [num,  setNum]  = useState("");
   const [name, setName] = useState("");
@@ -190,7 +184,6 @@ function AddCardModal({ open, onClose, onAdd }) {
   );
 }
 
-/* ─── Transaction row ────────────────────────────────────────── */
 function TxRow({ t }) {
   const ok = !t.failed;
   return (
@@ -214,9 +207,7 @@ function TxRow({ t }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN
-═══════════════════════════════════════════════════════════════ */
+// Wallet tab — manages payment cards, shows active session cost, and recent transactions.
 export default function WalletTab({ activeSpot, onGoToSession }) {
   const [cards,       setCards]      = useState(INITIAL_CARDS);
   const [activeCard,  setActiveCard] = useState(1);
@@ -230,11 +221,10 @@ export default function WalletTab({ activeSpot, onGoToSession }) {
     <div className="wlt-wrap" style={{maxWidth:780,margin:"0 auto",padding:pad}}>
       <style dangerouslySetInnerHTML={{__html:CSS}}/>
 
-      {/* ══ CARDS SECTION ══ */}
       <div style={{marginBottom:30}}>
         <div style={{fontSize:16,fontWeight:800,marginBottom:16}}>Payment Cards</div>
 
-        {/* Horizontal scroll row */}
+        {/* Horizontally scrollable card row */}
         <div style={{display:"flex",gap:14,overflowX:"auto",paddingBottom:8,
           scrollbarWidth:"none"}} className="hideScroll">
           {cards.map(c=>(
@@ -249,7 +239,6 @@ export default function WalletTab({ activeSpot, onGoToSession }) {
           </div>
         </div>
 
-        {/* Selected card quick actions */}
         {cards.length>0 && (
           <div style={{marginTop:14,display:"flex",gap:8}}>
             {[
@@ -272,7 +261,6 @@ export default function WalletTab({ activeSpot, onGoToSession }) {
         )}
       </div>
 
-      {/* ══ ACTIVE SESSION ══ */}
       <div style={{marginBottom:30}}>
         <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Active Session</div>
 
@@ -321,7 +309,6 @@ export default function WalletTab({ activeSpot, onGoToSession }) {
         )}
       </div>
 
-      {/* ══ RECENT ACTIVITY ══ */}
       <div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={{fontSize:16,fontWeight:800}}>Recent Activity</div>
@@ -336,7 +323,6 @@ export default function WalletTab({ activeSpot, onGoToSession }) {
         </div>
       </div>
 
-      {/* Modals */}
       <AddCardModal open={addOpen} onClose={()=>setAddOpen(false)}
         onAdd={c=>setCards(p=>[...p,{...c,id:Date.now()}])}/>
 

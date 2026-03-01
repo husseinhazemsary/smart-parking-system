@@ -1,16 +1,7 @@
 import React from "react";
 
-/*
-  AnimatedBtn — the expanding-circle arrow button style.
-  Props:
-    children  — label text
-    onClick   — handler
-    small     — smaller size
-    outline   — inverted colours (transparent bg, purple border)
-    full      — width: 100%
-    style     — extra inline overrides
-    gold      — gold colour variant (for B2B CTAs)
-*/
+// Animated expanding-circle button with arrow slide effect.
+// Props: children, onClick, small, outline, full, gold, noArrow, style
 
 const CSS = `
   .ez-btn {
@@ -32,11 +23,9 @@ const CSS = `
     vertical-align: middle;
   }
 
-  /* ── Size variants ── */
   .ez-btn-normal { padding: 13px 32px; font-size: 15px; }
   .ez-btn-small  { padding: 9px 22px;  font-size: 13px; }
 
-  /* ── Colour: purple (default) ── */
   .ez-btn-purple {
     color: #7D39EB;
     box-shadow: 0 0 0 2px #7D39EB;
@@ -47,7 +36,6 @@ const CSS = `
   .ez-btn-purple:hover svg   { fill: #fff; }
   .ez-btn-purple:active      { box-shadow: 0 0 0 4px #7D39EB; }
 
-  /* ── Colour: purple filled ── */
   .ez-btn-purple-filled {
     color: #fff;
     box-shadow: 0 0 0 2px #7D39EB;
@@ -59,25 +47,22 @@ const CSS = `
   .ez-btn-purple-filled:hover svg   { fill: #7D39EB; }
   .ez-btn-purple-filled:active      { box-shadow: 0 0 0 4px #7D39EB; scale: 0.97; }
 
-  /* ── Colour: gold ── */
   .ez-btn-gold {
-    color: #F0B429;
-    box-shadow: 0 0 0 2px #F0B429;
+    color: #C6FF33;
+    box-shadow: 0 0 0 2px #C6FF33;
   }
-  .ez-btn-gold .ez-circle { background-color: #F0B429; }
-  .ez-btn-gold svg         { fill: #F0B429; }
+  .ez-btn-gold .ez-circle { background-color: #C6FF33; }
+  .ez-btn-gold svg         { fill: #C6FF33; }
   .ez-btn-gold:hover       { color: #07001A; }
   .ez-btn-gold:hover svg   { fill: #07001A; }
-  .ez-btn-gold:active      { box-shadow: 0 0 0 4px #F0B429; }
+  .ez-btn-gold:active      { box-shadow: 0 0 0 4px #C6FF33; }
 
-  /* ── Shared hover effects ── */
   .ez-btn:hover {
     box-shadow: 0 0 0 12px transparent;
     border-radius: 12px;
   }
   .ez-btn:active { scale: 0.96; }
 
-  /* ── SVG arrows ── */
   .ez-btn svg {
     position: absolute;
     width: 20px;
@@ -94,7 +79,6 @@ const CSS = `
   .ez-btn-small:hover .ez-arr-1 { right: -22%; }
   .ez-btn-small:hover .ez-arr-2 { left: 11px; }
 
-  /* ── Expanding circle ── */
   .ez-circle {
     position: absolute;
     top: 50%;
@@ -113,20 +97,17 @@ const CSS = `
     opacity: 1;
   }
 
-  /* ── Text ── */
   .ez-text {
     position: relative;
     z-index: 1;
     transform: translateX(-10px);
     transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-    /* leave room for right arrow */
     padding-right: 12px;
   }
   .ez-btn-small .ez-text { transform: translateX(-8px); padding-right: 8px; }
   .ez-btn:hover .ez-text { transform: translateX(10px); }
   .ez-btn-small:hover .ez-text { transform: translateX(8px); }
 
-  /* ── No-arrow variant ── */
   .ez-btn-no-arrow svg { display: none; }
   .ez-btn-no-arrow .ez-text {
     transform: translateX(0) !important;
@@ -135,7 +116,6 @@ const CSS = `
   }
   .ez-btn-no-arrow:hover .ez-text { transform: translateX(0) !important; }
 
-  /* ── Full width ── */
   .ez-btn-full { width: 100%; }
 `;
 
@@ -146,6 +126,7 @@ const ArrowSVG = ({ cls }) => (
 );
 
 export default function GlowBtn({ children, onClick, small, outline, full, gold, noArrow, style={} }){
+  // accent-green class reused under the 'gold' prop name for backwards compat
   let colorClass;
   if(gold)         colorClass = "ez-btn-gold";
   else if(outline) colorClass = "ez-btn-purple";

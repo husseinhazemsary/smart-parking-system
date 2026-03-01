@@ -1,6 +1,7 @@
 import React from "react";
 import { T } from "../../constants/theme";
 
+// Sticky bottom navigation for mobile — renders one button per tab.
 export default function BottomNav({ tabs, tab, setTabSafe }){
   return(
     <div style={{ position:"sticky",bottom:0,display:"flex",borderTop:`1px solid ${T.border}`,background:"rgba(17,0,48,.97)",backdropFilter:"blur(12px)",zIndex:50 }}>
