@@ -75,8 +75,8 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen }){
             </>
           ) : (
             <>
-              {!isMobile && <GlowBtn small outline onClick={onAuthOpen}>Log In</GlowBtn>}
-              <GlowBtn small onClick={onAuthOpen}>Sign Up</GlowBtn>
+              {!isMobile && <GlowBtn small outline noArrow onClick={onAuthOpen}>Log In</GlowBtn>}
+              <GlowBtn small noArrow onClick={onAuthOpen}>Sign Up</GlowBtn>
             </>
           )}
         </div>

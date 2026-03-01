@@ -108,8 +108,8 @@ const CSS = `
     z-index: 0;
   }
   .ez-btn:hover .ez-circle {
-    width: 260px;
-    height: 260px;
+    width: 500px;
+    height: 500px;
     opacity: 1;
   }
 

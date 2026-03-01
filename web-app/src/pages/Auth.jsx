@@ -50,8 +50,8 @@ export default function AuthModal({ open, onClose, onAuth }){
           </div>
         )}
 
-        <GlowBtn full onClick={submit} style={{ marginTop:24 }}>
-          {mode==="login" ? "Log In →" : "Create Account →"}
+        <GlowBtn full noArrow onClick={submit} style={{ marginTop:24 }}>
+          {mode==="login" ? "Log In" : "Create Account"}
         </GlowBtn>
 
         <div style={{ textAlign:"center",marginTop:16,fontSize:13,color:T.sub }}>

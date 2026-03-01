@@ -33,12 +33,12 @@ const B2B_FEATURES = [
 
 /* Image paths keyed by spot id — place files in src/assets/ */
 const SPOT_IMAGES = {
-  1: new URL("../assets/arkan-mall.jpg",    import.meta.url).href,
-  2: new URL("../assets/ngu-parking.jpg",   import.meta.url).href,
-  3: new URL("../assets/cairo-airport.jpg", import.meta.url).href,
-  4: new URL("../assets/tahrir-street.jpg", import.meta.url).href,
+  1: new URL("../assets/arkan2.jpg",    import.meta.url).href,
+  2: new URL("../assets/ngu.jpg",   import.meta.url).href,
+  3: new URL("../assets/airport.jpg", import.meta.url).href,
+  4: new URL("../assets/tahrir.jpg", import.meta.url).href,
   5: new URL("../assets/city-stars.jpg",    import.meta.url).href,
-  6: new URL("../assets/dandy-mall.jpg",    import.meta.url).href,
+  6: new URL("../assets/dandy.jpg",    import.meta.url).href,
 };
 
 /* ═══════════════════════════════════════════════════════════════
