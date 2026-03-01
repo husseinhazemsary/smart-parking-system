@@ -111,13 +111,13 @@ function Badge({ children, color=T.purple }){
 /* ─── Floating Ambient Availability Mini-Cards ─── */
 const AMBIENT_CARDS = [
   // Left column — three cards descending, slight depth recession via scale
-  { id:1, location:"Nasr City",   spots:12, total:18, top:"13%", left:"4%",  animDur:9,  animDel:0,   parallaxX:"-10px", scale:1    },
-  { id:3, location:"Maadi",       spots:27, total:40, top:"52%", left:"3%",  animDur:10, animDel:1.2, parallaxX:"-14px", scale:0.88 },
-  { id:5, location:"6th October", spots:19, total:25, top:"76%", left:"6%",  animDur:13, animDel:5.1, parallaxX:"-8px",  scale:0.76 },
+  { id:1, location:"NGU Parking",   spots:12, total:18, top:"13%", left:"4%",  animDur:9,  animDel:0,   parallaxX:"-10px", scale:1    },
+  { id:3, location:"Mall of Egypt",       spots:27, total:40, top:"52%", left:"3%",  animDur:10, animDel:1.2, parallaxX:"-14px", scale:0.88 },
+  { id:5, location:"Galleria 40", spots:19, total:25, top:"76%", left:"6%",  animDur:13, animDel:5.1, parallaxX:"-8px",  scale:0.76 },
   // Right column — mirrored, staggered so no card sits at the same height as its pair
-  { id:2, location:"Zamalek",     spots:4,  total:20, top:"19%", right:"4%", animDur:11, animDel:2.5, parallaxX:"12px",  scale:1    },
-  { id:4, location:"Heliopolis",  spots:8,  total:30, top:"44%", right:"3%", animDur:12, animDel:3.8, parallaxX:"16px",  scale:0.88 },
-  { id:6, location:"New Cairo",   spots:34, total:50, top:"72%", right:"5%", animDur:14, animDel:6.4, parallaxX:"10px",  scale:0.76 },
+  { id:2, location:"Arkan Plaza",     spots:4,  total:20, top:"19%", right:"4%", animDur:11, animDel:2.5, parallaxX:"12px",  scale:1    },
+  { id:4, location:"City Stars Mall",  spots:8,  total:30, top:"44%", right:"3%", animDur:12, animDel:3.8, parallaxX:"16px",  scale:0.88 },
+  { id:6, location:"Tahrir Street",   spots:34, total:50, top:"72%", right:"5%", animDur:14, animDel:6.4, parallaxX:"10px",  scale:0.76 },
 ];
 
 function AmbientMiniCard({ location, spots, total, top, left, right, animDur, animDel, parallaxX, scale=1 }){
