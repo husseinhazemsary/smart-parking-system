@@ -9,7 +9,7 @@ class PlateReader:
         # use_gpu=False: CPU inference (works on any machine)
         self.ocr_ar = PaddleOCR(
             lang="ar", 
-            use_gpu=False,
+            use_gpu=True,
             det_db_thresh=0.05,       # Lower threshold (default: 0.3)
             det_db_box_thresh=0.08,    # Lower box threshold (default: 0.5)
             det_db_unclip_ratio=3.0   # Larger text boxes (default: 1.5)
@@ -17,7 +17,7 @@ class PlateReader:
         
         self.ocr_lat = PaddleOCR(
             lang="latin", 
-            use_gpu=False,
+            use_gpu=True,
             det_db_thresh=0.05,       # Lower threshold (default: 0.3)
             det_db_box_thresh=0.1,    # Lower box threshold (default: 0.5)
             det_db_unclip_ratio=2.5   # Larger text boxes (default: 1.5)

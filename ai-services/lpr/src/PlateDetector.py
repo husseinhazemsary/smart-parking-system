@@ -11,10 +11,12 @@ class PlateDetector:
         # Model 1: YOLOv8 Nano (pretrained COCO)
         # Vehicle detector (cars, motorcycles, buses, trucks)
         self.vehicle_model = YOLO("yolov8n.pt")
+        self.vehicle_model.to('cuda')
 
         # Model 2: Custom trained YOLOv8 Nano
         # License plate detector
         self.plate_model = YOLO("PlateDetectorNano.pt")  
+        self.plate_model.to('cuda')
 
         # Vehicle classes from COCO dataset
         # 2: car, 3: motorcycle, 5: bus, 7: truck
@@ -52,7 +54,7 @@ class PlateDetector:
         active_ids = set()
 
         # Detect all vehicles in frame
-        detections = self.vehicle_model(frame, verbose=False)[0]
+        detections = self.vehicle_model(frame, verbose=False, device='cuda')[0]
 
         for box in detections.boxes:
             cls = int(box.cls[0])
@@ -75,7 +77,7 @@ class PlateDetector:
 
             if car_roi.size > 0:
                 # Run plate detector on vehicle crop
-                plate_results = self.plate_model(car_roi, verbose=False)[0]
+                plate_results = self.plate_model(car_roi, verbose=False, device='cuda')[0]
 
                 if len(plate_results.boxes) > 0:
                     # Get first (highest confidence) plate detection

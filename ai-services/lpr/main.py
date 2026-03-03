@@ -1,8 +1,9 @@
+import os
+os.environ["CUDNN_PATH"] = os.path.join(os.path.dirname(__file__), "venv", "Lib", "site-packages", "nvidia", "cudnn")
 import cv2
 import time
 import re
 from db.db import check_access
-
 
 from src.Car import Car
 from src.PlateDetector import PlateDetector
@@ -54,7 +55,7 @@ def extract_arabic_letters(text):
 # ==============================
 
 INPUT_VIDEO = "input/video.mp4"
-OUTPUT_VIDEO = "output/output_video.mp4"
+OUTPUT_VIDEO = "output/output_video_gpu.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
