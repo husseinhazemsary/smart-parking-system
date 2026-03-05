@@ -326,8 +326,8 @@ def reconstruct_plate_from_partials(candidates):
     return None
 
 def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
-                          debug_mode=False, save_plates=False):
-
+                          debug_mode=False, save_plates=False, predetected_crop=None):
+    
     debug_info = {
         'plate_detected': False,
         'plate_crop_size': None,
@@ -336,34 +336,40 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
         'rejection_reason': None
     }
 
-    x1, y1, x2, y2 = car.x1, car.y1, car.x2, car.y2
-    car_roi = frame[y1:y2, x1:x2]
+    if predetected_crop is not None and predetected_crop.size > 0:
+        # Use the crop already found during background detection — skip YOLO
+        plate_img = predetected_crop
+        debug_info['plate_detected'] = True
+    else:
+        # Fallback: run plate YOLO (only if no crop was passed in)
+        x1, y1, x2, y2 = car.x1, car.y1, car.x2, car.y2
+        car_roi = frame[y1:y2, x1:x2]
 
-    if car_roi.size == 0:
-        debug_info['rejection_reason'] = "Empty car ROI"
-        return None, debug_info
+        if car_roi.size == 0:
+            debug_info['rejection_reason'] = "Empty car ROI"
+            return None, debug_info
 
-    plate_results = plate_detector.plate_model(car_roi, verbose=False)[0]
+        plate_results = plate_detector.plate_model(car_roi, verbose=False)[0]
 
-    if len(plate_results.boxes) == 0:
-        debug_info['rejection_reason'] = "No plate detected by YOLO"
-        return None, debug_info
+        if len(plate_results.boxes) == 0:
+            debug_info['rejection_reason'] = "No plate detected by YOLO"
+            return None, debug_info
 
-    debug_info['plate_detected'] = True
+        debug_info['plate_detected'] = True
 
-    p = plate_results.boxes[0].xyxy[0]
-    px1, py1, px2, py2 = map(int, p)
+        p = plate_results.boxes[0].xyxy[0]
+        px1, py1, px2, py2 = map(int, p)
 
-    px1 = max(0, px1)
-    py1 = max(0, py1)
-    px2 = min(car_roi.shape[1], px2)
-    py2 = min(car_roi.shape[0], py2)
+        px1 = max(0, px1)
+        py1 = max(0, py1)
+        px2 = min(car_roi.shape[1], px2)
+        py2 = min(car_roi.shape[0], py2)
 
-    plate_img = car_roi[py1:py2, px1:px2].copy()
+        plate_img = car_roi[py1:py2, px1:px2].copy()
 
-    if plate_img.size == 0:
-        debug_info['rejection_reason'] = "Empty plate crop"
-        return None, debug_info
+        if plate_img.size == 0:
+            debug_info['rejection_reason'] = "Empty plate crop"
+            return None, debug_info
 
     debug_info['plate_crop_size'] = f"{plate_img.shape[1]}x{plate_img.shape[0]}"
 
@@ -495,6 +501,8 @@ while True:
             else:
                 cars[car_id].update_bbox((x1, y1, x2, y2))
 
+            cars[car_id].latest_plate_crop = plate_crop  # ← ADD THIS LINE
+        
         # Cleanup cars not seen recently
         for cid in list(cars.keys()):
             if current_time - cars[cid].last_seen > MAX_IDLE_TIME:
@@ -526,7 +534,8 @@ while True:
                     plate_reader,
                     frame_index,
                     debug_mode=DEBUG_MODE,
-                    save_plates=DEBUG_SAVE_PLATES
+                    save_plates=DEBUG_SAVE_PLATES,
+                    predetected_crop=getattr(gate_car, 'latest_plate_crop', None)  # ← ADD THIS
                 )
                 
                 # Debug logging
