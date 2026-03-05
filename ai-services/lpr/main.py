@@ -101,7 +101,7 @@ MAX_IDLE_TIME = 2.0  # seconds
 
 BACKGROUND_VEHICLE_DETECT_EVERY_N = 7  # Detect all vehicles every 7 frames
 GATE_CAR_PROCESS_EVERY_N = 1           # Process gate car EVERY frame (max speed for fast cars)
-GATE_CAR_OCR_EVERY_N = 1               # OCR gate car EVERY frame (max speed)
+GATE_CAR_OCR_EVERY_N = 4               # OCR gate car EVERY frame (max speed)
 
 # Number of identical reads required to open gate
 PLATE_STABILITY_COUNT = 2
