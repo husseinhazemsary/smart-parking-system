@@ -63,9 +63,9 @@ FONT_PATH = "fonts/Amiri-Regular.ttf"
 # DEBUG MODE
 # ==============================
 # Enable detailed debugging information
-DEBUG_MODE = True
-DEBUG_SAVE_PLATES = True  # Save detected plate crops to debug folder
-DEBUG_SHOW_OCR_RESULTS = True  # Show all OCR results in console
+DEBUG_MODE = False
+DEBUG_SAVE_PLATES = False  # Save detected plate crops to debug folder
+DEBUG_SHOW_OCR_RESULTS = False  # Show all OCR results in console
 
 # ==============================
 # VALIDATION MODE
@@ -101,7 +101,7 @@ MAX_IDLE_TIME = 2.0  # seconds
 
 BACKGROUND_VEHICLE_DETECT_EVERY_N = 7  # Detect all vehicles every 7 frames
 GATE_CAR_PROCESS_EVERY_N = 1           # Process gate car EVERY frame (max speed for fast cars)
-GATE_CAR_OCR_EVERY_N = 4               # OCR gate car EVERY frame (max speed)
+GATE_CAR_OCR_EVERY_N = 4               # OCR every 4 frames 
 
 # Number of identical reads required to open gate
 PLATE_STABILITY_COUNT = 2
