@@ -732,12 +732,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
             <p style={{color:T.sub,fontSize:15,marginBottom:56}}>Simple by design. Fast by default.</p>
           </Reveal>
           <div style={{display:"grid",gridTemplateColumns:`repeat(${isMobile?"1":"3"},1fr)`,gap:48,position:"relative"}}>
-            {!isMobile&&(
-              <>
-                <div style={{position:"absolute",top:35,left:"33.3%",right:"33.3%",height:1,background:`linear-gradient(90deg,${T.purple}44,${T.purple}99,${T.purple}44)`,zIndex:0}}/>
-                <div style={{position:"absolute",top:35,left:"66.6%",right:0,height:1,background:`linear-gradient(90deg,${T.purple}44,${T.purple}99,${T.purple}44)`,zIndex:0}}/>
-              </>
-            )}
+
             {[
               {n:"1",title:"Search",  body:"Browse parking locations across Cairo and pick the one that suits you best."},
               {n:"2",title:"Navigate",body:"See all available spots in real time and navigate directly to the one you prefer - no more circling."},
