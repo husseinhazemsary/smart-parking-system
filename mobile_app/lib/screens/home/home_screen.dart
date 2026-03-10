@@ -1,11 +1,17 @@
 // Home screen — main dashboard shown after login.
 // Displays: user greeting, search bar, active parking session timer,
 // nearby parking cards, and a monthly snapshot summary.
+//
+// NOTE: SelectLocationScreen must accept an optional `initialQuery` named
+// parameter (String?) so the search bar can pre-fill the query on navigation.
+// Example:  SelectLocationScreen({super.key, this.initialQuery});
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../parking/select_location_screen.dart';
 import '../parking/parking_details_screen.dart';
+import 'package:step_circle_progressbar/step_circle_progressbar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // Active session elapsed time — ticks every second.
   Duration _elapsed = const Duration(hours: 1, minutes: 23, seconds: 45);
   Timer? _timer;
+
+  // Session total duration for progress calculation (e.g. 2 hours = 7200s)
+  static const int _sessionTotalSeconds = 7200;
+  static const int _progressTotalSteps = 10;
 
   @override
   void initState() {
@@ -39,6 +49,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final m = (d.inMinutes % 60).toString().padLeft(2, '0');
     final s = (d.inSeconds % 60).toString().padLeft(2, '0');
     return '$h:$m:$s';
+  }
+
+  /// Maps elapsed time → currentSteps (1–10), capped at totalSteps.
+  int get _currentSteps {
+    final ratio = _elapsed.inSeconds / _sessionTotalSeconds;
+    final steps = (ratio * _progressTotalSteps).floor().clamp(1, _progressTotalSteps);
+    return steps;
   }
 
   // Opens the active session detail bottom sheet.
@@ -203,11 +220,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
 
-    // Sample saved locations — replace with real data.
-    const saved = [
-      ('Arkan Mall', 'Sheikh Zayed, Giza', '0.5 km'),
-      ('Cairo Airport T2', 'Cairo International Airport', '1.2 km'),
-      ('City Stars', 'Nasr City, Cairo', '3.4 km'),
+    // Saved locations mapped to full ParkingLocation objects from _nearby.
+    final saved = [
+      (loc: _nearby.firstWhere((l) => l.name == 'Arkan Mall'), distance: '0.5 km'),
+      (loc: _nearby.firstWhere((l) => l.name == 'Cairo Airport T2'), distance: '1.2 km'),
+      (loc: _nearby.firstWhere((l) => l.name == 'New Giza University'), distance: '0.5 km'),
     ];
 
     showModalBottomSheet(
@@ -240,30 +257,47 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               ...saved.map((s) => Column(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEC4899).withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ParkingDetailsScreen(location: s.loc),
                         ),
-                        child: const Icon(Icons.favorite, color: Color(0xFFEC4899), size: 18),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      );
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEC4899).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.favorite, color: Color(0xFFEC4899), size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(s.loc.name,
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+                              Text(s.loc.address,
+                                  style: TextStyle(fontSize: 12, color: subColor)),
+                            ],
+                          ),
+                        ),
+                        Row(
                           children: [
-                            Text(s.$1,
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
-                            Text(s.$2,
-                                style: TextStyle(fontSize: 12, color: subColor)),
+                            Text(s.distance, style: TextStyle(fontSize: 12, color: subColor)),
+                            const SizedBox(width: 6),
+                            Icon(Icons.chevron_right, color: subColor, size: 18),
                           ],
                         ),
-                      ),
-                      Text(s.$3, style: TextStyle(fontSize: 12, color: subColor)),
-                    ],
+                      ],
+                    ),
                   ),
                   if (s != saved.last) Divider(height: 20, color: divColor),
                 ],
@@ -626,139 +660,287 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 16),
 
-              // Search bar — navigates to SelectLocationScreen on tap.
-              GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SelectLocationScreen()),
-                ),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: surface,
+              // Search bar — real text input; navigates to SelectLocationScreen on submit.
+              TextField(
+                onSubmitted: (query) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SelectLocationScreen(),
+                    ),
+                  );
+                },
+                style: TextStyle(color: textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Search destination...',
+                  hintStyle: TextStyle(color: textSecondary, fontSize: 14),
+                  prefixIcon: Icon(Icons.search, color: textSecondary, size: 20),
+                  suffixIcon: Icon(Icons.tune, color: textSecondary, size: 20),
+                  filled: true,
+                  fillColor: surface,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: border),
+                    borderSide: BorderSide(color: border),
                   ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 14),
-                      Icon(Icons.search, color: textSecondary, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text('Search destination....',
-                            style: TextStyle(color: textSecondary, fontSize: 14)),
-                      ),
-                      Icon(Icons.tune, color: textSecondary, size: 20),
-                      const SizedBox(width: 14),
-                    ],
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: AppColors.purple, width: 1.5),
                   ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Active Parking Session section.
+              // ── Active Parking Session header row ───────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Active Parking Session',
-                      style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700)),
-                  GestureDetector(
-                    onTap: () => _showActiveSessionSheet(context, isDark),
-                    child: Text('View Details',
-                        style: TextStyle(
-                            color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
+                  Text(
+                    'Active Parking Session',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  // LIVE pill — aligned with the section heading.
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF22C55E),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Text(
+                          'LIVE',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // Active session card — transparent background, subtle purple glow.
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.purple.withOpacity(0.04),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.purple.withOpacity(0.5), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.purple.withOpacity(0.08),
-                      blurRadius: 14,
-                      spreadRadius: 1,
+              // ── Active Parking Session card ──────────────────────────────
+              GestureDetector(
+                onTap: () => _showActiveSessionSheet(context, isDark),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF6B21E8), Color(0xFF7D39EB), Color(0xFF4F0DBF)],
+                      stops: [0.0, 0.5, 1.0],
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Location name.
-                    Text('Mall of Egypt',
-                        style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text('El Wahat Rd, First 6th of October, Giza Governorate',
-                        style: TextStyle(color: textSecondary, fontSize: 11)),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        // Elapsed time with clock icon.
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.purple.withOpacity(0.2),
-                            shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7D39EB).withOpacity(0.55),
+                        blurRadius: 28,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header — name/address left, View Details + arrow right.
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'Mall of Egypt',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'El Wahat Rd, 6th of October · Slot A2',
+                                  style: TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 11,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                          child: const Icon(Icons.access_time,
-                              color: AppColors.purple, size: 18),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Live ticking timer.
-                            Text(
-                              _formatElapsed(_elapsed),
-                              style: TextStyle(
-                                  color: textPrimary,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w700,
-                                  fontFeatures: const [FontFeature.tabularFigures()]),
+                          const SizedBox(width: 8),
+                          // "View Details" text + small frosted arrow circle.
+                          GestureDetector(
+                            onTap: () => _showActiveSessionSheet(context, isDark),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'View Details',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_forward,
+                                    color: Colors.white,
+                                    size: 13,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text('Elapsed Time  •  Started at 09:30pm',
-                                style: TextStyle(color: textSecondary, fontSize: 11)),
-                          ],
-                        ),
-                        const Spacer(),
-                        // Slot and cost — top-aligned column, no background or border.
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            _InfoChip(
-                              icon: Icons.local_parking,
-                              label: 'Slot A2',
-                              sub: 'Level C  •  Gate A',
-                              isDark: isDark,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // ── INTEGRATED: StepCircleProgressBar + timer text + cost ──
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Left: StepCircleProgressbar with timer text overlaid
+                          SizedBox(
+                            width: 150,
+                            height: 130,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Rotated & flipped progress ring
+                                Transform.rotate(
+                                  angle: 0.8, // gap sits at bottom; progress grows from top
+                                  child: Transform(
+                                    alignment: Alignment.center,
+                                    transform: Matrix4.rotationY(math.pi), // flip horizontally
+                                    child: StepCircleProgressbar(
+                                      size: 120,
+                                      circleSize: 10,
+                                      currentSteps: 7, // fixed — does not animate or update
+                                      totalSteps: _progressTotalSteps,
+                                      progressColor: const Color(0xFFFFFFFF),
+                                      stepColor: const Color(0x00FFFFFF), // transparent dots
+                                    ),
+                                  ),
+                                ),
+
+                                // Timer + subtitle text — NOT inside the rotation
+                                Positioned(
+                                  top: 45,
+                                  left: 40,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        _formatElapsed(_elapsed),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 25,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.0,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Started at 09:30 PM',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w400,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            _InfoChip(
-                              icon: Icons.attach_money,
-                              label: '50.00 EGP',
-                              sub: '',
-                              isDark: isDark,
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Right: Cost section (unchanged)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                const Text(
+                                  'EST. COST',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                const Text(
+                                  'EGP 50',
+                                  style: TextStyle(
+                                    color: Color(0xFF86EFAC),
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'EGP 25 /hr',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -790,7 +972,6 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
 
               // Horizontal scrollable nearby parking cards.
-              // Card height is set here (line ~331). Card width is in _NearbyCard width: 240 (~line 508).
               SizedBox(
                 height: 160,
                 child: ListView.separated(
@@ -822,66 +1003,66 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w700)),
-                  GestureDetector(
-                    onTap: () => _showMonthlySnapshotSheet(context, isDark),
-                    child: Text('View Details',
-                        style: TextStyle(
-                            color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                  ),
+                  Text('View Details',
+                      style: TextStyle(
+                          color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
 
               const SizedBox(height: 12),
 
-              // Three-stat snapshot card with gradient border.
-              CustomPaint(
-                painter: _GradientBorderPainter(
-                  gradient: isDark
-                      ? const LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [Color(0x887D39EB), Color(0xCC0A0320)],
-                  )
-                      : const LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [Color(0xFFE9E2FA), Color(0xFF7D39EB)],
+              // Three-stat snapshot card — entire card is tappable.
+              GestureDetector(
+                onTap: () => _showMonthlySnapshotSheet(context, isDark),
+                child: CustomPaint(
+                  painter: _GradientBorderPainter(
+                    gradient: isDark
+                        ? const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Color(0x887D39EB), Color(0xCC0A0320)],
+                    )
+                        : const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Color(0xFFE9E2FA), Color(0xFF7D39EB)],
+                    ),
+                    borderWidth: 1.5,
+                    radius: 16,
                   ),
-                  borderWidth: 1.5,
-                  radius: 16,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: (isDark ? AppColors.surfaceDark : AppColors.surfaceLight).withOpacity(0.35),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _SnapshotStat(
-                        icon: Icons.access_time_outlined,
-                        value: '42h',
-                        label: 'HOURS',
-                        isDark: isDark,
-                      ),
-                      Container(width: 1, height: 40, color: border),
-                      _SnapshotStat(
-                        icon: Icons.photo_camera_outlined,
-                        value: '300 EGP',
-                        label: 'SPENT',
-                        isDark: isDark,
-                      ),
-                      Container(width: 1, height: 40, color: border),
-                      _SnapshotStat(
-                        icon: Icons.history_outlined,
-                        value: '18',
-                        label: 'SESSIONS',
-                        isDark: isDark,
-                      ),
-                    ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: (isDark ? AppColors.surfaceDark : AppColors.surfaceLight).withOpacity(0.35),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _SnapshotStat(
+                          icon: Icons.access_time_outlined,
+                          value: '42h',
+                          label: 'HOURS',
+                          isDark: isDark,
+                        ),
+                        Container(width: 1, height: 40, color: border),
+                        _SnapshotStat(
+                          icon: Icons.photo_camera_outlined,
+                          value: '300 EGP',
+                          label: 'SPENT',
+                          isDark: isDark,
+                        ),
+                        Container(width: 1, height: 40, color: border),
+                        _SnapshotStat(
+                          icon: Icons.history_outlined,
+                          value: '18',
+                          label: 'SESSIONS',
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -972,7 +1153,6 @@ class _InfoChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Icon uses the muted lavender #B2A8D2 colour.
         Icon(icon, color: _iconColor, size: 16),
         const SizedBox(width: 8),
         Column(
@@ -1153,6 +1333,7 @@ class _SnapshotStat extends StatelessWidget {
     );
   }
 }
+
 // Compact pill used in the monthly snapshot sheet to show a key stat.
 class _SnapshotPill extends StatelessWidget {
   final String label;

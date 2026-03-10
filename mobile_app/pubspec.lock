@@ -330,6 +330,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.12.1"
+  step_circle_progressbar:
+    dependency: "direct main"
+    description:
+      name: step_circle_progressbar
+      sha256: "599388ca419d48d46a01309eebef5fd79afb341afec92407da950f0bdabcc5cd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.9"
   stream_channel:
     dependency: transitive
     description:
