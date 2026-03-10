@@ -6,12 +6,10 @@
 // parameter (String?) so the search bar can pre-fill the query on navigation.
 // Example:  SelectLocationScreen({super.key, this.initialQuery});
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../parking/select_location_screen.dart';
 import '../parking/parking_details_screen.dart';
-import 'package:step_circle_progressbar/step_circle_progressbar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,10 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Active session elapsed time — ticks every second.
   Duration _elapsed = const Duration(hours: 1, minutes: 23, seconds: 45);
   Timer? _timer;
-
-  // Session total duration for progress calculation (e.g. 2 hours = 7200s)
-  static const int _sessionTotalSeconds = 7200;
-  static const int _progressTotalSteps = 10;
 
   @override
   void initState() {
@@ -49,13 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final m = (d.inMinutes % 60).toString().padLeft(2, '0');
     final s = (d.inSeconds % 60).toString().padLeft(2, '0');
     return '$h:$m:$s';
-  }
-
-  /// Maps elapsed time → currentSteps (1–10), capped at totalSteps.
-  int get _currentSteps {
-    final ratio = _elapsed.inSeconds / _sessionTotalSeconds;
-    final steps = (ratio * _progressTotalSteps).floor().clamp(1, _progressTotalSteps);
-    return steps;
   }
 
   // Opens the active session detail bottom sheet.
@@ -744,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => _showActiveSessionSheet(context, isDark),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     gradient: const LinearGradient(
@@ -829,113 +816,77 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
 
-                      // ── INTEGRATED: StepCircleProgressBar + timer text + cost ──
+                      // ── Timer + cost row ──
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Left: StepCircleProgressbar with timer text overlaid
-                          SizedBox(
-                            width: 150,
-                            height: 130,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                // Rotated & flipped progress ring
-                                Transform.rotate(
-                                  angle: 0.8, // gap sits at bottom; progress grows from top
-                                  child: Transform(
-                                    alignment: Alignment.center,
-                                    transform: Matrix4.rotationY(math.pi), // flip horizontally
-                                    child: StepCircleProgressbar(
-                                      size: 120,
-                                      circleSize: 10,
-                                      currentSteps: 7, // fixed — does not animate or update
-                                      totalSteps: _progressTotalSteps,
-                                      progressColor: const Color(0xFFFFFFFF),
-                                      stepColor: const Color(0x00FFFFFF), // transparent dots
-                                    ),
-                                  ),
+                          // Left: timer text
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _formatElapsed(_elapsed),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                  height: 1.0,
                                 ),
-
-                                // Timer + subtitle text — NOT inside the rotation
-                                Positioned(
-                                  top: 45,
-                                  left: 40,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        _formatElapsed(_elapsed),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 25,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 1.0,
-                                          height: 1.0,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        'Started at 09:30 PM',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Started at 09:30 PM',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w400,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
 
-                          const SizedBox(width: 8),
+                          const Spacer(),
 
-                          // Right: Cost section (unchanged)
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                const Text(
-                                  'EST. COST',
+                          // Right: Cost section
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'EST. COST',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              const Text(
+                                'EGP 50',
+                                style: TextStyle(
+                                  color: AppColors.accentGreen,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'EGP 25 /hr',
                                   style: TextStyle(
-                                    color: Colors.white54,
+                                    color: Colors.white70,
                                     fontSize: 11,
-                                    letterSpacing: 1,
                                   ),
                                 ),
-                                const SizedBox(height: 3),
-                                const Text(
-                                  'EGP 50',
-                                  style: TextStyle(
-                                    color: Color(0xFF86EFAC),
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text(
-                                    'EGP 25 /hr',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
