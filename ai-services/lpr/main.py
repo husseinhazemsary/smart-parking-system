@@ -10,10 +10,14 @@ from src.PlateDetector import PlateDetector
 from src.PlateReader import PlateReader
 from src.utils.draw_arabic import draw_arabic_text_box
 import re
+import logging
+logging.getLogger("ppocr").setLevel(logging.WARNING)
 
 last_gate_open_time = 0
-GATE_COOLDOWN = 5  # seconds
+GATE_COOLDOWN = 5  # seconds before the gate can open again
 
+# Common OCR misreads of the "EGYPT" header printed on Egyptian license plates,
+# covering both Latin and Arabic script variants.
 HEADER_PATTERNS = [
     r"\bEGYPT\b",
     r"\bEGYPTI\b",
@@ -38,7 +42,6 @@ def remove_plate_header(text):
     for pattern in HEADER_PATTERNS:
         cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
 
-    # Normalize spaces
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
 
@@ -50,87 +53,71 @@ def extract_arabic_letters(text):
     letters = re.findall(r"[ء-ي]", text)
     return letters if letters else []
 
-# ==============================
-# CONFIG
-# ==============================
+# --- Configuration ---
 
 INPUT_VIDEO = "input/video.mp4"
 OUTPUT_VIDEO = "output/output_video_gpu.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
-# ==============================
-# DEBUG MODE
-# ==============================
-# Enable detailed debugging information
+# Set to True to print OCR results and show per-frame debug overlays
 DEBUG_MODE = False
-DEBUG_SAVE_PLATES = False  # Save detected plate crops to debug folder
-DEBUG_SHOW_OCR_RESULTS = False  # Show all OCR results in console
+DEBUG_SAVE_PLATES = False       # Save detected plate crops to debug/plate_crops/
+DEBUG_SHOW_OCR_RESULTS = False  # Print OCR output per frame to console
 
-# ==============================
-# VALIDATION MODE
-# ==============================
-# Use lenient validation for fast-moving cars (accepts partial reads)
+# Lenient mode accepts partial reads (digits or letters only).
+# Useful for fast-moving cars where the full plate isn't captured in a single frame.
 USE_LENIENT_VALIDATION = False
 
-# ==============================
-# GATE ZONE TOGGLE
-# ==============================
-# Set to True to use gate zone (recommended for fixed parking gates)
-# Set to False to process closest car (useful for mobile cameras or testing)
+# When True, only the car inside the defined gate zone is processed.
+# When False, the largest (closest) car in the frame is processed instead.
+# Use gate zone mode for fixed cameras at parking entries.
 USE_GATE_ZONE = False
 
-# Gate zone configuration (only used if USE_GATE_ZONE = True)
-# Instead of hardcoded coordinates, use relative positioning
-# This makes the system portable across different camera setups
+# Relative gate zone bounds expressed as fractions of frame dimensions.
+# Avoids hardcoding pixel coordinates so the config works across different camera setups.
 GATE_ZONE_RELATIVE = {
     'x_start': 0.2,   # 20% from left edge
-    'x_end': 0.8,     # 80% from left edge (covers center 60% width)
+    'x_end': 0.8,     # 80% from left edge (covers the center 60% of frame width)
     'y_start': 0.6,   # 60% from top (lower portion of frame)
     'y_end': 0.95,    # 95% from top (near bottom)
 }
 
-# Will be calculated from frame dimensions (set in main loop)
+# Computed from GATE_ZONE_RELATIVE and actual frame dimensions at runtime
 GATE_ZONE = None
 
-MAX_IDLE_TIME = 2.0  # seconds
+MAX_IDLE_TIME = 2.0  # seconds before a car is dropped from tracking if not re-detected
 
 # Two-tier processing strategy:
-# - Background: Track all vehicles slowly (saves compute)
-# - Gate car: Process intensively and quickly (reduces wait time)
+# - Background tier: detect all vehicles at a slow rate to keep tracking alive without overloading the CPU
+# - Gate tier: process the selected gate car at high frequency to minimize plate recognition latency
+BACKGROUND_VEHICLE_DETECT_EVERY_N = 7  # run full vehicle detection every N frames
+GATE_CAR_PROCESS_EVERY_N = 1           # process gate car every frame for maximum responsiveness
+GATE_CAR_OCR_EVERY_N = 4              # run OCR every N frames to reduce compute on the gate car
 
-BACKGROUND_VEHICLE_DETECT_EVERY_N = 7  # Detect all vehicles every 7 frames
-GATE_CAR_PROCESS_EVERY_N = 1           # Process gate car EVERY frame (max speed for fast cars)
-GATE_CAR_OCR_EVERY_N = 4               # OCR every 4 frames 
-
-# Number of identical reads required to open gate
+# Minimum number of identical OCR reads before a plate is accepted as stable
 PLATE_STABILITY_COUNT = 2
 
-# ==============================
-# HELPERS
-# ==============================
+# --- Helper Functions ---
 
 def valid_egyptian_plate(text):
     """
-    Validates if text matches Egyptian license plate format:
-    - No Latin characters
-    - Exactly 2 Arabic letters
-    - At least 3 Arabic digits
+    Strict validation for Egyptian license plate format.
+    Requires exactly 2 Arabic letters and at least 3 Arabic digits.
+    Rejects any text containing Latin characters.
     """
     if not text:
         return False
 
-    # Reject Latin characters
     if re.search(r"[A-Za-z]", text):
         return False
 
-    # Normalize spaces
     text = re.sub(r"\s+", " ", text).strip()
 
     arabic_digits = re.findall(r"[٠-٩]", text)
     arabic_letters = re.findall(r"[ء-ي]", text)
 
-    # Expect exactly 2 letters (like "ج ع") and >= 3 digits (e.g. "٤٧٣٨")
+    # Egyptian plates carry exactly 2 letters (e.g. "ج ع") and 3–4 digits (e.g. "٤٧٣٨")
     if len(arabic_letters) != 2:
         return False
     if len(arabic_digits) < 3:
@@ -148,55 +135,46 @@ def lenient_egyptian_plate(text):
     if not text:
         return False
 
-    # Reject Latin characters
     if re.search(r"[A-Za-z]", text):
         return False
-    
-    # Reject common false positives (country labels)
+
+    # Reject known false positives such as country header text misread as plate content
     text_clean = re.sub(r"\s+", "", text.strip().lower())
     false_positives = ["egypt", "مصر", "ملصر", "eypt", "egpt", "gypt"]
     if text_clean in false_positives:
         return False
-    
-    # Normalize spaces
+
     text = re.sub(r"\s+", " ", text).strip()
-    
-    # Must have at least some Arabic content
+
     if not re.search(r"[٠-٩ء-ي]", text):
         return False
-    
+
     arabic_digits = re.findall(r"[٠-٩]", text)
     arabic_letters = re.findall(r"[ء-ي]", text)
-    
-    # Accept if we have:
-    # - At least 2 digits OR
-    # - Exactly 2 letters OR
-    # - Mix of 1+ letters and 2+ digits
-    
-    if len(arabic_digits) >= 2:  # Has digit component
+
+    # Accept if the read contains a meaningful digit or letter component
+    if len(arabic_digits) >= 2:
         return True
-    
-    if len(arabic_letters) >= 2:  # Has letter component
+
+    if len(arabic_letters) >= 2:
         return True
-    
-    if len(arabic_letters) >= 1 and len(arabic_digits) >= 2:  # Has both
+
+    if len(arabic_letters) >= 1 and len(arabic_digits) >= 2:
         return True
-    
+
     return False
 
 
 def choose_gate_car(cars, gate_zone):
     """
-    From all cars, pick ONE that is inside gate zone.
-    Strategy: Score based on:
-    1. Vertical position (deeper = closer to gate)
-    2. Size (larger = closer to camera)
-    3. Horizontal centering (centered = more likely at gate)
-    Returns the car object or None.
+    Selects the most relevant car inside the gate zone.
+    Scores candidates by vertical depth (closer to gate), bounding box size
+    (closer to camera), and horizontal centering (aligned with gate).
+    Returns the car object or None if no car is inside the zone.
     """
     if gate_zone is None:
         return None
-    
+
     gx1, gy1, gx2, gy2 = gate_zone
     gate_center_x = (gx1 + gx2) // 2
     candidates = []
@@ -204,15 +182,14 @@ def choose_gate_car(cars, gate_zone):
     for car in cars.values():
         cx = (car.x1 + car.x2) // 2
         cy = (car.y1 + car.y2) // 2
-        
-        # Check if car is in gate zone
+
         if gx1 <= cx <= gx2 and gy1 <= cy <= gy2:
-            # Calculate composite score
-            depth = cy  # Vertical position (higher = closer)
-            size = (car.x2 - car.x1) * (car.y2 - car.y1)  # Bounding box area
-            center_offset = abs(cx - gate_center_x)  # Distance from gate center
-            
-            # Weighted score: prioritize depth, then size, penalize off-center
+            depth = cy
+            size = (car.x2 - car.x1) * (car.y2 - car.y1)
+            center_offset = abs(cx - gate_center_x)
+
+            # Prioritize cars that are deeper (nearer the gate) and larger (nearer the camera);
+            # penalize cars that are off-center relative to the gate midpoint
             score = depth * 2.0 + size * 0.01 - center_offset * 0.5
             candidates.append((score, car))
 
@@ -224,6 +201,10 @@ def choose_gate_car(cars, gate_zone):
 
 
 def try_open_gate_with_db(plate_text):
+    """
+    Checks the detected plate against the database and opens the gate if access is granted.
+    Enforces a cooldown period between consecutive gate openings to prevent rapid re-triggering.
+    """
     global gate_open, gate_open_plate, last_gate_open_time
 
     decision, reason = check_access(plate_text)
@@ -241,24 +222,21 @@ def try_open_gate_with_db(plate_text):
     return False
 
 
-
 def choose_closest_car(cars):
     """
-    Pick the car with the largest bounding box (closest to camera).
-    Used when gate zone is disabled.
-    Returns the car object or None.
+    Returns the car with the largest bounding box, assumed to be the closest to the camera.
+    Used when gate zone mode is disabled.
     """
     if not cars:
         return None
-    
-    # Find car with largest bounding box area
+
     return max(cars.values(), key=lambda c: (c.x2 - c.x1) * (c.y2 - c.y1))
 
 
 def select_gate_car(cars, gate_zone, use_gate_zone):
     """
-    Wrapper function to select gate car based on configuration.
-    Returns the selected car or None.
+    Selects the car to process based on the active mode.
+    Uses gate zone selection or closest-car fallback depending on USE_GATE_ZONE.
     """
     if use_gate_zone:
         return choose_gate_car(cars, gate_zone)
@@ -268,66 +246,67 @@ def select_gate_car(cars, gate_zone, use_gate_zone):
 
 def reconstruct_plate_from_partials(candidates):
     """
-    Try to reconstruct a full plate from partial OCR reads.
+    Reconstructs a full Egyptian plate from a list of partial OCR reads.
     Example: ['٧٢٣', '١٧٢٣', 'م ي'] → '١٧٢٣ م ي'
-    
-    Strategy:
-    1. Find the most common digit sequence (3-4 digits)
-    2. Find the most common letter pair (2 letters)
-    3. Combine them if both exist
+
+    Finds the most frequent digit sequence (≥3 digits) and letter pair (exactly 2 letters)
+    across all candidates, then combines them into the standard Egyptian format.
+    Returns the reconstructed plate string, or None if insufficient data.
     """
     if not candidates or len(candidates) < 2:
         return None
-    
+
     digit_parts = []
     letter_parts = []
-    
+
     for candidate in candidates:
         text = re.sub(r"\s+", " ", str(candidate).strip())
-        
-        # Extract digits and letters
+
         digits = re.findall(r"[٠-٩]", text)
         letters = re.findall(r"[ء-ي]", text)
-        
-        # Collect digit sequences (3-4 digits)
+
         if len(digits) >= 3:
             digit_str = ''.join(digits)
             digit_parts.append(digit_str)
-        
-        # Collect letter pairs (exactly 2 letters)
+
         if len(letters) == 2:
             letter_str = ' '.join(letters)
             letter_parts.append(letter_str)
-    
-    # Find most common digit sequence
+
     from collections import Counter
-    
+
     best_digits = None
     if digit_parts:
         digit_counter = Counter(digit_parts)
         most_common_digits = digit_counter.most_common(1)
         if most_common_digits and most_common_digits[0][1] >= 1:
             best_digits = most_common_digits[0][0]
-    
-    # Find most common letter pair
+
     best_letters = None
     if letter_parts:
         letter_counter = Counter(letter_parts)
         most_common_letters = letter_counter.most_common(1)
         if most_common_letters and most_common_letters[0][1] >= 1:
             best_letters = most_common_letters[0][0]
-    
-    # Reconstruct full plate
+
     if best_digits and best_letters:
-        # Egyptian format: digits + letters (e.g. "١٧٢٣ م ي")
+        # Egyptian format: digit group followed by letter pair (e.g. "١٧٢٣ م ي")
         reconstructed = f"{best_digits} {best_letters}"
         return reconstructed
-    
+
     return None
 
 def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
                           debug_mode=False, save_plates=False, predetected_crop=None):
-    
+    """
+    Extracts and reads the license plate for a given car in the current frame.
+
+    If a pre-detected plate crop is provided (from background detection), it is used directly
+    to avoid redundant YOLO inference. Otherwise, falls back to running the plate detector
+    on the car's bounding box region.
+
+    Returns (plate_text, debug_info). plate_text is None if detection or validation fails.
+    """
     debug_info = {
         'plate_detected': False,
         'plate_crop_size': None,
@@ -337,11 +316,11 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
     }
 
     if predetected_crop is not None and predetected_crop.size > 0:
-        # Use the crop already found during background detection — skip YOLO
+        # Reuse the crop already found during background detection — skip YOLO
         plate_img = predetected_crop
         debug_info['plate_detected'] = True
     else:
-        # Fallback: run plate YOLO (only if no crop was passed in)
+        # No pre-detected crop available: run plate YOLO on the car's region of interest
         x1, y1, x2, y2 = car.x1, car.y1, car.x2, car.y2
         car_roi = frame[y1:y2, x1:x2]
 
@@ -373,6 +352,7 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
 
     debug_info['plate_crop_size'] = f"{plate_img.shape[1]}x{plate_img.shape[0]}"
 
+    # Reject crops that are too small for reliable OCR
     if plate_img.shape[1] < 60 or plate_img.shape[0] < 28:
         debug_info['rejection_reason'] = "Plate too small"
         return None, debug_info
@@ -385,7 +365,6 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
             plate_img
         )
 
-    # -------- OCR --------
     raw_text = plate_reader.read_plate(plate_img)
     debug_info['ocr_result'] = raw_text if raw_text else "NULL"
 
@@ -393,18 +372,15 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
         debug_info['rejection_reason'] = "OCR returned empty"
         return None, debug_info
 
-    # -------- HEADER REMOVAL --------
     cleaned_text = remove_plate_header(raw_text)
 
-    # -------- DIGIT EXTRACTION --------
     digits = extract_arabic_digits(cleaned_text)
     letters = extract_arabic_letters(cleaned_text)
 
-    # Accept if digits exist
     if digits and len(digits) >= 3:
         debug_info['validation_passed'] = True
 
-        # Use letters only if we have exactly 2 (Egyptian format)
+        # Egyptian format requires exactly 2 letters; fall back to digits-only if unavailable
         if len(letters) == 2:
             plate_text = f"{digits} {' '.join(letters)}"
         else:
@@ -416,9 +392,7 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
     return None, debug_info
 
 
-# ==============================
-# INIT
-# ==============================
+# --- Initialization ---
 
 cap = cv2.VideoCapture(INPUT_VIDEO)
 assert cap.isOpened(), "Failed to open input video"
@@ -427,7 +401,7 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-# Calculate adaptive gate zone from frame dimensions (only if enabled)
+# Convert relative gate zone bounds to absolute pixel coordinates now that frame size is known
 if USE_GATE_ZONE:
     GATE_ZONE = (
         int(w * GATE_ZONE_RELATIVE['x_start']),
@@ -467,14 +441,10 @@ print(f"[INFO] Background vehicle detection: every {BACKGROUND_VEHICLE_DETECT_EV
 print(f"[INFO] Gate car processing: every {GATE_CAR_PROCESS_EVERY_N} frames")
 print(f"[INFO] Plate stability required: {PLATE_STABILITY_COUNT} identical reads")
 
-# Create resizable window for display
 cv2.namedWindow("Parking Gate", cv2.WINDOW_NORMAL)
-# Optionally set initial window size (adjust to your screen)
 cv2.resizeWindow("Parking Gate", 1280, 720)
 
-# ==============================
-# MAIN LOOP
-# ==============================
+# --- Main Loop ---
 
 while True:
     ret, frame = cap.read()
@@ -484,13 +454,10 @@ while True:
     current_time = time.time()
     frame_index += 1
 
-    # ----------------------------------
-    # 1) BACKGROUND: Detect all vehicles (slow rate)
-    # ----------------------------------
+    # 1) Background: detect all vehicles at a slow rate to maintain tracking
     if frame_index % BACKGROUND_VEHICLE_DETECT_EVERY_N == 0:
         detections, active_ids = plate_detector.find_vehicles(frame)
 
-        # Update or create car objects
         for det in detections:
             x1, y1, x2, y2, car_id, plate_crop = det
 
@@ -501,44 +468,37 @@ while True:
             else:
                 cars[car_id].update_bbox((x1, y1, x2, y2))
 
-            cars[car_id].latest_plate_crop = plate_crop  # ← ADD THIS LINE
-        
-        # Cleanup cars not seen recently
+            cars[car_id].latest_plate_crop = plate_crop
+
+        # Remove cars not re-detected within the idle timeout
         for cid in list(cars.keys()):
             if current_time - cars[cid].last_seen > MAX_IDLE_TIME:
                 del cars[cid]
 
-    # ----------------------------------
-    # 2) FOREGROUND: Fast gate car processing
-    # ----------------------------------
+    # 2) Foreground: run intensive plate recognition on the selected gate car
     gate_car = select_gate_car(cars, GATE_ZONE, USE_GATE_ZONE)
 
-    # If there's a gate car and it doesn't have a final plate yet
     if gate_car is not None and not gate_car.final_plate:
-        
-        # Process gate car at fast rate
+
         if frame_index % GATE_CAR_PROCESS_EVERY_N == 0:
-            
-            # Update the last processing frame
+
             if not hasattr(gate_car, 'last_plate_process_frame'):
                 gate_car.last_plate_process_frame = -999
-            
-            # Perform OCR at configured rate
+
             if frame_index - gate_car.last_plate_process_frame >= GATE_CAR_OCR_EVERY_N:
                 gate_car.last_plate_process_frame = frame_index
-                
+
                 plate_text, debug_info = detect_and_read_plate(
-                    frame, 
-                    gate_car, 
-                    plate_detector, 
+                    frame,
+                    gate_car,
+                    plate_detector,
                     plate_reader,
                     frame_index,
                     debug_mode=DEBUG_MODE,
                     save_plates=DEBUG_SAVE_PLATES,
-                    predetected_crop=getattr(gate_car, 'latest_plate_crop', None)  # ← ADD THIS
+                    predetected_crop=getattr(gate_car, 'latest_plate_crop', None)
                 )
-                
-                # Debug logging
+
                 if DEBUG_MODE and DEBUG_SHOW_OCR_RESULTS:
                     status = "✓" if debug_info['validation_passed'] else "✗"
                     print(f"[DEBUG] Frame {frame_index} | Car {gate_car.id} | {status}")
@@ -550,22 +510,21 @@ while True:
                         print(f"  └─ ✓ VALID PLATE")
                     else:
                         print(f"  └─ ✗ Rejection: {debug_info['rejection_reason']}")
-                
+
                 if plate_text:
-                    # Initialize plate_candidates if not exists
                     if not hasattr(gate_car, 'plate_candidates'):
                         gate_car.plate_candidates = []
-                    
+
                     gate_car.plate_candidates.append(plate_text)
-                    
+
                     if DEBUG_MODE:
                         print(f"  └─ Added to candidates. Total: {len(gate_car.plate_candidates)}")
-                    
-                    # Strategy: Try reconstruction first (needs at least 3 attempts)
-                    # This allows time to collect both digit and letter parts
+
+                    # After 3+ reads, attempt full plate reconstruction from partial OCR results.
+                    # Collecting multiple reads allows both digit and letter parts to be captured.
                     if len(gate_car.plate_candidates) >= 3:
                         full_plate = reconstruct_plate_from_partials(gate_car.plate_candidates)
-                        
+
                         if full_plate and valid_egyptian_plate(full_plate):
                             gate_car.final_plate = full_plate
 
@@ -577,14 +536,14 @@ while True:
 
                             print(f"[TIMING] Approximate time: {frame_index / fps:.2f}s")
                             print(f"{'='*60}\n")
-                    
-                    # Fallback: If we have many attempts (6+) but no reconstruction,
-                    # accept partial plate (digit-only or letter-only) as last resort
+
+                    # Fallback: after 6+ failed reconstruction attempts, accept the most
+                    # frequently seen partial read if it meets the stability threshold
                     if not gate_car.final_plate and len(gate_car.plate_candidates) >= 6:
                         from collections import Counter
                         counts = Counter(gate_car.plate_candidates)
                         most_common_text, count = counts.most_common(1)[0]
-                        
+
                         if count >= PLATE_STABILITY_COUNT:
                             gate_car.final_plate = most_common_text
 
@@ -598,11 +557,8 @@ while True:
                             print(f"[TIMING] Approximate time: {frame_index / fps:.2f}s")
                             print(f"{'='*60}\n")
 
-    # ----------------------------------
-    # 3) VISUALIZATION (every frame)
-    # ----------------------------------
+    # 3) Visualization: draw overlays on every frame
 
-    # Draw all cars (thin green boxes for debugging)
     for car in cars.values():
         cv2.rectangle(
             frame,
@@ -612,8 +568,8 @@ while True:
             1,
         )
 
-    # Highlight gate car with thick yellow box
     if gate_car is not None:
+        # Highlight the selected gate car with a thicker yellow box
         cv2.rectangle(
             frame,
             (gate_car.x1, gate_car.y1),
@@ -622,7 +578,6 @@ while True:
             3,
         )
 
-        # Draw final plate text if locked
         if gate_car.final_plate:
             draw_arabic_text_box(
                 frame,
@@ -634,13 +589,13 @@ while True:
                 padding=6,
             )
 
-        # Show candidate count for debugging
+        # Show how many reads have been collected toward the stability threshold
         if hasattr(gate_car, 'plate_candidates') and gate_car.plate_candidates:
             from collections import Counter
             counts = Counter(gate_car.plate_candidates)
             most_common = counts.most_common(1)[0]
             debug_text = f"Candidates: {most_common[1]}/{PLATE_STABILITY_COUNT}"
-            
+
             cv2.putText(
                 frame,
                 debug_text,
@@ -650,12 +605,11 @@ while True:
                 (0, 255, 255),
                 1,
             )
-            
-            # Show all unique candidates
+
             if DEBUG_MODE and len(gate_car.plate_candidates) > 0:
                 unique_plates = list(set(gate_car.plate_candidates))
                 y_offset = 40
-                for idx, plate in enumerate(unique_plates[:3]):  # Show max 3
+                for idx, plate in enumerate(unique_plates[:3]):
                     cv2.putText(
                         frame,
                         f"{idx+1}. {plate} ({gate_car.plate_candidates.count(plate)}x)",
@@ -667,7 +621,6 @@ while True:
                     )
                     y_offset += 20
 
-    # Draw gate zone (only if enabled)
     if USE_GATE_ZONE and GATE_ZONE:
         gx1, gy1, gx2, gy2 = GATE_ZONE
         cv2.rectangle(frame, (gx1, gy1), (gx2, gy2), (255, 0, 0), 2)
@@ -681,18 +634,16 @@ while True:
             2,
         )
     elif not USE_GATE_ZONE:
-        # Show "NO GATE ZONE" indicator
         cv2.putText(
             frame,
             "MODE: Closest Car",
             (50, 120),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
-            (255, 165, 0),  # Orange
+            (255, 165, 0),
             2,
         )
 
-    # Visualize gate state
     if gate_open:
         cv2.rectangle(frame, (40, 30), (250, 80), (0, 255, 0), -1)
         cv2.putText(
@@ -716,7 +667,6 @@ while True:
             2,
         )
 
-    # Show frame info
     cv2.putText(
         frame,
         f"Frame: {frame_index} | Cars: {len(cars)}",
@@ -733,9 +683,7 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
-# ==============================
-# CLEANUP
-# ==============================
+# --- Cleanup ---
 
 cap.release()
 writer.release()
