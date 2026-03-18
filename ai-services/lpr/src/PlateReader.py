@@ -16,6 +16,12 @@ class PlateReader:
             det_db_box_thresh=0.08,
             det_db_unclip_ratio=3.0
         )
+        # Force model weights to load now so the first real OCR call has no delay.
+        # PaddleOCR lazy-loads its detection and recognition models on the first
+        # actual inference call — without this, the first plate read mid-stream
+        # causes a visible freeze while weights are loaded into GPU memory.
+        import numpy as np
+        self.ocr_ar.ocr(np.zeros((64, 128, 3), dtype=np.uint8), cls=False)
 
     def read_plate_with_boxes(self, plate_img, debug_annotated_path=None):
         """
