@@ -9,61 +9,48 @@ from src.Car import Car
 from src.PlateDetector import PlateDetector
 from src.PlateReader import PlateReader
 from src.utils.draw_arabic import draw_arabic_text_box
-import re
 import logging
 logging.getLogger("ppocr").setLevel(logging.WARNING)
 
 last_gate_open_time = 0
 GATE_COOLDOWN = 5  # seconds before the gate can open again
 
-# Common OCR misreads of the "EGYPT" header printed on Egyptian license plates,
-# covering both Latin and Arabic script variants.
-HEADER_PATTERNS = [
-    r"\bEGYPT\b",
-    r"\bEGYPTI\b",
-    r"\bLEGYPTE\b",
-    r"\bCEGYPT\b",
-    r"\bEGTP\b",
-    r"\bEGTPT\b",
-    r"\bEGYP\b",
-    r"\bEGYPT[A-Z]*\b",
-    r"مصر",
-    r"مصـر",
-    r"مصان",
-    r"مطير",
-    r"مطى",
-]
+def extract_plate_components(filtered_text):
+    """
+    Extracts Arabic digits and letters from position-filtered OCR text.
 
-def remove_plate_header(text):
-    if not text:
-        return text
+    Digits: take all of them — the header band contains no Arabic digits so
+            every digit in filtered_text is plate content.
+    Letters: if more than 3 found, take only the last 2-3 — OCR reads blocks
+             top-to-bottom so any residual header letters (مصر = م،ص،ر) appear
+             earlier in the string than the actual plate letters, which sit in
+             the lower portion of the plate image.
+    Returns (digits_str, letters_list). digits_str is None when no digits found.
+    """
+    if not filtered_text:
+        return None, []
 
-    cleaned = text.upper()
-    for pattern in HEADER_PATTERNS:
-        cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+    digits  = re.findall(r"[٠-٩]", filtered_text)
+    letters = re.findall(r"[ء-ي]", filtered_text)
 
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    return cleaned
+    digits_str = "".join(digits) if digits else None
 
-def extract_arabic_digits(text):
-    digits = re.findall(r"[٠-٩]", text)
-    return "".join(digits) if digits else None
+    if len(letters) > 3:
+        letters = letters[-3:]
 
-def extract_arabic_letters(text):
-    letters = re.findall(r"[ء-ي]", text)
-    return letters if letters else []
+    return digits_str, letters
 
 # --- Configuration ---
 
 INPUT_VIDEO = "input/video.mp4"
-OUTPUT_VIDEO = "output/output_video_gpu.mp4"
+OUTPUT_VIDEO = "output/output_video_rm_header.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
 # Set to True to print OCR results and show per-frame debug overlays
-DEBUG_MODE = False
-DEBUG_SAVE_PLATES = False       # Save detected plate crops to debug/plate_crops/
-DEBUG_SHOW_OCR_RESULTS = False  # Print OCR output per frame to console
+DEBUG_MODE = True
+DEBUG_SAVE_PLATES = True       # Save detected plate crops to debug/plate_crops/
+DEBUG_SHOW_OCR_RESULTS = True  # Print OCR output per frame to console
 
 # Lenient mode accepts partial reads (digits or letters only).
 # Useful for fast-moving cars where the full plate isn't captured in a single frame.
@@ -93,7 +80,7 @@ MAX_IDLE_TIME = 2.0  # seconds before a car is dropped from tracking if not re-d
 # - Gate tier: process the selected gate car at high frequency to minimize plate recognition latency
 BACKGROUND_VEHICLE_DETECT_EVERY_N = 7  # run full vehicle detection every N frames
 GATE_CAR_PROCESS_EVERY_N = 1           # process gate car every frame for maximum responsiveness
-GATE_CAR_OCR_EVERY_N = 4              # run OCR every N frames to reduce compute on the gate car
+GATE_CAR_OCR_EVERY_N = 4               # run OCR every N frames to reduce compute on the gate car
 
 # Minimum number of identical OCR reads before a plate is accepted as stable
 PLATE_STABILITY_COUNT = 2
@@ -103,8 +90,13 @@ PLATE_STABILITY_COUNT = 2
 def valid_egyptian_plate(text):
     """
     Strict validation for Egyptian license plate format.
-    Requires exactly 2 Arabic letters and at least 3 Arabic digits.
+    Requires 2-3 Arabic letters and at least 3 Arabic digits.
     Rejects any text containing Latin characters.
+
+    Egyptian plates use exactly 2 letters for private cars (e.g. "م ي ١٧٢٣")
+    and exactly 3 letters for other vehicle categories (e.g. "و م ط ٧٢٣").
+    Both formats must be accepted; requiring exactly 2 was silently rejecting
+    valid 3-letter plates.
     """
     if not text:
         return False
@@ -117,8 +109,9 @@ def valid_egyptian_plate(text):
     arabic_digits = re.findall(r"[٠-٩]", text)
     arabic_letters = re.findall(r"[ء-ي]", text)
 
-    # Egyptian plates carry exactly 2 letters (e.g. "ج ع") and 3–4 digits (e.g. "٤٧٣٨")
-    if len(arabic_letters) != 2:
+    # Accept 2-letter plates (private cars) and 3-letter plates (other categories).
+    # Anything outside this range is noise or an unrecognised format.
+    if not (2 <= len(arabic_letters) <= 3):
         return False
     if len(arabic_digits) < 3:
         return False
@@ -269,7 +262,10 @@ def reconstruct_plate_from_partials(candidates):
             digit_str = ''.join(digits)
             digit_parts.append(digit_str)
 
-        if len(letters) == 2:
+        # Collect letter groups of 2 or 3, matching the two valid Egyptian plate formats.
+        # The old exact-2 check caused 3-letter plates to never contribute letters to
+        # letter_parts, leaving letter_parts empty and making reconstruction always fail.
+        if 2 <= len(letters) <= 3:
             letter_str = ' '.join(letters)
             letter_parts.append(letter_str)
 
@@ -310,7 +306,10 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
     debug_info = {
         'plate_detected': False,
         'plate_crop_size': None,
-        'ocr_result': None,
+        'ocr_raw': None,
+        'ocr_filtered': None,
+        'digits_found': None,
+        'letters_found': [],
         'validation_passed': False,
         'rejection_reason': None
     }
@@ -365,30 +364,39 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
             plate_img
         )
 
-    raw_text = plate_reader.read_plate(plate_img)
-    debug_info['ocr_result'] = raw_text if raw_text else "NULL"
+    debug_annotated_path = None
+    if save_plates:
+        debug_annotated_path = f"debug/plate_boxes/car_{car.id}_frame_{frame_index}.jpg"
 
-    if not raw_text:
+    filtered_text, raw_text = plate_reader.read_plate_with_boxes(plate_img, debug_annotated_path=debug_annotated_path)
+    debug_info['ocr_raw']      = raw_text      if raw_text      else "NULL"
+    debug_info['ocr_filtered'] = filtered_text if filtered_text else "NULL"
+
+    if not filtered_text:
         debug_info['rejection_reason'] = "OCR returned empty"
         return None, debug_info
 
-    cleaned_text = remove_plate_header(raw_text)
-
-    digits = extract_arabic_digits(cleaned_text)
-    letters = extract_arabic_letters(cleaned_text)
+    digits, letters = extract_plate_components(filtered_text)
+    debug_info['digits_found']  = digits  if digits  else "NULL"
+    debug_info['letters_found'] = letters if letters else []
 
     if digits and len(digits) >= 3:
         debug_info['validation_passed'] = True
 
-        # Egyptian format requires exactly 2 letters; fall back to digits-only if unavailable
-        if len(letters) == 2:
+        # Store letters whenever the count matches a valid Egyptian format (2 or 3 letters).
+        # Previously this required exactly 2, so all 3-letter plate reads were stripped to
+        # digits-only before being added to plate_candidates, meaning the letter portion
+        # was never available for reconstruction.
+        if 2 <= len(letters) <= 3:
             plate_text = f"{digits} {' '.join(letters)}"
         else:
-            plate_text = digits  # fallback
+            # No usable letter group found — store digits alone so the reconstruction
+            # step can still pair them with letters captured in other reads.
+            plate_text = digits
 
         return plate_text, debug_info
 
-    debug_info['rejection_reason'] = f"No valid digits after cleaning: '{cleaned_text}'"
+    debug_info['rejection_reason'] = f"No valid digits after filtering: '{filtered_text}'"
     return None, debug_info
 
 
@@ -504,8 +512,11 @@ while True:
                     print(f"[DEBUG] Frame {frame_index} | Car {gate_car.id} | {status}")
                     print(f"  └─ Plate Detected: {debug_info['plate_detected']}")
                     if debug_info['plate_detected']:
-                        print(f"  └─ Crop Size: {debug_info['plate_crop_size']}")
-                        print(f"  └─ OCR Result: '{debug_info['ocr_result']}'")
+                        print(f"  └─ Crop Size:     {debug_info['plate_crop_size']}")
+                        print(f"  └─ OCR Raw:       '{debug_info['ocr_raw']}'")
+                        print(f"  └─ OCR Filtered:  '{debug_info['ocr_filtered']}'")
+                        print(f"  └─ Digits found:  '{debug_info['digits_found']}'")
+                        print(f"  └─ Letters found: {debug_info['letters_found']}")
                     if debug_info['validation_passed']:
                         print(f"  └─ ✓ VALID PLATE")
                     else:

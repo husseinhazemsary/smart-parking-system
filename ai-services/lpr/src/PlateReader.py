@@ -1,48 +1,86 @@
 # Reads Arabic text from license plate images
 
 from paddleocr import PaddleOCR
-import re
+import logging
+import cv2
+import os
+
+logging.getLogger("ppocr").setLevel(logging.WARNING)
 
 class PlateReader:
     def __init__(self):
         self.ocr_ar = PaddleOCR(
-            lang="ar", 
+            lang="ar",
             use_gpu=True,
             det_db_thresh=0.05,
             det_db_box_thresh=0.08,
             det_db_unclip_ratio=3.0
         )
-        self.ocr_lat = None  # Don't load until needed
 
-    def read_plate(self, plate_img):
+    def read_plate_with_boxes(self, plate_img, debug_annotated_path=None):
+        """
+        Runs Arabic OCR and discards text blocks whose vertical center falls in
+        the top 30% of the image — the country header band ("EGYPT" / "مصر").
+
+        Returns (filtered_text, raw_text):
+          - filtered_text: surviving text joined into a single string, or None
+          - raw_text:      all text before filtering, for debug logging, or None
+        Both are None if OCR returns no results or the image is invalid.
+        """
         if plate_img is None or plate_img.size == 0:
-            return None
+            return None, None
 
         try:
             res_ar = self.ocr_ar.ocr(plate_img, cls=False)
-            if res_ar and res_ar[0]:
-                texts = [line[1][0].strip() for line in res_ar[0]]
-                ar_text = " ".join(texts)
-                print("OCR boxes:", res_ar[0])
-                return ar_text
-        except:
-            pass
+            if not res_ar or not res_ar[0]:
+                return None, None
 
-        # Latin fallback — initialize only on first use
-        try:
-            if self.ocr_lat is None:
-                self.ocr_lat = PaddleOCR(
-                    lang="latin",
-                    use_gpu=True,
-                    det_db_thresh=0.05,
-                    det_db_box_thresh=0.1,
-                    det_db_unclip_ratio=2.5
-                )
-            res_lat = self.ocr_lat.ocr(plate_img, cls=False)
-            if res_lat and res_lat[0]:
-                return res_lat[0][0][1][0].strip()
-        except:
-            pass
+            img_h = plate_img.shape[0]
+            header_cutoff = img_h * 0.30  # top 30% is the header band
 
-        return None
-    
+            raw_texts = []
+            filtered_texts = []
+
+            for line in res_ar[0]:
+                bbox = line[0]           # [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
+                text = line[1][0].strip()
+                vertical_center = (bbox[0][1] + bbox[2][1]) / 2
+
+                raw_texts.append(text)
+
+                if vertical_center >= header_cutoff:
+                    filtered_texts.append(text)
+
+            raw_text      = " ".join(raw_texts)      if raw_texts      else None
+            filtered_text = " ".join(filtered_texts) if filtered_texts else None
+
+            if debug_annotated_path is not None:
+                annotated = plate_img.copy()
+                cutoff_y = int(img_h * 0.30)
+
+                # Horizontal line showing the 30% header cutoff
+                cv2.line(annotated, (0, cutoff_y), (annotated.shape[1], cutoff_y), (0, 165, 255), 1)
+                cv2.putText(annotated, "30%", (2, cutoff_y - 3),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 165, 255), 1)
+
+                for line in res_ar[0]:
+                    bbox = line[0]
+                    text = line[1][0].strip()
+                    vertical_center = (bbox[0][1] + bbox[2][1]) / 2
+                    kept = vertical_center >= cutoff_y
+
+                    color = (0, 255, 0) if kept else (0, 0, 255)  # green kept, red discarded
+                    pts = [(int(p[0]), int(p[1])) for p in bbox]
+                    cv2.rectangle(annotated, pts[0], pts[2], color, 1)
+                    # Label shows vertical center — more useful than text since cv2 can't render Arabic
+                    label = f"y={int(vertical_center)} ({'keep' if kept else 'drop'})"
+                    cv2.putText(annotated, label, (pts[0][0], pts[0][1] - 3),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
+
+                os.makedirs(os.path.dirname(debug_annotated_path), exist_ok=True)
+                cv2.imwrite(debug_annotated_path, annotated)
+
+            return filtered_text, raw_text
+
+        except Exception:
+            return None, None
