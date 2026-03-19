@@ -15,35 +15,10 @@ logging.getLogger("ppocr").setLevel(logging.WARNING)
 last_gate_open_time = 0
 GATE_COOLDOWN = 5  # seconds before the gate can open again
 
-def extract_plate_components(filtered_text):
-    """
-    Extracts Arabic digits and letters from position-filtered OCR text.
-
-    Digits: take all of them — the header band contains no Arabic digits so
-            every digit in filtered_text is plate content.
-    Letters: if more than 3 found, take only the last 2-3 — OCR reads blocks
-             top-to-bottom so any residual header letters (مصر = م،ص،ر) appear
-             earlier in the string than the actual plate letters, which sit in
-             the lower portion of the plate image.
-    Returns (digits_str, letters_list). digits_str is None when no digits found.
-    """
-    if not filtered_text:
-        return None, []
-
-    digits  = re.findall(r"[٠-٩]", filtered_text)
-    letters = re.findall(r"[ء-ي]", filtered_text)
-
-    digits_str = "".join(digits) if digits else None
-
-    if len(letters) > 3:
-        letters = letters[-3:]
-
-    return digits_str, letters
-
 # --- Configuration ---
 
-INPUT_VIDEO = "input/video.mp4"
-OUTPUT_VIDEO = "output/output_video_rm_header.mp4"
+INPUT_VIDEO = "input/captured (2).mp4"
+OUTPUT_VIDEO = "output/output_video_cap2.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
@@ -51,10 +26,6 @@ FONT_PATH = "fonts/Amiri-Regular.ttf"
 DEBUG_MODE = True
 DEBUG_SAVE_PLATES = True       # Save detected plate crops to debug/plate_crops/
 DEBUG_SHOW_OCR_RESULTS = True  # Print OCR output per frame to console
-
-# Lenient mode accepts partial reads (digits or letters only).
-# Useful for fast-moving cars where the full plate isn't captured in a single frame.
-USE_LENIENT_VALIDATION = False
 
 # When True, only the car inside the defined gate zone is processed.
 # When False, the largest (closest) car in the frame is processed instead.
@@ -87,6 +58,31 @@ PLATE_STABILITY_COUNT = 2
 
 # --- Helper Functions ---
 
+def extract_plate_components(filtered_text):
+    """
+    Extracts Arabic digits and letters from position-filtered OCR text.
+
+    Digits: take all of them — the header band contains no Arabic digits so
+            every digit in filtered_text is plate content.
+    Letters: if more than 3 found, take only the last 2-3 — OCR reads blocks
+             top-to-bottom so any residual header letters (مصر = م،ص،ر) appear
+             earlier in the string than the actual plate letters, which sit in
+             the lower portion of the plate image.
+    Returns (digits_str, letters_list). digits_str is None when no digits found.
+    """
+    if not filtered_text:
+        return None, []
+
+    digits  = re.findall(r"[٠-٩]", filtered_text)
+    letters = re.findall(r"[ء-ي]", filtered_text)
+
+    digits_str = "".join(digits) if digits else None
+
+    if len(letters) > 3:
+        letters = letters[-3:]
+
+    return digits_str, letters
+
 def valid_egyptian_plate(text):
     """
     Strict validation for Egyptian license plate format.
@@ -95,8 +91,7 @@ def valid_egyptian_plate(text):
 
     Egyptian plates use exactly 2 letters for private cars (e.g. "م ي ١٧٢٣")
     and exactly 3 letters for other vehicle categories (e.g. "و م ط ٧٢٣").
-    Both formats must be accepted; requiring exactly 2 was silently rejecting
-    valid 3-letter plates.
+    Both formats must be accepted;
     """
     if not text:
         return False
@@ -118,44 +113,6 @@ def valid_egyptian_plate(text):
 
     return True
 
-
-def lenient_egyptian_plate(text):
-    """
-    Lenient validation that accepts partial plate reads.
-    Useful for fast-moving cars where OCR reads digits/letters separately.
-    Returns True if text contains valid Egyptian plate components.
-    """
-    if not text:
-        return False
-
-    if re.search(r"[A-Za-z]", text):
-        return False
-
-    # Reject known false positives such as country header text misread as plate content
-    text_clean = re.sub(r"\s+", "", text.strip().lower())
-    false_positives = ["egypt", "مصر", "ملصر", "eypt", "egpt", "gypt"]
-    if text_clean in false_positives:
-        return False
-
-    text = re.sub(r"\s+", " ", text).strip()
-
-    if not re.search(r"[٠-٩ء-ي]", text):
-        return False
-
-    arabic_digits = re.findall(r"[٠-٩]", text)
-    arabic_letters = re.findall(r"[ء-ي]", text)
-
-    # Accept if the read contains a meaningful digit or letter component
-    if len(arabic_digits) >= 2:
-        return True
-
-    if len(arabic_letters) >= 2:
-        return True
-
-    if len(arabic_letters) >= 1 and len(arabic_digits) >= 2:
-        return True
-
-    return False
 
 
 def choose_gate_car(cars, gate_zone):
@@ -441,7 +398,6 @@ print(f"[INFO] Frame dimensions: {w}x{h}")
 print(f"[INFO] Debug mode: {'ENABLED' if DEBUG_MODE else 'DISABLED'}")
 if DEBUG_SAVE_PLATES:
     print(f"[INFO] Plate crops will be saved to: debug/plate_crops/")
-print(f"[INFO] Validation mode: {'LENIENT (accepts partial reads)' if USE_LENIENT_VALIDATION else 'STRICT (full plate required)'}")
 print(f"[INFO] Gate zone mode: {'ENABLED' if USE_GATE_ZONE else 'DISABLED (processing closest car)'}")
 if USE_GATE_ZONE:
     print(f"[INFO] Gate zone (adaptive): {GATE_ZONE}")
