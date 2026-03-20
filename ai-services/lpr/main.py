@@ -17,8 +17,8 @@ GATE_COOLDOWN = 5  # seconds before the gate can open again
 
 # --- Configuration ---
 
-INPUT_VIDEO = "input/captured (2).mp4"
-OUTPUT_VIDEO = "output/output_video_debug.mp4"
+INPUT_VIDEO = "input/captured (7).mp4"
+OUTPUT_VIDEO = "output/output_video_cap7.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
@@ -436,7 +436,8 @@ while True:
             else:
                 cars[car_id].update_bbox((x1, y1, x2, y2))
 
-            cars[car_id].latest_plate_crop = plate_crop
+            if plate_crop is not None:
+                cars[car_id].latest_plate_crop = plate_crop
 
         # Remove cars not re-detected within the idle timeout
         for cid in list(cars.keys()):
