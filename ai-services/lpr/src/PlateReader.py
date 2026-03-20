@@ -34,31 +34,36 @@ class PlateReader:
         Both are None if OCR returns no results or the image is invalid.
         """
         if plate_img is None or plate_img.size == 0:
-            return None, None
+            return None, None, 0.0
 
         try:
             res_ar = self.ocr_ar.ocr(plate_img, cls=False)
             if not res_ar or not res_ar[0]:
-                return None, None
+                return None, None, 0.0
 
             img_h = plate_img.shape[0]
             header_cutoff = img_h * 0.30  # top 30% is the header band
 
             raw_texts = []
             filtered_texts = []
+            filtered_confidences = []
 
             for line in res_ar[0]:
-                bbox = line[0]           # [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
-                text = line[1][0].strip()
+                bbox       = line[0]           # [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
+                text       = line[1][0].strip()
+                confidence = line[1][1]        # float in [0, 1]
                 vertical_center = (bbox[0][1] + bbox[2][1]) / 2
 
                 raw_texts.append(text)
 
                 if vertical_center >= header_cutoff:
                     filtered_texts.append(text)
+                    filtered_confidences.append(confidence)
 
             raw_text      = " ".join(raw_texts)      if raw_texts      else None
             filtered_text = " ".join(filtered_texts) if filtered_texts else None
+            avg_confidence = (sum(filtered_confidences) / len(filtered_confidences)
+                              if filtered_confidences else 0.0)
 
             if debug_annotated_path is not None:
                 annotated = plate_img.copy()
@@ -86,7 +91,7 @@ class PlateReader:
                 os.makedirs(os.path.dirname(debug_annotated_path), exist_ok=True)
                 cv2.imwrite(debug_annotated_path, annotated)
 
-            return filtered_text, raw_text
+            return filtered_text, raw_text, avg_confidence
 
         except Exception:
-            return None, None
+            return None, None, 0.0

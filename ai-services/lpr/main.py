@@ -18,7 +18,7 @@ GATE_COOLDOWN = 5  # seconds before the gate can open again
 # --- Configuration ---
 
 INPUT_VIDEO = "input/captured (2).mp4"
-OUTPUT_VIDEO = "output/output_video_cap2.mp4"
+OUTPUT_VIDEO = "output/output_video_debug.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
@@ -113,8 +113,6 @@ def valid_egyptian_plate(text):
 
     return True
 
-
-
 def choose_gate_car(cars, gate_zone):
     """
     Selects the most relevant car inside the gate zone.
@@ -196,55 +194,59 @@ def select_gate_car(cars, gate_zone, use_gate_zone):
 
 def reconstruct_plate_from_partials(candidates):
     """
-    Reconstructs a full Egyptian plate from a list of partial OCR reads.
-    Example: ['٧٢٣', '١٧٢٣', 'م ي'] → '١٧٢٣ م ي'
+    Reconstructs a full Egyptian plate from a list of (text, confidence) reads.
+    Example: [('٧٢٣', 0.91), ('١٧٢٣ م ي', 0.95)] → '١٧٢٣ م ي'
 
-    Finds the most frequent digit sequence (≥3 digits) and letter pair (exactly 2 letters)
-    across all candidates, then combines them into the standard Egyptian format.
+    Uses confidence-weighted voting — each read's contribution is weighted by its
+    OCR confidence score so high-confidence reads outweigh uncertain ones.
+    Digits and letters are voted on independently and then combined.
     Returns the reconstructed plate string, or None if insufficient data.
     """
     if not candidates or len(candidates) < 2:
         return None
 
-    digit_parts = []
-    letter_parts = []
+    from collections import defaultdict
 
-    for candidate in candidates:
+    digit_weights  = defaultdict(float)
+    letter_weights = defaultdict(float)
+
+    for candidate, confidence in candidates:
         text = re.sub(r"\s+", " ", str(candidate).strip())
 
-        digits = re.findall(r"[٠-٩]", text)
+        digits  = re.findall(r"[٠-٩]", text)
         letters = re.findall(r"[ء-ي]", text)
 
         if len(digits) >= 3:
-            digit_str = ''.join(digits)
-            digit_parts.append(digit_str)
+            digit_weights[''.join(digits)] += confidence
 
-        # Collect letter groups of 2 or 3, matching the two valid Egyptian plate formats.
-        # The old exact-2 check caused 3-letter plates to never contribute letters to
-        # letter_parts, leaving letter_parts empty and making reconstruction always fail.
         if 2 <= len(letters) <= 3:
-            letter_str = ' '.join(letters)
-            letter_parts.append(letter_str)
+            letter_weights[' '.join(letters)] += confidence
 
-    from collections import Counter
-
-    best_digits = None
-    if digit_parts:
-        digit_counter = Counter(digit_parts)
-        most_common_digits = digit_counter.most_common(1)
-        if most_common_digits and most_common_digits[0][1] >= 1:
-            best_digits = most_common_digits[0][0]
-
-    best_letters = None
-    if letter_parts:
-        letter_counter = Counter(letter_parts)
-        most_common_letters = letter_counter.most_common(1)
-        if most_common_letters and most_common_letters[0][1] >= 1:
-            best_letters = most_common_letters[0][0]
+    best_digits  = max(digit_weights,  key=digit_weights.get)  if digit_weights  else None
+    best_letters = max(letter_weights, key=letter_weights.get) if letter_weights else None
 
     if best_digits and best_letters:
-        # Egyptian format: digit group followed by letter pair (e.g. "١٧٢٣ م ي")
         reconstructed = f"{best_digits} {best_letters}"
+
+        # Tiebreaker check: if the single highest-confidence FULL read (one that contains
+        # both valid digits and valid letters) disagrees with the weighted winner, the vote
+        # is uncertain — defer and collect one more read.
+        # Partial reads (digits only, no letters) are skipped — they cannot speak to whether
+        # the letter component is correct and would cause false tiebreaker triggers.
+        # In the common case (all reads agree) this check passes immediately with no delay.
+        full_reads = [
+            (t, c) for t, c in candidates
+            if 2 <= len(re.findall(r"[ء-ي]", t)) <= 3
+        ]
+        if full_reads:
+            best_full_text, _ = max(full_reads, key=lambda x: x[1])
+            best_full_letters = ' '.join(re.findall(r"[ء-ي]", best_full_text))
+
+            # Only check letters — digit disagreement between full and partial reads
+            # is handled by the weighted digit vote, not the tiebreaker.
+            if best_full_letters != best_letters:
+                return None  # letter disagreement — wait for more reads to break the tie
+
         return reconstructed
 
     return None
@@ -265,6 +267,7 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
         'plate_crop_size': None,
         'ocr_raw': None,
         'ocr_filtered': None,
+        'ocr_confidence': 0.0,
         'digits_found': None,
         'letters_found': [],
         'validation_passed': False,
@@ -325,9 +328,10 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
     if save_plates:
         debug_annotated_path = f"debug/plate_boxes/car_{car.id}_frame_{frame_index}.jpg"
 
-    filtered_text, raw_text = plate_reader.read_plate_with_boxes(plate_img, debug_annotated_path=debug_annotated_path)
-    debug_info['ocr_raw']      = raw_text      if raw_text      else "NULL"
-    debug_info['ocr_filtered'] = filtered_text if filtered_text else "NULL"
+    filtered_text, raw_text, avg_confidence = plate_reader.read_plate_with_boxes(plate_img, debug_annotated_path=debug_annotated_path)
+    debug_info['ocr_raw']        = raw_text      if raw_text      else "NULL"
+    debug_info['ocr_filtered']   = filtered_text if filtered_text else "NULL"
+    debug_info['ocr_confidence'] = avg_confidence
 
     if not filtered_text:
         debug_info['rejection_reason'] = "OCR returned empty"
@@ -473,6 +477,7 @@ while True:
                         print(f"  └─ OCR Filtered:  '{debug_info['ocr_filtered']}'")
                         print(f"  └─ Digits found:  '{debug_info['digits_found']}'")
                         print(f"  └─ Letters found: {debug_info['letters_found']}")
+                        print(f"  └─ Confidence:    {debug_info['ocr_confidence']:.2f}")
                     if debug_info['validation_passed']:
                         print(f"  └─ ✓ VALID PLATE")
                     else:
@@ -482,7 +487,7 @@ while True:
                     if not hasattr(gate_car, 'plate_candidates'):
                         gate_car.plate_candidates = []
 
-                    gate_car.plate_candidates.append(plate_text)
+                    gate_car.plate_candidates.append((plate_text, debug_info['ocr_confidence']))
 
                     if DEBUG_MODE:
                         print(f"  └─ Added to candidates. Total: {len(gate_car.plate_candidates)}")
@@ -497,21 +502,26 @@ while True:
 
                             print(f"\n{'='*60}")
                             print(f"[ENTRY] Plate detected: {full_plate}")
-                            print(f"[INFO] Reconstructed from: {gate_car.plate_candidates}")
+                            print(f"[INFO] Reconstructed from: {[t for t, _ in gate_car.plate_candidates]}")
 
                             try_open_gate_with_db(full_plate)
 
                             print(f"[TIMING] Approximate time: {frame_index / fps:.2f}s")
                             print(f"{'='*60}\n")
 
-                    # Fallback: after 6+ failed reconstruction attempts, accept the most
-                    # frequently seen partial read if it meets the stability threshold
+                    # Fallback: after 6+ failed reconstruction attempts, accept the
+                    # highest confidence-weighted partial read if seen enough times
                     if not gate_car.final_plate and len(gate_car.plate_candidates) >= 6:
-                        from collections import Counter
-                        counts = Counter(gate_car.plate_candidates)
-                        most_common_text, count = counts.most_common(1)[0]
+                        from collections import defaultdict
+                        weight_map = defaultdict(float)
+                        count_map  = defaultdict(int)
+                        for t, conf in gate_car.plate_candidates:
+                            weight_map[t] += conf
+                            count_map[t]  += 1
 
-                        if count >= PLATE_STABILITY_COUNT:
+                        most_common_text = max(weight_map, key=weight_map.get)
+
+                        if count_map[most_common_text] >= PLATE_STABILITY_COUNT:
                             gate_car.final_plate = most_common_text
 
                             print(f"\n{'='*60}")
@@ -558,10 +568,12 @@ while True:
 
         # Show how many reads have been collected toward the stability threshold
         if hasattr(gate_car, 'plate_candidates') and gate_car.plate_candidates:
-            from collections import Counter
-            counts = Counter(gate_car.plate_candidates)
-            most_common = counts.most_common(1)[0]
-            debug_text = f"Candidates: {most_common[1]}/{PLATE_STABILITY_COUNT}"
+            from collections import defaultdict
+            count_map = defaultdict(int)
+            for t, _ in gate_car.plate_candidates:
+                count_map[t] += 1
+            best_text  = max(count_map, key=count_map.get)
+            debug_text = f"Candidates: {count_map[best_text]}/{PLATE_STABILITY_COUNT}"
 
             cv2.putText(
                 frame,
@@ -574,12 +586,12 @@ while True:
             )
 
             if DEBUG_MODE and len(gate_car.plate_candidates) > 0:
-                unique_plates = list(set(gate_car.plate_candidates))
+                unique_plates = list(dict.fromkeys(t for t, _ in gate_car.plate_candidates))
                 y_offset = 40
                 for idx, plate in enumerate(unique_plates[:3]):
                     cv2.putText(
                         frame,
-                        f"{idx+1}. {plate} ({gate_car.plate_candidates.count(plate)}x)",
+                        f"{idx+1}. {plate} ({count_map[plate]}x)",
                         (gate_car.x1, gate_car.y2 + y_offset),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.4,
