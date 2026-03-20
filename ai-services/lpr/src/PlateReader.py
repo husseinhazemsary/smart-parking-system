@@ -37,20 +37,6 @@ class PlateReader:
             return None, None, 0.0
 
         try:
-            # Preprocess: upscale 2x then apply CLAHE to boost local contrast.
-            # PaddleOCR's DB text detector scores pixels by how well they match
-            # learned text stroke patterns — low-contrast regions (like the digit
-            # half of some plates) score below det_db_thresh and are silently dropped.
-            # Upscaling gives the detector more pixels per stroke; CLAHE amplifies
-            # local contrast independently in each tile so the digit area is enhanced
-            # without washing out the letter area which is already clear.
-            h_orig, w_orig = plate_img.shape[:2]
-            plate_img = cv2.resize(plate_img, (w_orig * 2, h_orig * 2), interpolation=cv2.INTER_CUBIC)
-            gray = cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY)
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
-            gray = clahe.apply(gray)
-            plate_img = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-
             res_ar = self.ocr_ar.ocr(plate_img, cls=False)
             if not res_ar or not res_ar[0]:
                 return None, None, 0.0
