@@ -31,6 +31,9 @@ inference_results/
 output/
 log_output/
 
+# Input videos (large binaries — keep locally, not in repo)
+input/
+
 # OS
 .DS_Store
 Thumbs.db
