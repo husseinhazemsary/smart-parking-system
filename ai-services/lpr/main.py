@@ -17,8 +17,8 @@ GATE_COOLDOWN = 5  # seconds before the gate can open again
 
 # --- Configuration ---
 
-INPUT_VIDEO = "input/captured (2).mp4"
-OUTPUT_VIDEO = "output/output_video_cap2.mp4"
+INPUT_VIDEO = "input/captured (3).mp4"
+OUTPUT_VIDEO = "output/output_video_cap3.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
@@ -86,7 +86,7 @@ def extract_plate_components(filtered_text):
 def valid_egyptian_plate(text):
     """
     Strict validation for Egyptian license plate format.
-    Requires 2-3 Arabic letters and at least 3 Arabic digits.
+    Requires 2-3 Arabic letters and exactly 3-4 Arabic digits.
     Rejects any text containing Latin characters.
 
     Egyptian plates use exactly 2 letters for private cars (e.g. "م ي ١٧٢٣")
@@ -108,7 +108,9 @@ def valid_egyptian_plate(text):
     # Anything outside this range is noise or an unrecognised format.
     if not (2 <= len(arabic_letters) <= 3):
         return False
-    if len(arabic_digits) < 3:
+    # Egyptian plates have 3–4 digits. More than 4 means OCR merged a noise
+    # region into the digit string (e.g. upscaling picked up a border artifact).
+    if not (3 <= len(arabic_digits) <= 4):
         return False
 
     return True
@@ -216,7 +218,7 @@ def reconstruct_plate_from_partials(candidates):
         digits  = re.findall(r"[٠-٩]", text)
         letters = re.findall(r"[ء-ي]", text)
 
-        if len(digits) >= 3:
+        if 3 <= len(digits) <= 4:
             digit_weights[''.join(digits)] += confidence
 
         if 2 <= len(letters) <= 3:

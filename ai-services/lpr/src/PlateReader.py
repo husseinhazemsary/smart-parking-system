@@ -4,6 +4,7 @@ from paddleocr import PaddleOCR
 import logging
 import cv2
 import os
+import re
 
 logging.getLogger("ppocr").setLevel(logging.WARNING)
 
@@ -23,6 +24,15 @@ class PlateReader:
         import numpy as np
         self.ocr_ar.ocr(np.zeros((64, 128, 3), dtype=np.uint8), cls=False)
 
+    def _preprocess(self, img):
+        """
+        Upscale 2x. Used as a fallback when the first OCR pass finds no digits.
+        Larger image gives the DB detector more pixels per stroke, pushing low-scoring
+        regions above det_db_thresh without altering stroke shapes the way CLAHE can.
+        """
+        h, w = img.shape[:2]
+        return cv2.resize(img, (w * 2, h * 2), interpolation=cv2.INTER_CUBIC)
+
     def read_plate_with_boxes(self, plate_img, debug_annotated_path=None):
         """
         Runs Arabic OCR and discards text blocks whose vertical center falls in
@@ -38,6 +48,19 @@ class PlateReader:
 
         try:
             res_ar = self.ocr_ar.ocr(plate_img, cls=False)
+
+            # If the first pass returned no results or no Arabic digits, retry with
+            # a 2x upscaled version. This handles plates where the digit region scores
+            # below det_db_thresh on the original crop — more pixels per stroke pushes
+            # the probability map above the threshold without altering stroke shapes.
+            # Plates that already produced digits on the first pass are left untouched.
+            if not res_ar or not res_ar[0] or not any(
+                re.search(r"[٠-٩]", line[1][0]) for line in res_ar[0]
+            ):
+                print("[OCR] No digits on first pass — retrying with preprocessing")
+                plate_img = self._preprocess(plate_img)
+                res_ar = self.ocr_ar.ocr(plate_img, cls=False)
+
             if not res_ar or not res_ar[0]:
                 return None, None, 0.0
 
