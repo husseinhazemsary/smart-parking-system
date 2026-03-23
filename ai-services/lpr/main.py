@@ -17,8 +17,8 @@ GATE_COOLDOWN = 5  # seconds before the gate can open again
 
 # --- Configuration ---
 
-INPUT_VIDEO = "input/captured (3).mp4"
-OUTPUT_VIDEO = "output/output_video_cap3.mp4"
+INPUT_VIDEO = "input/video.mp4"
+OUTPUT_VIDEO = "output/output_video.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
