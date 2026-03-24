@@ -114,6 +114,10 @@ Project Updates.md
 **/data/
 **/datasets/
 
+# Roboflow Egyptian License Plate dataset
+ai-services/Egyptian License Plate Dataset.v1i.coco/
+ai-services/Egyptian License Plate Dataset.v1i.coco.zip
+
 # Generated outputs (processed videos, results)
 **/output/
 **/outputs/
