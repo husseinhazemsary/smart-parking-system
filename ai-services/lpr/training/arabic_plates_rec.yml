@@ -13,7 +13,7 @@ Global:
   use_visualdl: false
   infer_img: null
   character_dict_path: /kaggle/input/egyptian-license-plates/dict.txt
-  max_text_length: &max_text_length 15
+  max_text_length: 15
   infer_mode: false
   use_space_char: false
   distributed: false
@@ -53,17 +53,13 @@ Architecture:
     head_list:
       - CTCHead:
           Neck:
-            name: svtr
-            dims: 120
-            depth: 2
-            hidden_dims: 120
-            kernel_size: [1, 3]
-            use_guide: False
+            name: rnn
+            hidden_size: 48
           Head:
             fc_decay: 0.00001
       - SARHead:
           enc_dim: 512
-          max_text_length: *max_text_length
+          max_text_length: 15
 
 Loss:
   name: MultiLoss
@@ -90,7 +86,6 @@ Train:
           channel_first: false
       - RecAug:
       - MultiLabelEncode:
-          gtc_encode: SARLabelEncode
       - RecResizeImg:
           image_shape: [3, 48, 320]
       - KeepKeys:
@@ -117,7 +112,6 @@ Eval:
           img_mode: BGR
           channel_first: false
       - MultiLabelEncode:
-          gtc_encode: SARLabelEncode
       - RecResizeImg:
           image_shape: [3, 48, 320]
       - KeepKeys:
