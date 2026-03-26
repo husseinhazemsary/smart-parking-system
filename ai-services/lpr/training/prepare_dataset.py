@@ -150,7 +150,8 @@ def convert_split(split_dir, output_label_path):
     # image_id → filename
     id_to_file = {img['id']: img['file_name'] for img in data['images']}
 
-    labels = []
+    # Build (image_path, text) pairs first, before consistency filtering
+    candidates = []
     skipped = 0
 
     for image_id, chars in ann_by_image.items():
@@ -168,15 +169,43 @@ def convert_split(split_dir, output_label_path):
             continue
 
         filename = id_to_file[image_id]
-        image_path = os.path.abspath(os.path.join(split_dir, filename)).replace('\\', '/')
-        labels.append(f"{image_path}\t{text}")
+        split_name = os.path.basename(split_dir)
+        image_path = f"{split_name}/{filename}"
+        candidates.append((image_path, text, filename))
+
+    # -----------------------------------------------------------------------
+    # Consistency filter: group augmented versions of the same source image
+    # and keep only those whose text matches the longest (most complete) text
+    # in the group. This discards cropped augmentations that lost characters.
+    #
+    # Source image is identified by stripping the ".rf.<hash>" Roboflow suffix.
+    # e.g. "00292_jpg.rf.2f83ef04...jpg" → source key "00292_jpg"
+    # -----------------------------------------------------------------------
+    from collections import defaultdict as _dd
+
+    groups = _dd(list)  # source_key → [(image_path, text)]
+    for image_path, text, filename in candidates:
+        # filename looks like: 00292_jpg.rf.2f83ef04....jpg
+        source_key = filename.split('.rf.')[0] if '.rf.' in filename else filename
+        groups[source_key].append((image_path, text))
+
+    labels = []
+    consistency_skipped = 0
+    for source_key, entries in groups.items():
+        longest = max(len(text) for _, text in entries)
+        for image_path, text in entries:
+            if len(text) == longest:
+                labels.append(f"{image_path}\t{text}")
+            else:
+                consistency_skipped += 1
+                skipped += 1
 
     with open(output_label_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(labels))
 
     print(f"  [OK] {len(labels)} labels written ({skipped} images skipped)")
-    if skipped:
-        print(f"       {skipped} images had no/incomplete character annotations")
+    if consistency_skipped:
+        print(f"       {consistency_skipped} cropped augmentations removed (inconsistent text vs source image)")
 
 
 if __name__ == '__main__':

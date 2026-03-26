@@ -1,23 +1,23 @@
 Global:
   use_gpu: true
-  epoch_num: 100
+  epoch_num: 300
   log_smooth_window: 20
   print_batch_step: 10
-  save_model_dir: /content/drive/MyDrive/paddle_output/rec_arabic_plates
+  save_model_dir: /kaggle/working/output/rec_arabic_plates
   save_epoch_step: 5
   eval_batch_step: [0, 500]
   cal_metric_during_train: true
-  pretrained_model: /content/PaddleOCR/pretrain_models/arabic_PP-OCRv3_rec_train/best_accuracy
+  pretrained_model: /kaggle/working/pretrain_models/arabic_PP-OCRv3_rec_train/best_accuracy
   checkpoints: null
   save_inference_dir: null
   use_visualdl: false
   infer_img: null
-  character_dict_path: /content/dataset/dict.txt
+  character_dict_path: /kaggle/input/egyptian-license-plates/dict.txt
   max_text_length: &max_text_length 15
   infer_mode: false
   use_space_char: false
   distributed: false
-  save_res_path: /content/drive/MyDrive/paddle_output/predicts.txt
+  save_res_path: /kaggle/working/output/predicts.txt
 
 Optimizer:
   name: Adam
@@ -81,9 +81,9 @@ Metric:
 Train:
   dataset:
     name: SimpleDataSet
-    data_dir: /content/dataset
+    data_dir: /kaggle/input/egyptian-license-plates
     label_file_list:
-      - /content/dataset/train_labels.txt
+      - /kaggle/input/egyptian-license-plates/train_labels.txt
     transforms:
       - DecodeImage:
           img_mode: BGR
@@ -109,9 +109,9 @@ Train:
 Eval:
   dataset:
     name: SimpleDataSet
-    data_dir: /content/dataset
+    data_dir: /kaggle/input/egyptian-license-plates
     label_file_list:
-      - /content/dataset/valid_labels.txt
+      - /kaggle/input/egyptian-license-plates/valid_labels.txt
     transforms:
       - DecodeImage:
           img_mode: BGR
