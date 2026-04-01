@@ -97,11 +97,13 @@ class PlateReader:
                 cv2.putText(annotated, "30%", (2, cutoff_y - 3),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 165, 255), 1)
 
-                for line in res_ar[0]:
+                for i, line in enumerate(res_ar[0], start=1):
                     bbox = line[0]
                     text = line[1][0].strip()
                     vertical_center = (bbox[0][1] + bbox[2][1]) / 2
                     kept = vertical_center >= cutoff_y
+
+                    print(f"[OCR] region {i}: text={text!r} y_center={int(vertical_center)} {'KEEP' if kept else 'DROP'}")
 
                     color = (0, 255, 0) if kept else (0, 0, 255)  # green kept, red discarded
                     pts = [(int(p[0]), int(p[1])) for p in bbox]
