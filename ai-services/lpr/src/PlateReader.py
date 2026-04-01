@@ -49,23 +49,30 @@ class PlateReader:
         try:
             res_ar = self.ocr_ar.ocr(plate_img, cls=False)
 
-            # If the first pass returned no results or no Arabic digits, retry with
-            # a 2x upscaled version. This handles plates where the digit region scores
-            # below det_db_thresh on the original crop — more pixels per stroke pushes
-            # the probability map above the threshold without altering stroke shapes.
-            # Plates that already produced digits on the first pass are left untouched.
-            if not res_ar or not res_ar[0] or not any(
-                re.search(r"[٠-٩]", line[1][0]) for line in res_ar[0]
-            ):
-                print("[OCR] No digits on first pass — retrying with preprocessing")
+            img_h = plate_img.shape[0]
+            header_cutoff = img_h * 0.30  # top 30% is the header band
+
+            # If the first pass returned no results, or the filtered regions (below the
+            # header band) are missing digits or letters, retry with a 2x upscaled version.
+            # Checking filtered regions avoids false positives where only the header ("مصر")
+            # was detected — those letters get dropped later anyway.
+            def _body_lines(result):
+                if not result or not result[0]:
+                    return []
+                return [l for l in result[0] if (l[0][0][1] + l[0][2][1]) / 2 >= header_cutoff]
+
+            body = _body_lines(res_ar)
+            has_digits  = any(re.search(r"[٠-٩]", l[1][0]) for l in body)
+            has_letters = any(re.search(r"[\u0600-\u065F\u0670-\u06EF]", l[1][0]) for l in body)
+            if not has_digits or not has_letters:
+                print(f"[OCR] Incomplete read (digits={'yes' if has_digits else 'no'}, letters={'yes' if has_letters else 'no'}) — retrying with preprocessing")
                 plate_img = self._preprocess(plate_img)
                 res_ar = self.ocr_ar.ocr(plate_img, cls=False)
+                img_h = plate_img.shape[0]
+                header_cutoff = img_h * 0.30
 
             if not res_ar or not res_ar[0]:
                 return None, None, 0.0
-
-            img_h = plate_img.shape[0]
-            header_cutoff = img_h * 0.30  # top 30% is the header band
 
             raw_texts = []
             filtered_texts = []
