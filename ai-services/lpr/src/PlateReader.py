@@ -26,7 +26,7 @@ class PlateReader:
 
     def _preprocess(self, img):
         """
-        Upscale 2x. Used as a fallback when the first OCR pass finds no digits.
+        Upscale 2x. Used as a fallback when the first OCR pass finds no digits or letters.
         Larger image gives the DB detector more pixels per stroke, pushing low-scoring
         regions above det_db_thresh without altering stroke shapes the way CLAHE can.
         """
