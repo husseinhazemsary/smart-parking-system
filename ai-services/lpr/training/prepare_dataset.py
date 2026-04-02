@@ -159,9 +159,17 @@ def convert_split(split_dir, output_label_path):
             skipped += 1
             continue
 
-        # Arabic is read right-to-left: sort by center_x descending
-        chars.sort(key=lambda item: item[0], reverse=True)
-        text = ''.join(char for _, char in chars)
+        # Egyptian plates: letters on the right (RTL), digits on the left (LTR).
+        # Applying a single RTL sort to everything reverses the digit group.
+        # Fix: sort each group by its own reading direction, then concatenate.
+        is_digit = lambda ch: '\u0660' <= ch <= '\u0669'
+        letters = [(cx, ch) for cx, ch in chars if not is_digit(ch)]
+        digits  = [(cx, ch) for cx, ch in chars if is_digit(ch)]
+
+        letters.sort(key=lambda item: item[0], reverse=True)  # RTL
+        digits.sort(key=lambda item: item[0])                  # LTR
+
+        text = ''.join(ch for _, ch in letters) + ''.join(ch for _, ch in digits)
 
         # Skip partial crops (fewer than 4 characters — not a complete plate)
         if len(text) < 4:

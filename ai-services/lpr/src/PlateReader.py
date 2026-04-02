@@ -66,7 +66,14 @@ class PlateReader:
             has_letters = any(re.search(r"[\u0600-\u065F\u0670-\u06EF]", l[1][0]) for l in body)
             if not has_digits or not has_letters:
                 print(f"[OCR] Incomplete read (digits={'yes' if has_digits else 'no'}, letters={'yes' if has_letters else 'no'}) — retrying with preprocessing")
+                if debug_annotated_path is not None:
+                    base = os.path.splitext(os.path.basename(debug_annotated_path))[0]
+                    compare_dir = "debug/upscale_compare"
+                    os.makedirs(compare_dir, exist_ok=True)
+                    cv2.imwrite(f"{compare_dir}/{base}_original.jpg", plate_img)
                 plate_img = self._preprocess(plate_img)
+                if debug_annotated_path is not None:
+                    cv2.imwrite(f"{compare_dir}/{base}_upscaled.jpg", plate_img)
                 res_ar = self.ocr_ar.ocr(plate_img, cls=False)
                 img_h = plate_img.shape[0]
                 header_cutoff = img_h * 0.30
