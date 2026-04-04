@@ -1,5 +1,16 @@
-opencv-python==4.8.1.78
-numpy==1.24.3
-ultralytics==8.0.196
-supervision==0.16.0
-pyyaml==6.0.1
+# requirements.txt
+
+# Core AI / Detection
+ultralytics>=8.1.0
+torch>=2.2.0
+torchvision>=0.17.0
+
+# Computer Vision
+opencv-python>=4.9.0
+numpy>=1.26.0
+
+# Clustering
+scikit-learn>=1.4.0
+
+# Utilities
+tqdm>=4.66.0

@@ -1,6 +1,6 @@
 {
     "profile_id": "camera_1",
-    "src_points": "325,131 651,170 622,246 229,170",
+    "src_points": "327,134 643,174 619,234 228,169",
     "calibration_mode": "repeat_from_first_slot",
     "warp_w": 1400,
     "warp_h": 500,
@@ -8,13 +8,13 @@
     "row_margin_bottom": 20,
     "repeat_slot": {
         "first_slot_rect_warp": [
-            56.0,
-            27.0,
-            363.0,
-            487.0
+            28.0,
+            4.0,
+            347.0,
+            488.0
         ],
-        "row_start_x": 56.0,
-        "row_end_x": 1354.0,
+        "row_start_x": 28.0,
+        "row_end_x": 1381.0,
         "direction": "right"
     }
 }
