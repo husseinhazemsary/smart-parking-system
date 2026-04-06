@@ -8,21 +8,11 @@ import re
 
 logging.getLogger("ppocr").setLevel(logging.WARNING)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DET_MODEL_DIR = os.path.join(BASE_DIR, "weights", "det")
-CLS_MODEL_DIR = os.path.join(BASE_DIR, "weights", "cls")
-REC_MODEL_DIR = os.path.join(BASE_DIR, "models", "arabic_plates_rec")
-REC_ONNX_MODEL = os.path.join(REC_MODEL_DIR, "arabic_plates_rec.onnx")
-REC_CHAR_DICT = os.path.join(REC_MODEL_DIR, "dict.txt")
-
 class PlateReader:
     def __init__(self):
         self.ocr_ar = PaddleOCR(
             lang="ar",
-            use_gpu=False,
-            use_onnx=True,
-            rec_model_dir=REC_ONNX_MODEL,
-            rec_char_dict_path=REC_CHAR_DICT,
+            use_gpu=True,
             det_db_thresh=0.05,
             det_db_box_thresh=0.08,
             det_db_unclip_ratio=3.0
@@ -142,8 +132,5 @@ class PlateReader:
 
             return filtered_text, raw_text, avg_confidence
 
-        except Exception as e:
-            import traceback
-            print(f"[OCR ERROR] {e}")
-            traceback.print_exc()
+        except Exception:
             return None, None, 0.0
