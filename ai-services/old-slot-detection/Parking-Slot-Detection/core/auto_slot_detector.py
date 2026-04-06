@@ -1,6 +1,10 @@
 """
-Fixed automatic parking slot detection
-Addresses spatial relationship, line filtering, and polygon validation issues
+Perspective-aware automatic parking slot detection.
+Works with angled/perspective camera views by:
+1. Detecting row boundary lines
+2. Warping the parking area to a clean top-down view
+3. Detecting slots on the straightened image
+4. Unwarping slot coordinates back to original image space
 """
 
 import cv2
@@ -10,552 +14,618 @@ import os
 
 
 class AutoSlotDetector:
-    """
-    Improved parking slot detector with spatial awareness
-    """
-    
+
     def __init__(self, image_path):
-        """
-        Initialize with empty parking lot image
-        """
         self.image = cv2.imread(image_path)
         if self.image is None:
             raise ValueError(f"Could not load image: {image_path}")
-        
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         self.height, self.width = self.image.shape[:2]
         self.slots = []
-        
-    def detect_slots(self, min_slot_width=30, max_slot_width=150):
-        """
-        Main detection pipeline with improved spatial logic
-        """
-        print("Step 1: Detecting parking area...")
-        parking_mask = self.detect_parking_area()
-        
-        print("Step 2: Enhancing parking lines...")
-        enhanced = self.enhance_parking_lines()
-        
-        print("Step 3: Detecting and filtering line segments...")
-        lines = self.detect_and_filter_lines(enhanced, parking_mask)
-        
-        print("Step 4: Merging line fragments...")
-        merged_lines = self.merge_line_fragments(lines)
-        
-        print("Step 5: Finding parking slots from spatial patterns...")
-        self.slots = self.find_slots_with_spatial_logic(
-            merged_lines, 
-            parking_mask,
-            min_slot_width,
-            max_slot_width
-        )
-        
-        print(f"✓ Detected {len(self.slots)} parking slots")
-        
+        self._homography = None          # original → warped
+        self._homography_inv = None      # warped → original
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def detect_slots(self, min_slot_width=30):
+        os.makedirs('output', exist_ok=True)
+
+        print("Step 1: Detecting parking area mask...")
+        parking_mask = self._detect_parking_mask()
+
+        print("Step 2: Detecting lines on original image...")
+        lines = self._detect_lines(self.gray, parking_mask, prefix="orig")
+        print(f"  Detected {len(lines)} line segments")
+
+        print("Step 3: Classifying lines into dividers and boundaries...")
+        dividers, boundaries = self._classify_lines(lines, self.image, prefix="orig")
+        print(f"  Dividers: {len(dividers)}, Boundaries: {len(boundaries)}")
+
+        print("Step 4: Clustering boundary lines into row pairs...")
+        row_pairs = self._find_row_pairs(boundaries, self.image)
+        print(f"  Found {len(row_pairs)} parking row(s)")
+
+        if not row_pairs:
+            print("  No row pairs found — cannot detect slots.")
+            return []
+
+        print("Step 5: Warping parking area to top-down view...")
+        warped, M, Minv, src_corners = self._warp_to_topdown(row_pairs, parking_mask)
+        if warped is None:
+            print("  Warp failed — falling back to direct detection.")
+            warped_gray = self.gray
+            use_warp = False
+        else:
+            cv2.imwrite('output/debug_step5_warped.jpg', warped)
+            print("  Saved: debug_step5_warped.jpg")
+            warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+            use_warp = True
+            self._homography = M
+            self._homography_inv = Minv
+
+        print("Step 6: Detecting lines on warped image...")
+        warped_mask = np.ones(warped_gray.shape, dtype=np.uint8) * 255
+        warped_lines = self._detect_lines(warped_gray,
+                                          warped_mask if use_warp else parking_mask,
+                                          prefix="warp")
+        print(f"  Detected {len(warped_lines)} line segments")
+
+        print("Step 7: Classifying warped lines...")
+        w_dividers, w_boundaries = self._classify_lines(warped_lines,
+                                                         warped if use_warp else self.image,
+                                                         prefix="warp")
+        print(f"  Dividers: {len(w_dividers)}, Boundaries: {len(w_boundaries)}")
+
+        print("Step 8: Finding row pairs in warped image...")
+        w_h = warped.shape[0] if use_warp else self.height
+        w_w = warped.shape[1] if use_warp else self.width
+        w_row_pairs = self._find_row_pairs(w_boundaries,
+                                            warped if use_warp else self.image,
+                                            prefix="warp",
+                                            img_h=w_h,
+                                            filter_white=use_warp)
+
+        # If warped row detection fails, use full-height rows spanning the warped image
+        if not w_row_pairs and use_warp:
+            print("  No rows found in warped image — using full image height as single row")
+            top_line = ((0, 0), (w_w, 0))
+            bot_line = ((0, w_h), (w_w, w_h))
+            w_row_pairs = [(top_line, bot_line)]
+
+        print("Step 9: Building slots in warped space...")
+        warped_slots = []
+        ref_img = warped if use_warp else self.image
+        for row_top, row_bottom in w_row_pairs:
+            row_slots = self._slots_in_row(w_dividers, row_top, row_bottom,
+                                            min_slot_width, ref_img)
+            warped_slots.extend(row_slots)
+        print(f"  Found {len(warped_slots)} slot(s) in warped space")
+
+        print("Step 10: Unwarping slot coordinates back to original image...")
+        if use_warp and warped_slots:
+            self.slots = self._unwarp_slots(warped_slots, Minv)
+        else:
+            self.slots = warped_slots
+
+        for i, slot in enumerate(self.slots):
+            slot['id'] = f'slot_{i + 1}'
+            slot['zone'] = self._auto_zone(slot['polygon'], i)
+
+        print(f"Done. Detected {len(self.slots)} parking slots")
         return self.slots
-    
-    def detect_parking_area(self):
-        """
-        FIX FOR PROBLEM 3: Create a mask of where parking area actually is
-        Filters out trees, buildings, sky, roads
-        """
-        # Convert to HSV
-        hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
-        
-        # Detect dark asphalt (parking lot surface)
-        # Asphalt is dark with low saturation
-        lower_asphalt = np.array([0, 0, 0])
-        upper_asphalt = np.array([180, 50, 100])
-        asphalt_mask = cv2.inRange(hsv, lower_asphalt, upper_asphalt)
-        
-        # Morphological operations to clean up
-        kernel_large = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
-        asphalt_mask = cv2.morphologyEx(asphalt_mask, cv2.MORPH_CLOSE, kernel_large)
-        asphalt_mask = cv2.morphologyEx(asphalt_mask, cv2.MORPH_OPEN, kernel_large)
-        
-        # Keep only large connected components (the main parking area)
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(asphalt_mask, connectivity=8)
-        
-        # Find largest component (background is label 0, so start from 1)
-        if num_labels > 1:
-            largest_component = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
-            parking_mask = (labels == largest_component).astype(np.uint8) * 255
-        else:
-            parking_mask = asphalt_mask
-        
-        print(f"  Parking area coverage: {np.sum(parking_mask > 0) / parking_mask.size * 100:.1f}%")
-        
-        return parking_mask
-    
-    def enhance_parking_lines(self):
-        """
-        Enhanced line detection focusing on white parking lines
-        """
-        # Apply CLAHE
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-        enhanced = clahe.apply(self.gray)
-        
-        # Strong threshold for white lines
-        _, binary = cv2.threshold(enhanced, 170, 255, cv2.THRESH_BINARY)
-        
-        # Clean up
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
-        
-        return binary
-    
-    def detect_and_filter_lines(self, binary_image, parking_mask):
-        """
-        FIX FOR PROBLEM 1 & 3: Detect lines and filter to parking area only
-        IMPROVED: Better detection of distant parking lines
-        """
-        # Edge detection
-        edges = cv2.Canny(binary_image, 30, 100, apertureSize=3)
-        
-        # Apply parking mask to edges
-        edges = cv2.bitwise_and(edges, edges, mask=parking_mask)
-        
-        # Hough Line Transform with LOWER thresholds for distant lines
-        lines = cv2.HoughLinesP(
-            edges,
-            rho=1,
-            theta=np.pi/180,
-            threshold=25,      # LOWERED from 40 to 25
-            minLineLength=15,  # LOWERED from 30 to 15
-            maxLineGap=15      # INCREASED from 10 to 15
-        )
-        
-        if lines is None:
-            print("  Warning: No lines detected")
-            return []
-        
-        # Convert to structured format
-        line_segments = []
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            
-            # Filter: Only keep lines within parking mask
-            mid_x = int((x1 + x2) / 2)
-            mid_y = int((y1 + y2) / 2)
-            
-            if 0 <= mid_y < parking_mask.shape[0] and 0 <= mid_x < parking_mask.shape[1]:
-                if parking_mask[mid_y, mid_x] > 0:
-                    angle = self.calculate_angle(x1, y1, x2, y2)
-                    length = np.sqrt((x2-x1)**2 + (y2-y1)**2)
-                    
-                    # Filter: Keep lines (even short ones for distant slots)
-                    if length > 15:  # LOWERED from 20 to 15
-                        line_segments.append({
-                            'start': (x1, y1),
-                            'end': (x2, y2),
-                            'angle': angle,
-                            'length': length
-                        })
-        
-        print(f"  Detected {len(line_segments)} line segments in parking area")
-        return line_segments
-    
-    def merge_line_fragments(self, lines, angle_tolerance=8, distance_tolerance=30):
-        """
-        FIX: More lenient merging to keep more individual slot divider lines
-        """
-        if len(lines) == 0:
-            return []
-        
-        merged = []
-        used = [False] * len(lines)
-        
-        for i, line in enumerate(lines):
-            if used[i]:
-                continue
-            
-            # Start new merged line
-            current_line = {
-                'start': line['start'],
-                'end': line['end'],
-                'angle': line['angle'],
-                'length': line['length']
-            }
-            used[i] = True
-            
-            # Find nearby lines with similar angle to merge
-            merged_something = True
-            iteration_count = 0
-            max_iterations = 3  # ADDED: Limit iterations to prevent over-merging
-            
-            while merged_something and iteration_count < max_iterations:
-                merged_something = False
-                iteration_count += 1
-                
-                for j, other in enumerate(lines):
-                    if used[j]:
-                        continue
-                    
-                    # Check if angles are similar
-                    angle_diff = abs(current_line['angle'] - other['angle'])
-                    if angle_diff > angle_tolerance and angle_diff < (180 - angle_tolerance):
-                        continue
-                    
-                    # Check if lines are close enough to merge
-                    distances = [
-                        np.linalg.norm(np.array(current_line['end']) - np.array(other['start'])),
-                        np.linalg.norm(np.array(current_line['start']) - np.array(other['end'])),
-                    ]
-                    min_dist = min(distances)
-                    
-                    if min_dist < distance_tolerance:
-                        # Merge: extend current line
-                        if distances[0] == min_dist:
-                            current_line['end'] = other['end']
-                        else:
-                            current_line['start'] = other['start']
-                        
-                        # Recalculate length
-                        current_line['length'] = np.linalg.norm(
-                            np.array(current_line['end']) - np.array(current_line['start'])
-                        )
-                        
-                        used[j] = True
-                        merged_something = True
-            
-            merged.append(current_line)
-        
-        # CHANGED: Keep shorter lines too (they might be individual slot dividers)
-        merged = [l for l in merged if l['length'] > 25]  # Was 40, now 25
-        
-        print(f"  Merged into {len(merged)} continuous lines")
-        return merged
-    
-    def calculate_angle(self, x1, y1, x2, y2):
-        """Calculate angle of line in degrees"""
-        angle = np.degrees(np.arctan2(y2 - y1, x2 - x1))
-        return angle % 180
-    
-    def find_slots_with_spatial_logic(self, lines, parking_mask, min_slot_width, max_slot_width):
-        """
-        FIX FOR PROBLEM 2 & 4: Use spatial logic to find actual parking slots
-        Only pairs lines that are spatially adjacent, not just sorted-order adjacent
-        ADDED: Filter out horizontal/vertical lines (not slot dividers)
-        """
-        if len(lines) < 2:
-            return []
-        
-        # Group parallel lines
-        angle_groups = self.group_parallel_lines(lines, angle_tolerance=10)
-        
-        print(f"  Found {len(angle_groups)} groups of parallel lines")
-        
-        # FILTER: Remove groups that are too horizontal or too vertical
-        # Parking slot dividers are angled (typically 30-150 degrees, not 0-20 or 160-180)
-        filtered_groups = []
-        for group in angle_groups:
-            angle = group['angle']
-            # Keep only angled lines (exclude near-horizontal and near-vertical)
-            if 25 < angle < 155:  # Only keep angled lines
-                filtered_groups.append(group)
-                print(f"  ✓ Keeping group with {len(group['lines'])} lines at {angle:.1f}° (angled)")
-            else:
-                print(f"  ✗ Filtering out group with {len(group['lines'])} lines at {angle:.1f}° (too horizontal/vertical)")
-        
-        if len(filtered_groups) == 0:
-            print("  Warning: No angled line groups found after filtering")
-            # Fallback: use all groups if filtering removed everything
-            filtered_groups = angle_groups[:3]
-        
-        slots = []
-        
-        # Process the filtered groups (actual slot dividers)
-        for group_idx, group in enumerate(filtered_groups[:3]):  # Check top 3 filtered groups
-            group_lines = group['lines']
-            
-            if len(group_lines) < 2:
-                continue
-            
-            print(f"  Analyzing group {group_idx+1}: {len(group_lines)} lines at ~{group['angle']:.1f}°")
-            
-            # Sort lines by perpendicular position
-            sorted_lines = self.sort_lines_by_position(group_lines, group['angle'])
-            
-            # FIX: Only pair lines that are spatially close (actual slot width)
-            for i in range(len(sorted_lines) - 1):
-                line1 = sorted_lines[i]
-                line2 = sorted_lines[i + 1]
-                
-                # Calculate perpendicular distance between lines
-                distance = self.perpendicular_distance_between_lines(line1, line2, group['angle'])
-                
-                # Only create slot if distance is reasonable for a parking slot
-                if min_slot_width < distance < max_slot_width:
-                    slot_polygon = self.create_slot_between_spatially_adjacent_lines(
-                        line1, 
-                        line2,
-                        group['angle']
-                    )
-                    
-                    if slot_polygon is not None:
-                        # Validate: polygon should be in parking area
-                        if self.validate_slot_polygon(slot_polygon, parking_mask):
-                            area = cv2.contourArea(np.array(slot_polygon, dtype=np.float32))
-                            
-                            if 2000 < area < 100000:  # Reasonable slot area
-                                slots.append({
-                                    'id': f'slot_{len(slots) + 1}',
-                                    'polygon': slot_polygon,
-                                    'type': 'regular',
-                                    'zone': self.auto_assign_zone(slot_polygon, len(slots)),
-                                    'area': area,
-                                    'width': distance
-                                })
-        
-        return slots
-    def perpendicular_distance_between_lines(self, line1, line2, angle):
-        """
-        Calculate perpendicular distance between two parallel lines
-        """
-        # Get midpoints
-        mid1 = ((line1['start'][0] + line1['end'][0]) / 2, 
-                (line1['start'][1] + line1['end'][1]) / 2)
-        mid2 = ((line2['start'][0] + line2['end'][0]) / 2,
-                (line2['start'][1] + line2['end'][1]) / 2)
-        
-        # Calculate perpendicular angle
-        perp_angle = (angle + 90) % 180
-        perp_rad = np.radians(perp_angle)
-        
-        # Project midpoints onto perpendicular axis
-        proj1 = mid1[0] * np.cos(perp_rad) + mid1[1] * np.sin(perp_rad)
-        proj2 = mid2[0] * np.cos(perp_rad) + mid2[1] * np.sin(perp_rad)
-        
-        return abs(proj2 - proj1)
-    
-    def create_slot_between_spatially_adjacent_lines(self, line1, line2, angle):
-        """
-        FIX FOR PROBLEM 1: Create proper rectangular polygon between two spatially adjacent lines
-        Uses line extensions to create clean rectangles
-        """
-        # Extend both lines to same length for clean rectangles
-        # Use the longer line as reference
-        max_length = max(line1['length'], line2['length'])
-        
-        # Extend line1
-        dx = line1['end'][0] - line1['start'][0]
-        dy = line1['end'][1] - line1['start'][1]
-        current_length = np.sqrt(dx**2 + dy**2)
-        
-        if current_length > 0:
-            scale = max_length / current_length
-            line1_extended_end = (
-                int(line1['start'][0] + dx * scale),
-                int(line1['start'][1] + dy * scale)
-            )
-        else:
-            line1_extended_end = line1['end']
-        
-        # Extend line2
-        dx = line2['end'][0] - line2['start'][0]
-        dy = line2['end'][1] - line2['start'][1]
-        current_length = np.sqrt(dx**2 + dy**2)
-        
-        if current_length > 0:
-            scale = max_length / current_length
-            line2_extended_end = (
-                int(line2['start'][0] + dx * scale),
-                int(line2['start'][1] + dy * scale)
-            )
-        else:
-            line2_extended_end = line2['end']
-        
-        # Create quadrilateral with proper ordering
-        polygon = [
-            list(line1['start']),
-            list(line1_extended_end),
-            list(line2_extended_end),
-            list(line2['start'])
-        ]
-        
-        return polygon
-    
-    def validate_slot_polygon(self, polygon, parking_mask):
-        """
-        FIX FOR PROBLEM 4: Validate that polygon is reasonable
-        - Must be mostly within parking area
-        - Must have reasonable shape (not too skewed)
-        """
-        # Check if center is in parking area
-        center_x = int(np.mean([p[0] for p in polygon]))
-        center_y = int(np.mean([p[1] for p in polygon]))
-        
-        if center_y < 0 or center_y >= self.height or center_x < 0 or center_x >= self.width:
-            return False
-        
-        if parking_mask[center_y, center_x] == 0:
-            return False
-        
-        # Check aspect ratio (slots shouldn't be too square or too elongated)
-        polygon_array = np.array(polygon, dtype=np.float32)
-        rect = cv2.minAreaRect(polygon_array)
-        width, height = rect[1]
-        
-        if width == 0 or height == 0:
-            return False
-        
-        aspect_ratio = max(width, height) / min(width, height)
-        
-        # Parking slots typically have aspect ratio between 1.5 and 8
-        if aspect_ratio < 1.3 or aspect_ratio > 10:
-            return False
-        
-        return True
-    
-    def group_parallel_lines(self, lines, angle_tolerance=10):
-        """
-        Group lines by similar angles
-        """
-        groups = []
-        used = [False] * len(lines)
-        
-        for i, line in enumerate(lines):
-            if used[i]:
-                continue
-            
-            group = {
-                'angle': line['angle'],
-                'lines': [line]
-            }
-            used[i] = True
-            
-            for j, other in enumerate(lines):
-                if used[j]:
-                    continue
-                
-                angle_diff = abs(line['angle'] - other['angle'])
-                if angle_diff < angle_tolerance or angle_diff > (180 - angle_tolerance):
-                    group['lines'].append(other)
-                    used[j] = True
-            
-            if len(group['lines']) >= 2:
-                groups.append(group)
-        
-        # Sort groups by number of lines (descending)
-        groups.sort(key=lambda g: len(g['lines']), reverse=True)
-        
-        return groups
-    
-    def sort_lines_by_position(self, lines, reference_angle):
-        """
-        Sort lines by their perpendicular position
-        """
-        perp_angle = (reference_angle + 90) % 180
-        perp_rad = np.radians(perp_angle)
-        
-        positions = []
-        for line in lines:
-            mid_x = (line['start'][0] + line['end'][0]) / 2
-            mid_y = (line['start'][1] + line['end'][1]) / 2
-            position = mid_x * np.cos(perp_rad) + mid_y * np.sin(perp_rad)
-            positions.append((position, line))
-        
-        positions.sort(key=lambda x: x[0])
-        return [line for _, line in positions]
-    
-    def auto_assign_zone(self, polygon, index):
-        """
-        Auto-assign zone based on position
-        """
-        center_x = np.mean([p[0] for p in polygon])
-        center_y = np.mean([p[1] for p in polygon])
-        
-        row_index = int((center_y / self.height) * 3)
-        row_letter = chr(65 + min(row_index, 2))
-        
-        col_number = int((center_x / self.width) * 20) + 1
-        
-        return f"{row_letter}{col_number}"
-    
+
     def visualize_detected_slots(self):
-        """
-        Clean visualization
-        """
         result = self.image.copy()
         overlay = result.copy()
-        
+
         for slot in self.slots:
             polygon = np.array(slot['polygon'], dtype=np.int32)
-            
-            # Draw filled polygon
             cv2.fillPoly(overlay, [polygon], (0, 255, 0))
-            
-            # Draw outline
             cv2.polylines(result, [polygon], True, (0, 255, 0), 2)
-            
-            # Add label
-            center_x = int(np.mean([p[0] for p in slot['polygon']]))
-            center_y = int(np.mean([p[1] for p in slot['polygon']]))
-            
-            # Text background
-            text = slot['zone']
+
+            cx = int(np.mean([p[0] for p in slot['polygon']]))
+            cy = int(np.mean([p[1] for p in slot['polygon']]))
+            text = slot.get('zone', slot.get('id', ''))
             (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(result, (center_x-tw//2-3, center_y-th-3), 
-                         (center_x+tw//2+3, center_y+3), (0, 0, 0), -1)
-            
-            cv2.putText(result, text, (center_x-tw//2, center_y),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-        
-        # Blend
+            cv2.rectangle(result, (cx - tw // 2 - 3, cy - th - 3),
+                          (cx + tw // 2 + 3, cy + 3), (0, 0, 0), -1)
+            cv2.putText(result, text, (cx - tw // 2, cy),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
         result = cv2.addWeighted(overlay, 0.3, result, 0.7, 0)
-        
-        # Add info
         cv2.rectangle(result, (10, 10), (300, 60), (0, 0, 0), -1)
         cv2.putText(result, f"Detected Slots: {len(self.slots)}", (20, 35),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         return result
-    
-    def visualize_debug(self):
-        """
-        Debug visualization showing detected lines and groups
-        """
-        result = self.image.copy()
-        
-        # Recreate detection
-        parking_mask = self.detect_parking_area()
-        enhanced = self.enhance_parking_lines()
-        lines = self.detect_and_filter_lines(enhanced, parking_mask)
-        merged_lines = self.merge_line_fragments(lines)
-        angle_groups = self.group_parallel_lines(merged_lines, angle_tolerance=10)
-        
-        # Draw all merged lines
-        colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]
-        
-        for group_idx, group in enumerate(angle_groups[:5]):
-            color = colors[group_idx % len(colors)]
-            for line in group['lines']:
-                cv2.line(result, line['start'], line['end'], color, 2)
-                # Draw midpoint
-                mid_x = int((line['start'][0] + line['end'][0]) / 2)
-                mid_y = int((line['start'][1] + line['end'][1]) / 2)
-                cv2.circle(result, (mid_x, mid_y), 3, color, -1)
-        
-        # Add legend
-        y = 30
-        for idx in range(min(5, len(angle_groups))):
-            color = colors[idx]
-            text = f"Group {idx+1}: {len(angle_groups[idx]['lines'])} lines at {angle_groups[idx]['angle']:.1f}°"
-            cv2.putText(result, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-            y += 25
-        
-        return result
-    
+
     def save_slots(self, output_path):
-        """
-        Save slots to JSON
-        """
+        def convert(obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            raise TypeError(f'Object of type {type(obj)} is not JSON serializable')
+
         data = {
             'total_slots': len(self.slots),
-            'slots': self.slots
+            'image_width': self.width,
+            'image_height': self.height,
+            'slots': self.slots,
         }
-        
         with open(output_path, 'w') as f:
-            json.dump(data, f, indent=2)
-        
-        print(f"✓ Saved to: {output_path}")
+            json.dump(data, f, indent=2, default=convert)
+        print(f"Saved to: {output_path}")
+
+    # ------------------------------------------------------------------
+    # Parking area mask
+    # ------------------------------------------------------------------
+
+    def _detect_parking_mask(self):
+        hsv = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, np.array([0, 0, 60]), np.array([180, 50, 220]))
+        _, white = cv2.threshold(self.gray, 200, 255, cv2.THRESH_BINARY)
+        mask = cv2.bitwise_and(mask, cv2.bitwise_not(white))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        n, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+        if n > 1:
+            largest = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+            mask = ((labels == largest) * 255).astype(np.uint8)
+        coverage = np.sum(mask > 0) / mask.size * 100
+        print(f"  Parking area coverage: {coverage:.1f}%")
+        cv2.imwrite('output/debug_step1_mask.jpg', mask)
+        print(f"  Saved: debug_step1_mask.jpg")
+        return mask
+
+    # ------------------------------------------------------------------
+    # Line detection (reusable on any gray image + mask)
+    # ------------------------------------------------------------------
+
+    def _detect_lines(self, gray_img, mask, prefix=""):
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(gray_img)
+        _, binary = cv2.threshold(enhanced, 150, 255, cv2.THRESH_BINARY)
+        edges = cv2.Canny(binary, 30, 100, apertureSize=3)
+        edges = cv2.bitwise_and(edges, edges, mask=mask)
+
+        tag = f"_{prefix}" if prefix else ""
+        cv2.imwrite(f'output/debug{tag}_edges.jpg', edges)
+
+        raw = cv2.HoughLinesP(edges, rho=1, theta=np.pi / 180,
+                               threshold=20, minLineLength=20, maxLineGap=20)
+        if raw is None:
+            return []
+
+        lines = []
+        for seg in raw:
+            x1, y1, x2, y2 = seg[0]
+            mx, my = int((x1 + x2) / 2), int((y1 + y2) / 2)
+            h, w = gray_img.shape[:2]
+            if 0 <= my < h and 0 <= mx < w:
+                if mask[my, mx] == 0:
+                    continue
+            angle = np.degrees(np.arctan2(y2 - y1, x2 - x1)) % 180
+            length = np.hypot(x2 - x1, y2 - y1)
+            lines.append({'start': (x1, y1), 'end': (x2, y2),
+                          'angle': angle, 'length': length})
+        return lines
+
+    # ------------------------------------------------------------------
+    # Classification
+    # ------------------------------------------------------------------
+
+    def _classify_lines(self, lines, ref_img, prefix=""):
+        dividers = []
+        boundaries = []
+        debug = ref_img.copy()
+        for l in lines:
+            a = l['angle']
+            p1, p2 = tuple(l['start']), tuple(l['end'])
+            if a < 25 or a > 155:
+                boundaries.append(l)
+                cv2.line(debug, p1, p2, (0, 0, 255), 2)
+            elif 50 < a < 130:
+                dividers.append(l)
+                cv2.line(debug, p1, p2, (255, 0, 0), 2)
+            else:
+                cv2.line(debug, p1, p2, (100, 100, 100), 1)
+        cv2.putText(debug, "Red=boundary  Blue=divider  Gray=discarded",
+                    (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        tag = f"_{prefix}" if prefix else ""
+        cv2.imwrite(f'output/debug{tag}_classified.jpg', debug)
+        return dividers, boundaries
+
+    # ------------------------------------------------------------------
+    # Row pair detection
+    # ------------------------------------------------------------------
+
+    def _cluster_by_y(self, lines, tolerance=25):
+        if not lines:
+            return []
+        items = sorted(
+            [((l['start'][1] + l['end'][1]) / 2, l) for l in lines],
+            key=lambda x: x[0]
+        )
+        clusters, current, cur_y = [], [items[0][1]], items[0][0]
+        for y, line in items[1:]:
+            if abs(y - cur_y) < tolerance:
+                current.append(line)
+            else:
+                clusters.append(current)
+                current, cur_y = [line], y
+        clusters.append(current)
+        return clusters
+
+    def _representative_hline(self, cluster, img_w=None):
+        if img_w is None:
+            img_w = self.width
+        y = int(np.median([(l['start'][1] + l['end'][1]) / 2 for l in cluster]))
+        return (0, y), (img_w, y)
+
+    def _merge_overlapping_pairs(self, pairs):
+        """
+        Merge row pairs that overlap OR are close enough to be parts of the
+        same physical row (gap between them < the height of either pair).
+        Replaces the group with a single pair using the outermost boundaries.
+        """
+        if len(pairs) <= 1:
+            return pairs
+
+        # Sort by top y
+        pairs = sorted(pairs, key=lambda p: p[0][0][1])
+
+        merged = []
+        cur_top_y, cur_bot_y = pairs[0][0][0][1], pairs[0][1][0][1]
+        cur_top, cur_bot = pairs[0]
+
+        for top, bot in pairs[1:]:
+            t_y = top[0][1]
+            b_y = bot[0][1]
+            cur_height = cur_bot_y - cur_top_y
+            next_height = b_y - t_y
+            gap = t_y - cur_bot_y
+            # Merge if overlapping OR gap is smaller than 70% of the shorter row
+            if gap <= min(cur_height, next_height) * 0.70:
+                if t_y < cur_top_y:
+                    cur_top = top
+                    cur_top_y = t_y
+                if b_y > cur_bot_y:
+                    cur_bot = bot
+                    cur_bot_y = b_y
+            else:
+                merged.append((cur_top, cur_bot))
+                cur_top, cur_bot = top, bot
+                cur_top_y, cur_bot_y = t_y, b_y
+
+        merged.append((cur_top, cur_bot))
+        return merged
+
+    def _find_row_pairs(self, boundaries, ref_img, prefix="", img_h=None, filter_white=False):
+        if img_h is None:
+            img_h = self.height
+        img_w = ref_img.shape[1]
+
+        clusters = self._cluster_by_y(boundaries, tolerance=25)
+        if len(clusters) < 2:
+            return []
+
+        # In the warped (top-down) image, real white parking lines are bright and
+        # span most of the image width. Tree/shadow/curb edges are NOT white —
+        # they are transitions between two dark/gray areas.
+        # Only apply this filter on the warped image (filter_white=True), because
+        # in the original perspective image white lines are angled and cover only
+        # a narrow x-range per row, making row-wide brightness checks unreliable.
+        if filter_white:
+            # Step A: keep only clusters that sit on actual bright white pixels.
+            # Real parking lines have max brightness > 190; tree/shadow/curb
+            # edges are gray-to-gray transitions with max < 140.
+            gray_ref = cv2.cvtColor(ref_img, cv2.COLOR_BGR2GRAY)
+            white_clusters = []
+            for cluster in clusters:
+                y = int(np.median([(l['start'][1] + l['end'][1]) / 2 for l in cluster]))
+                y = max(0, min(y, gray_ref.shape[0] - 1))
+                y0, y1 = max(0, y - 3), min(gray_ref.shape[0], y + 4)
+                band = gray_ref[y0:y1, :]
+                if int(np.max(band)) > 190:
+                    white_clusters.append(cluster)
+            if len(white_clusters) >= 2:
+                clusters = white_clusters
+
+            # Step B: re-cluster the surviving white clusters with a larger
+            # tolerance to merge nearby detections of the same physical line
+            # (e.g. the A-row top/bottom white lines each produce 2-3 clusters
+            # within ~84px that should be treated as one boundary zone).
+            all_lines = [l for c in clusters for l in c]
+            clusters = self._cluster_by_y(all_lines, tolerance=50)
+
+        reps = sorted([self._representative_hline(c, img_w) for c in clusters],
+                      key=lambda r: r[0][1])
+
+        if filter_white:
+            # Deduplicate representative lines that are very close to each other
+            # (stray trailing-edge detections of the same physical white line).
+            deduped_reps = [reps[0]]
+            for r in reps[1:]:
+                if r[0][1] - deduped_reps[-1][0][1] > 30:
+                    deduped_reps.append(r)
+            reps = deduped_reps
+
+        min_row_h = img_h * 0.05
+        max_row_h = img_h * 0.90
+
+        pairs = []
+        used = [False] * len(reps)
+        for i in range(len(reps)):
+            if used[i]:
+                continue
+            for j in range(i + 1, len(reps)):
+                if used[j]:
+                    continue
+                gap = reps[j][0][1] - reps[i][0][1]
+                if min_row_h < gap < max_row_h:
+                    pairs.append((reps[i], reps[j]))
+                    used[i] = used[j] = True
+                    break
+
+        # Merge overlapping pairs: if two pairs share the same y-zone,
+        # keep only the one with the outermost boundaries (largest height).
+        # This prevents tree shadows / noise lines near a real row from
+        # spawning multiple thin false row pairs in the same region.
+        pairs = self._merge_overlapping_pairs(pairs)
+
+        # Drop noise pairs that are much shorter than the median row height.
+        # e.g. a thin vegetation-edge strip at the top of the warped image.
+        if len(pairs) > 1:
+            heights = [p[1][0][1] - p[0][0][1] for p in pairs]
+            median_h = float(np.median(heights))
+            pairs = [p for p in pairs
+                     if (p[1][0][1] - p[0][0][1]) >= median_h * 0.45]
+
+        if filter_white:
+            # Fallback: if a cluster in the lower half of the image has no pair
+            # (e.g. the bottom row's outer white line is cut off by the image crop),
+            # add a virtual bottom boundary at the image bottom edge.
+            paired_ys = {p[0][0][1] for p in pairs} | {p[1][0][1] for p in pairs}
+            for r in reps:
+                ry = r[0][1]
+                if ry > img_h // 2 and ry not in paired_ys:
+                    virtual_bot = ((0, img_h - 1), (img_w, img_h - 1))
+                    pairs.append((r, virtual_bot))
+
+        debug = ref_img.copy()
+        for p1, p2 in reps:
+            cv2.line(debug, p1, p2, (0, 255, 255), 1)
+        for idx, (top, bot) in enumerate(pairs):
+            cv2.line(debug, top[0], top[1], (255, 255, 0), 2)
+            cv2.line(debug, bot[0], bot[1], (255, 0, 255), 2)
+            mid_y = (top[0][1] + bot[0][1]) // 2
+            cv2.putText(debug, f"Row {idx+1}", (20, mid_y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        tag = f"_{prefix}" if prefix else ""
+        cv2.imwrite(f'output/debug{tag}_row_pairs.jpg', debug)
+        print(f"  Saved: debug{tag}_row_pairs.jpg  ({len(pairs)} row pair(s))")
+        return pairs
+
+    # ------------------------------------------------------------------
+    # Perspective warp
+    # ------------------------------------------------------------------
+
+    def _warp_to_topdown(self, row_pairs, parking_mask):
+        """
+        Compute src corners from the outermost detected row boundaries,
+        then warp the image to a clean top-down rectangle.
+        Returns: (warped_bgr, M, Minv, src_corners) or (None, None, None, None)
+        """
+        if not row_pairs:
+            return None, None, None, None
+
+        # Collect all boundary y-values from all row pairs
+        all_y = []
+        for top, bot in row_pairs:
+            all_y.append(top[0][1])
+            all_y.append(bot[0][1])
+        y_top = min(all_y)
+        y_bot = max(all_y)
+
+        # Find the horizontal extent of white line pixels within the parking mask
+        # by scanning the rows near each boundary
+        def scan_x_extent(y, band=15):
+            y0 = max(0, y - band)
+            y1 = min(self.height, y + band)
+            region = self.gray[y0:y1, :]
+            _, bw = cv2.threshold(region, 180, 255, cv2.THRESH_BINARY)
+            masked_row = cv2.bitwise_and(bw, bw,
+                                          mask=parking_mask[y0:y1, :])
+            cols = np.where(masked_row > 0)[1]
+            if len(cols) < 10:
+                # fallback: use parking_mask column extent at that row strip
+                cols = np.where(parking_mask[y0:y1, :] > 0)[1]
+            if len(cols) == 0:
+                return 0, self.width
+            return int(np.percentile(cols, 5)), int(np.percentile(cols, 95))
+
+        x_left_top, x_right_top = scan_x_extent(y_top)
+        x_left_bot, x_right_bot = scan_x_extent(y_bot)
+
+        # Debug: draw the computed source corners on original image
+        debug_corners = self.image.copy()
+        corners_src = np.array([
+            [x_left_top,  y_top],
+            [x_right_top, y_top],
+            [x_right_bot, y_bot],
+            [x_left_bot,  y_bot],
+        ], dtype=np.float32)
+        for pt in corners_src.astype(int):
+            cv2.circle(debug_corners, tuple(pt), 8, (0, 0, 255), -1)
+        cv2.polylines(debug_corners, [corners_src.astype(np.int32)], True, (0, 255, 255), 2)
+        cv2.imwrite('output/debug_warp_corners.jpg', debug_corners)
+        print(f"  Source corners: {corners_src.tolist()}")
+        print(f"  Saved: debug_warp_corners.jpg")
+
+        # Destination: a flat rectangle.
+        # Add 40px padding to dst_h so the bottom row's boundary white line
+        # doesn't land exactly at the warped image edge (where Hough misses it).
+        dst_w = int(max(x_right_top - x_left_top, x_right_bot - x_left_bot))
+        dst_h = int(y_bot - y_top) + 40
+        dst_w = max(dst_w, 100)
+        dst_h = max(dst_h, 50)
+
+        corners_dst = np.array([
+            [0,       0      ],
+            [dst_w,   0      ],
+            [dst_w,   dst_h  ],
+            [0,       dst_h  ],
+        ], dtype=np.float32)
+
+        M    = cv2.getPerspectiveTransform(corners_src, corners_dst)
+        Minv = cv2.getPerspectiveTransform(corners_dst, corners_src)
+
+        warped = cv2.warpPerspective(self.image, M, (dst_w, dst_h))
+        return warped, M, Minv, corners_src
+
+    # ------------------------------------------------------------------
+    # Slot building (in warped / top-down space)
+    # ------------------------------------------------------------------
+
+    def _x_at_y(self, p1, p2, y):
+        x1, y1 = p1
+        x2, y2 = p2
+        if y2 == y1:
+            return (x1 + x2) / 2
+        return x1 + (x2 - x1) * (y - y1) / (y2 - y1)
+
+    def _extend_divider_to_row(self, divider, y_top, y_bot):
+        p1, p2 = divider['start'], divider['end']
+        return (int(self._x_at_y(p1, p2, y_top)), y_top), \
+               (int(self._x_at_y(p1, p2, y_bot)),  y_bot)
+
+    def _slots_in_row(self, dividers, row_top, row_bottom, min_width, ref_img):
+        y_top = row_top[0][1]
+        y_bot = row_bottom[0][1]
+        img_w = ref_img.shape[1]
+
+        spanning = []
+        for d in dividers:
+            y_lo = min(d['start'][1], d['end'][1])
+            y_hi = max(d['start'][1], d['end'][1])
+            overlap = min(y_hi, y_bot) - max(y_lo, y_top)
+            if overlap < (y_bot - y_top) * 0.50:
+                continue
+            top_pt, bot_pt = self._extend_divider_to_row(d, y_top, y_bot)
+            x_mid = (top_pt[0] + bot_pt[0]) / 2
+            spanning.append({'top': top_pt, 'bot': bot_pt, 'x_mid': x_mid})
+
+        if len(spanning) < 2:
+            return []
+
+        spanning.sort(key=lambda d: d['x_mid'])
+
+        deduped = [spanning[0]]
+        for d in spanning[1:]:
+            if d['x_mid'] - deduped[-1]['x_mid'] > 10:
+                deduped.append(d)
+
+        # Estimate typical slot width from the median gap between adjacent dividers
+        gaps = [deduped[i+1]['x_mid'] - deduped[i]['x_mid']
+                for i in range(len(deduped) - 1)]
+        typical_width = float(np.median(gaps))
+
+        # Add virtual edge dividers if the space beyond the outermost real divider
+        # is roughly one slot-width (within 40% tolerance)
+        left_gap  = deduped[0]['x_mid']
+        right_gap = img_w - deduped[-1]['x_mid']
+
+        if typical_width * 0.40 < left_gap < typical_width * 1.40:
+            virtual_left = {
+                'top': (0, y_top),
+                'bot': (0, y_bot),
+                'x_mid': 0.0,
+            }
+            deduped.insert(0, virtual_left)
+
+        if typical_width * 0.40 < right_gap < typical_width * 1.40:
+            virtual_right = {
+                'top': (img_w, y_top),
+                'bot': (img_w, y_bot),
+                'x_mid': float(img_w),
+            }
+            deduped.append(virtual_right)
+
+        debug = ref_img.copy()
+        for d in deduped:
+            cv2.line(debug, d['top'], d['bot'], (0, 255, 255), 1)
+
+        slots = []
+        for i in range(len(deduped) - 1):
+            left  = deduped[i]
+            right = deduped[i + 1]
+            width = right['x_mid'] - left['x_mid']
+
+            if width < min_width:
+                continue
+
+            polygon = [
+                list(left['top']),
+                list(right['top']),
+                list(right['bot']),
+                list(left['bot']),
+            ]
+            area = float(abs(cv2.contourArea(np.array(polygon, dtype=np.float32))))
+            if area < 500:   # much smaller threshold — warped image is smaller
+                continue
+
+            pts = np.array(polygon, dtype=np.int32)
+            cv2.polylines(debug, [pts], True, (0, 255, 0), 2)
+            cx = int(np.mean([p[0] for p in polygon]))
+            cy = int(np.mean([p[1] for p in polygon]))
+            cv2.putText(debug, f"{len(slots)+1}", (cx - 8, cy + 6),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+            slots.append({
+                'id': '',
+                'polygon': polygon,
+                'type': 'regular',
+                'zone': '',
+                'area': area,
+                'width': float(width),
+            })
+
+        cv2.imwrite('output/debug_warp_slots.jpg', debug)
+        print(f"  Saved: debug_warp_slots.jpg  ({len(slots)} slot(s))")
+        return slots
+
+    # ------------------------------------------------------------------
+    # Unwarp polygon coordinates
+    # ------------------------------------------------------------------
+
+    def _unwarp_slots(self, warped_slots, Minv):
+        """Transform polygon coordinates from warped space back to original image space."""
+        original_slots = []
+        for slot in warped_slots:
+            pts = np.array(slot['polygon'], dtype=np.float32).reshape(-1, 1, 2)
+            pts_orig = cv2.perspectiveTransform(pts, Minv)
+            new_polygon = [[int(p[0][0]), int(p[0][1])] for p in pts_orig]
+            new_slot = dict(slot)
+            new_slot['polygon'] = new_polygon
+            # Recompute area in original space
+            new_slot['area'] = float(abs(cv2.contourArea(
+                np.array(new_polygon, dtype=np.float32)
+            )))
+            original_slots.append(new_slot)
+        return original_slots
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _auto_zone(self, polygon, index):
+        cx = np.mean([p[0] for p in polygon])
+        cy = np.mean([p[1] for p in polygon])
+        row = chr(65 + min(int(cy / self.height * 3), 2))
+        col = int(cx / self.width * 20) + 1
+        return f"{row}{col}"

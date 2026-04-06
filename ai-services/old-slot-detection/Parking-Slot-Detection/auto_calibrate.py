@@ -30,12 +30,11 @@ def auto_calibrate(empty_lot_image, lot_id):
     
     # Detect slots
     slots = detector.detect_slots(
-        min_area=1000,   # Minimum slot area in pixels
-        max_area=50000   # Maximum slot area in pixels
+        min_slot_width=20
     )
     
     if len(slots) == 0:
-        print("\n⚠ No slots detected!")
+        print("\nWARNING: No slots detected!")
         print("Tips:")
         print("  - Make sure parking lines are clearly visible")
         print("  - Try adjusting min_area and max_area parameters")
@@ -49,7 +48,7 @@ def auto_calibrate(empty_lot_image, lot_id):
     # Save visualization
     viz_path = os.path.join(OUTPUT_DIR, f"{lot_id}_detected_slots.jpg")
     cv2.imwrite(viz_path, result_image)
-    print(f"✓ Visualization saved to: {viz_path}")
+    print(f"OK Visualization saved to: {viz_path}")
     
     # Save slot configuration
     config_path = os.path.join(LAYOUT_DIR, f"{lot_id}_auto_slots.json")
@@ -62,9 +61,9 @@ def auto_calibrate(empty_lot_image, lot_id):
     cv2.destroyAllWindows()
     
     print("\n" + "="*60)
-    print(f"✓ Automatic detection complete!")
-    print(f"✓ Detected {len(slots)} parking slots")
-    print(f"✓ Configuration saved to: {config_path}")
+    print(f"OK Automatic detection complete!")
+    print(f"OK Detected {len(slots)} parking slots")
+    print(f"OK Configuration saved to: {config_path}")
     print("="*60)
     
     return config_path

@@ -36,17 +36,35 @@ class ParkingDetectionSystem:
         """
         self.video_path = video_path
         self.lot_id = lot_id
-        
+
         # Initialize components
         self.detector = VehicleDetector()
         self.state_manager = StateManager()
-        
+
         # Load or create slot configuration
         if calibration_file and os.path.exists(calibration_file):
-            self.slots = self.load_calibration(calibration_file)
+            self.slots, self.calib_size = self.load_calibration(calibration_file)
         else:
             raise ValueError("Calibration file required. Run calibration first.")
-        
+
+        # Scale slot polygons to video frame size if resolutions differ
+        cap = cv2.VideoCapture(video_path)
+        video_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        video_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+
+        if self.calib_size and (video_w, video_h) != self.calib_size:
+            calib_w, calib_h = self.calib_size
+            scale_x = video_w / calib_w
+            scale_y = video_h / calib_h
+            print(f"Scaling slots from {calib_w}x{calib_h} -> {video_w}x{video_h} "
+                  f"(sx={scale_x:.3f}, sy={scale_y:.3f})")
+            for slot in self.slots:
+                slot['polygon'] = [
+                    [int(p[0] * scale_x), int(p[1] * scale_y)]
+                    for p in slot['polygon']
+                ]
+
         self.slot_mapper = SlotMapper(self.slots)
         
         # Statistics tracking
@@ -55,24 +73,26 @@ class ParkingDetectionSystem:
         
     def load_calibration(self, calibration_file):
         """
-        Load slot definitions from calibration JSON
-        Handles both manual calibration and auto-detected slots
+        Load slot definitions from calibration JSON.
+        Returns (slots, calib_size) where calib_size is (w, h) or None.
         """
         with open(calibration_file, 'r') as f:
             calibration = json.load(f)
-        
-        # Check if this is auto-detected slots or manual calibration
+
         if 'visible_slots' in calibration:
-            # Manual calibration format
             slots = calibration['visible_slots']
         elif 'slots' in calibration:
-            # Auto-detected format
             slots = calibration['slots']
         else:
             raise ValueError("Invalid calibration file format")
-        
-        print(f"Loaded calibration for {len(slots)} slots")
-        return slots
+
+        calib_w = calibration.get('image_width')
+        calib_h = calibration.get('image_height')
+        calib_size = (calib_w, calib_h) if calib_w and calib_h else None
+
+        print(f"Loaded calibration for {len(slots)} slots"
+              + (f" (calibrated at {calib_w}x{calib_h})" if calib_size else ""))
+        return slots, calib_size
     
     def visualize_frame(self, frame, slot_states):
         """
