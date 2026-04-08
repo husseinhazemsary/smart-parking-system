@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { T } from "../constants/theme";
 import useTimer from "../hooks/useTimer";
 import useBreakpoint from "../hooks/useBreakpoint";
@@ -7,11 +7,9 @@ import Card from "../components/ui/Card";
 import Divider from "../components/ui/Divider";
 import SectionLabel from "../components/ui/SectionLabel";
 
-// Active parking session view — shows live elapsed time, running cost,
-// slot details, and an end-session confirmation flow.
-export default function SessionTab({ spot, onEnd }){
+// Active parking session view — shows live elapsed time, running cost, and session details.
+export default function SessionTab({ spot }){
   const elapsed=useTimer();
-  const [ending,setEnding]=useState(false);
   const { isMobile }=useBreakpoint();
 
   if(!spot) return(
@@ -56,9 +54,9 @@ export default function SessionTab({ spot, onEnd }){
         </Card>
       </div>
 
-      <Card style={{ padding:22,marginBottom:20 }}>
+      <Card style={{ padding:22 }}>
         <SectionLabel>Session Details</SectionLabel>
-        {[["Parking Slot","B4"],["Level & Gate","Level 2  •  Gate B"],["Vehicle","Toyota Corolla  •  BG 4567"],["Rate",`EGP ${spot.rate}/hr`],["Hours",spot.hours]].map(([l,v],i,arr)=>(
+        {[["Vehicle","Toyota Corolla  •  BG 4567"],["Rate",`EGP ${spot.rate}/hr`],["Hours",spot.hours]].map(([l,v],i,arr)=>(
           <div key={l}>
             <div style={{ display:"flex",justifyContent:"space-between",padding:"10px 0" }}>
               <span style={{ color:T.sub,fontSize:14 }}>{l}</span>
@@ -68,18 +66,6 @@ export default function SessionTab({ spot, onEnd }){
           </div>
         ))}
       </Card>
-
-      {!ending
-        ? <button onClick={()=>setEnding(true)} style={{ width:"100%",padding:16,borderRadius:14,background:"rgba(239,68,68,.1)",border:`1px solid rgba(239,68,68,.25)`,color:T.red,fontFamily:"inherit",fontSize:16,fontWeight:700,cursor:"pointer" }}>⏹ End Session</button>
-        : <Card style={{ padding:24 }}>
-            <div style={{ fontSize:17,fontWeight:700,marginBottom:8,textAlign:"center" }}>End your session?</div>
-            <div style={{ fontSize:14,color:T.sub,textAlign:"center",marginBottom:20 }}>Total charge: <strong style={{ color:T.green }}>EGP {cost}</strong></div>
-            <div style={{ display:"flex",gap:12 }}>
-              <button onClick={()=>setEnding(false)} style={{ flex:1,padding:14,borderRadius:12,border:`1px solid ${T.border}`,background:"transparent",color:T.text,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer" }}>Cancel</button>
-              <button onClick={onEnd} style={{ flex:1,padding:14,borderRadius:12,border:"none",background:T.red,color:"#fff",fontFamily:"inherit",fontSize:14,fontWeight:700,cursor:"pointer" }}>Confirm End</button>
-            </div>
-          </Card>
-      }
     </div>
   );
 }

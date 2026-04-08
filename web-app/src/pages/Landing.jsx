@@ -455,7 +455,7 @@ function AnimatedStep({n,title,body,delay}){
   );
 }
 
-function LandingCard({s, onReserve, delay, index=0}){
+function LandingCard({s, onViewDetails, delay, index=0}){
   const ac = availColor(s.available, s.total);
   const al = availLabel(s.available, s.total);
   const [hov, setHov] = useState(false);
@@ -535,7 +535,7 @@ function LandingCard({s, onReserve, delay, index=0}){
           </div>
 
           <div
-            onClick={onReserve}
+            onClick={()=>onViewDetails(s)}
             style={{
               display:"inline-flex", alignItems:"center", gap:5,
               fontSize:13, fontWeight:700, color: hov ? "#fff" : T.purple,
@@ -597,7 +597,7 @@ function CTAEmoji(){
   );
 }
 
-export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
+export default function Landing({onEnter,onViewDetails,onAuthOpen,onBusiness,user}){
   const [scrolled,setScrolled]=useState(false);
   const {isMobile}=useBreakpoint();
   useEffect(()=>{ const h=()=>setScrolled(window.scrollY>40); window.addEventListener("scroll",h); return()=>window.removeEventListener("scroll",h); },[]);
@@ -761,7 +761,7 @@ export default function Landing({onEnter,onAuthOpen,onBusiness,user}){
 
           <div style={{display:"grid",gridTemplateColumns:`repeat(${isMobile?"1":isTabletVal()?"2":"3"},1fr)`,gap:20}}>
             {SPOTS.slice(0,3).map((s,i)=>(
-              <LandingCard key={s.id} s={s} onReserve={onEnter} delay={i*100} index={i}/>
+              <LandingCard key={s.id} s={s} onViewDetails={onViewDetails} delay={i*100} index={i}/>
             ))}
           </div>
         </div>

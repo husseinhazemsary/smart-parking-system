@@ -63,6 +63,26 @@ const CSS = `
   }
 `;
 
+// Known pure-EV brands — any model from these is always electric
+const EV_MAKES = new Set([
+  "tesla","rivian","lucid","polestar","byd","nio","xpeng","zeekr","fisker","canoo",
+]);
+
+// Keywords that identify EV models regardless of make
+const EV_MODEL_KEYWORDS = [
+  "electric","ioniq","leaf","bolt ev","id.4","id.3","id.","e-tron","taycan","zoe",
+  "kona ev","niro ev","ev6","ev9","i3","i4","ix3","ix5","ix ","eqc","eqs","eqa","eqb",
+  "model s","model 3","model x","model y","cybertruck","r1t","r1s","air ","ocean ",
+  " ev"," bev",
+];
+
+export function detectEV(make, model) {
+  const m  = make.trim().toLowerCase();
+  const mo = model.trim().toLowerCase();
+  if (EV_MAKES.has(m)) return true;
+  return EV_MODEL_KEYWORDS.some(k => mo.includes(k));
+}
+
 function Toggle({ on, onChange }) {
   return (
     <button
@@ -113,17 +133,19 @@ function EditProfileModal({ open, onClose, user }) {
   );
 }
 
-// Add vehicle modal with emoji icon picker and plate input.
+// Add vehicle modal — auto-detects EV from make & model as user types.
 function AddVehicleModal({ open, onClose, onAdd }) {
-  const [make, setMake] = useState("");
+  const [make,  setMake]  = useState("");
   const [model, setModel] = useState("");
   const [plate, setPlate] = useState("");
   const icons = ["🚗", "🚙", "🛻", "🏎", "🚕"];
   const [icon, setIcon] = useState("🚗");
 
+  const isEV = detectEV(make, model);
+
   const handleAdd = () => {
     if (!make || !model || !plate) return;
-    onAdd({ icon, label: `${make} ${model}`, sub: plate.toUpperCase() });
+    onAdd({ icon, label: `${make} ${model}`, sub: plate.toUpperCase(), isEV });
     setMake(""); setModel(""); setPlate(""); setIcon("🚗");
     onClose();
   };
@@ -162,7 +184,29 @@ function AddVehicleModal({ open, onClose, onAdd }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+        {/* EV detection badge — appears as user types make/model */}
+        {make && model && (
+          <div style={{
+            marginTop: 12, padding: "9px 13px", borderRadius: 9,
+            background: isEV ? "rgba(245,158,11,.08)" : "rgba(255,255,255,.03)",
+            border: `1px solid ${isEV ? "rgba(245,158,11,.3)" : T.border}`,
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span style={{ fontSize: 16 }}>{isEV ? "⚡" : "🚗"}</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: isEV ? "#F59E0B" : T.sub }}>
+                {isEV ? "Electric Vehicle Detected" : "Combustion Vehicle"}
+              </div>
+              <div style={{ fontSize: 11, color: T.sub }}>
+                {isEV
+                  ? "This vehicle qualifies for EV charging spots."
+                  : "Not eligible for EV charging spots."}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
           <button onClick={onClose} style={{
             flex: 1, padding: 12, borderRadius: 11,
             border: `1px solid ${T.border}`, background: "transparent",
@@ -178,15 +222,11 @@ function AddVehicleModal({ open, onClose, onAdd }) {
 }
 
 // Account tab — user profile hero, vehicle list, preferences toggles, settings, and sign out.
-export default function AccountTab({ user, onLogout }) {
+export default function AccountTab({ user, onLogout, profile, onProfileUpdate }) {
   const { isMobile } = useBreakpoint();
 
   const [editOpen, setEditOpen] = useState(false);
   const [addVehicle, setAddVehicle] = useState(false);
-  const [vehicles, setVehicles] = useState([
-    { icon: "🚗", label: "Toyota Corolla", sub: "BG 4567" },
-    { icon: "🚙", label: "Hyundai Tucson", sub: "MK 1234" },
-  ]);
   const [prefs, setPrefs] = useState({
     notifications: true,
     location: true,
@@ -194,6 +234,15 @@ export default function AccountTab({ user, onLogout }) {
     darkMode: true,
   });
   const toggle = (k) => setPrefs((p) => ({ ...p, [k]: !p[k] }));
+
+  const vehicles     = profile.vehicles;
+  const accessibility = profile.accessibility;
+
+  const addVehicleToProfile = (v) =>
+    onProfileUpdate({ ...profile, vehicles: [...profile.vehicles, v] });
+
+  const toggleAccessibility = () =>
+    onProfileUpdate({ ...profile, accessibility: !profile.accessibility });
 
   // Derived from history data for the profile stats strip
   const completed = HISTORY_DATA.filter((h) => h.status === "completed");
@@ -223,8 +272,17 @@ export default function AccountTab({ user, onLogout }) {
                 {(user?.name || "?")[0].toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: "#fff", marginBottom: 2 }}>
-                  {user?.name || "User"}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: "#fff", marginBottom: 2 }}>
+                    {user?.name || "User"}
+                  </div>
+                  {accessibility && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: "#60A5FA",
+                      background: "rgba(96,165,250,.15)", border: "1px solid rgba(96,165,250,.3)",
+                      borderRadius: 5, padding: "2px 7px",
+                    }}>♿ Accessibility</span>
+                  )}
                 </div>
                 <div style={{
                   fontSize: 13, color: "rgba(255,255,255,.65)",
@@ -267,6 +325,7 @@ export default function AccountTab({ user, onLogout }) {
         {/* Two-column grid on desktop, stacked on mobile */}
         <div style={{ marginTop: 16 }} className={isMobile ? "" : "acc-grid"}>
           <div className="acc-col">
+            {/* Vehicles */}
             <div className="acc-section">
               <div style={{ padding: "13px 18px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: T.sub, letterSpacing: 0.5 }}>MY VEHICLES</div>
@@ -284,7 +343,16 @@ export default function AccountTab({ user, onLogout }) {
                   style={{ borderBottom: i < vehicles.length - 1 ? "1px solid rgba(125,57,235,.1)" : "none" }}>
                   <div className="acc-icon">{v.icon}</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{v.label}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{v.label}</span>
+                      {v.isEV && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, color: "#F59E0B",
+                          background: "rgba(245,158,11,.12)", border: "1px solid rgba(245,158,11,.3)",
+                          borderRadius: 4, padding: "1px 5px",
+                        }}>⚡ EV</span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: T.sub }}>{v.sub}</div>
                   </div>
                   <button style={{
@@ -296,10 +364,26 @@ export default function AccountTab({ user, onLogout }) {
               ))}
             </div>
 
+            {/* Preferences */}
             <div className="acc-section">
               <div style={{ padding: "13px 18px 10px" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: T.sub, letterSpacing: 0.5 }}>PREFERENCES</div>
               </div>
+
+              {/* Accessibility Need — lifted to shared profile state */}
+              <div className="acc-row" style={{ cursor: "default" }}>
+                <div className="acc-icon">♿</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>Accessibility Need</div>
+                  <div style={{ fontSize: 12, color: T.sub }}>
+                    {accessibility
+                      ? "Enabled — you can reserve accessible parking spots"
+                      : "Enable if you have a mobility impairment"}
+                  </div>
+                </div>
+                <Toggle on={accessibility} onChange={toggleAccessibility} />
+              </div>
+
               {[
                 { key: "notifications", icon: "🔔", label: "Push Notifications", sub: "Session alerts & reminders" },
                 { key: "location",      icon: "📍", label: "Location Services",  sub: "GPS for nearby parking" },
@@ -380,7 +464,7 @@ export default function AccountTab({ user, onLogout }) {
         <AddVehicleModal
           open={addVehicle}
           onClose={() => setAddVehicle(false)}
-          onAdd={(v) => setVehicles((p) => [...p, v])}
+          onAdd={addVehicleToProfile}
         />
       </div>
     </div>

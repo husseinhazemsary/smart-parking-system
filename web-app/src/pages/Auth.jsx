@@ -8,7 +8,7 @@ export default function AuthModal({ open, onClose, onAuth }){
   const [mode,setMode]=useState("login");
   const [form,setForm]=useState({ name:"",email:"",password:"" });
   const set = k => e => setForm(p=>({...p,[k]:e.target.value}));
-  const submit = () => { if(form.email&&form.password) onAuth({ name: form.name||"Nour Ahmed", email:form.email }); };
+  const submit = () => { if(form.email&&form.password) onAuth({ name: form.name||"Nour Helmy", email:form.email }); };
 
   return(
     <Modal open={open} onClose={onClose} maxWidth={440}>

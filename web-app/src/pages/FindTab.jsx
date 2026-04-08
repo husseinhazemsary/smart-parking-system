@@ -120,13 +120,21 @@ const CSS = `
 `;
 
 // Main FindTab component — search, filter, and view parking spots.
-export default function FindTab({ onReserve, user, onAuthOpen }) {
+export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, onSpotDetailOpened, profile }) {
   const [search,     setSearch]     = useState("");
   const [cat,        setCat]        = useState("All");
   const [sort,       setSort]       = useState("distance");
   const [detailSpot, setDetailSpot] = useState(null);
   const [slotSpot,   setSlotSpot]   = useState(null);
   const { isMobile } = useBreakpoint();
+
+  useEffect(()=>{
+    if(initialSpotId){
+      const spot = SPOTS.find(s=>s.id===initialSpotId);
+      if(spot){ setDetailSpot(spot); setSlotSpot(null); }
+      onSpotDetailOpened?.();
+    }
+  },[initialSpotId]);
 
   const cats = ["All","Mall","University","Airport","Street"];
 
@@ -197,12 +205,12 @@ export default function FindTab({ onReserve, user, onAuthOpen }) {
               background:  cat===c ? `${CAT_COLORS[c]||T.purple}1A` : "transparent",
               color:       cat===c ? (CAT_COLORS[c]||T.purple) : T.sub,
             }}>
-              {CAT_ICONS[c]} {c}
+              {c}
             </button>
           ))}
           <div style={{marginLeft:"auto",display:"flex",gap:5,alignItems:"center",flexShrink:0}}>
             <span style={{fontSize:11,color:T.sub,marginRight:2}}>Sort:</span>
-            {[["distance","📍 Nearest"],["price","💰 Price"],["avail","✅ Available"]].map(([v,l])=>(
+            {[["distance","Nearest"],["price","Price"],["avail","Available"]].map(([v,l])=>(
               <button key={v} onClick={()=>setSort(v)} style={{
                 padding:"5px 9px",borderRadius:7,
                 border:`1px solid ${sort===v?T.purple:T.border}`,
@@ -261,6 +269,7 @@ export default function FindTab({ onReserve, user, onAuthOpen }) {
           spot={slotSpot}
           slots={SPOT_SLOTS[slotSpot.id]}
           user={user}
+          profile={profile}
           onClose={closeAll}
           onBack={()=>{ setSlotSpot(null); setDetailSpot(slotSpot); }}
           onReserve={()=>handleReserve(slotSpot)}
@@ -465,9 +474,12 @@ function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen
 }
 
 // SlotMapModal — interactive floor-plan view with per-slot selection.
-function SlotMapModal({ spot:s, slots, user, onClose, onBack, onReserve, onAuthOpen }) {
+function SlotMapModal({ spot:s, slots, user, profile, onClose, onBack, onReserve, onAuthOpen }) {
   const [activeLevel,  setActiveLevel]  = useState(1);
   const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const hasEV        = profile?.vehicles?.some(v=>v.isEV) ?? false;
+  const isAccessible = profile?.accessibility ?? false;
 
   const levels     = [...new Set(slots.map(sl=>sl.level))].sort();
   const levelSlots = slots.filter(sl=>sl.level===activeLevel);
@@ -708,25 +720,44 @@ function SlotMapModal({ spot:s, slots, user, onClose, onBack, onReserve, onAuthO
               user={user}
               gmapsUrl={gmapsUrl}
               onAuthOpen={onAuthOpen}
-              onReserve={onReserve}
+              hasEV={hasEV}
+              isAccessible={isAccessible}
             />
           )}
 
           {/* Bottom CTA */}
-          {!selectedSlot && (
-            <div style={{display:"flex",gap:10}}>
-              {s.available>0
-                ? <GlowBtn full onClick={onReserve}>Reserve</GlowBtn>
-                : <div style={{flex:1,textAlign:"center",padding:"12px",borderRadius:11,background:"rgba(239,68,68,.08)",border:`1px solid rgba(239,68,68,.2)`,color:T.red,fontWeight:700}}>🚫 Lot Full</div>
-              }
-              <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" style={{
-                padding:"11px 16px",borderRadius:11,
-                border:`1px solid #34A85344`,background:"rgba(52,168,83,.06)",
-                color:"#34A853",fontSize:13,fontWeight:600,textDecoration:"none",
-                display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",
-              }}>🗺 Navigate</a>
-            </div>
-          )}
+          {selectedSlot
+            ? selectedSlot.status==="available" && (() => {
+                const eligible =
+                  (selectedSlot.type!=="ev"         || hasEV) &&
+                  (selectedSlot.type!=="accessible"  || isAccessible);
+                return eligible ? (
+                  <div style={{display:"flex",gap:10}}>
+                    <GlowBtn full onClick={onReserve}>Reserve</GlowBtn>
+                    <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" style={{
+                      padding:"11px 16px",borderRadius:11,
+                      border:`1px solid #34A85344`,background:"rgba(52,168,83,.06)",
+                      color:"#34A853",fontSize:13,fontWeight:600,textDecoration:"none",
+                      display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",
+                    }}>🗺 Navigate to {s.name}</a>
+                  </div>
+                ) : null;
+              })()
+            : (
+                <div style={{display:"flex",gap:10}}>
+                  {s.available>0
+                    ? <GlowBtn full onClick={onReserve}>Reserve</GlowBtn>
+                    : <div style={{flex:1,textAlign:"center",padding:"12px",borderRadius:11,background:"rgba(239,68,68,.08)",border:`1px solid rgba(239,68,68,.2)`,color:T.red,fontWeight:700}}>🚫 Lot Full</div>
+                  }
+                  <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" style={{
+                    padding:"11px 16px",borderRadius:11,
+                    border:`1px solid #34A85344`,background:"rgba(52,168,83,.06)",
+                    color:"#34A853",fontSize:13,fontWeight:600,textDecoration:"none",
+                    display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",
+                  }}>🗺 Navigate to {s.name}</a>
+                </div>
+              )
+          }
         </div>
       </div>
     </div>
@@ -734,12 +765,19 @@ function SlotMapModal({ spot:s, slots, user, onClose, onBack, onReserve, onAuthO
 }
 
 // SlotInfoPanel — shows details for the selected slot, or ML prediction if occupied.
-function SlotInfoPanel({ slot:sl, spot:s, user, gmapsUrl, onAuthOpen, onReserve }) {
+function SlotInfoPanel({ slot:sl, spot:s, user, gmapsUrl, onAuthOpen, hasEV, isAccessible }) {
   const cfg = slotTileColor(sl);
   const statusCfg = SLOT_CONFIG[sl.status];
 
   // Deterministic walk distance to lift based on slot number
-  const distToLift = ((sl.slotNum % 4) + 1) * 15; 
+  const distToLift = ((sl.slotNum % 4) + 1) * 15;
+
+  // Eligibility checks for special slot types
+  const needsEV         = sl.type === "ev";
+  const needsAccessible = sl.type === "accessible";
+  const evBlocked       = needsEV && !hasEV;
+  const accessBlocked   = needsAccessible && !isAccessible;
+  const blocked         = evBlocked || accessBlocked;
 
   return (
     <div style={{
@@ -786,18 +824,36 @@ function SlotInfoPanel({ slot:sl, spot:s, user, gmapsUrl, onAuthOpen, onReserve 
             </div>
           </div>
 
-          {/* Navigate + Reserve */}
-          <div style={{display:"flex",gap:8}}>
+          {/* Eligibility notice — shown when user doesn't qualify for this slot type */}
+          {blocked && (
+            <div style={{
+              padding:"10px 13px", borderRadius:9, marginBottom:10,
+              background:"rgba(239,68,68,.06)", border:"1px solid rgba(239,68,68,.22)",
+              display:"flex", gap:8, alignItems:"flex-start",
+            }}>
+              <span style={{fontSize:14,flexShrink:0}}>🚫</span>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:T.red,marginBottom:2}}>
+                  {evBlocked ? "EV Charging Spots — Electric Vehicles Only" : "Accessible Spots — Verified Need Required"}
+                </div>
+                <div style={{fontSize:11,color:T.sub,lineHeight:1.5}}>
+                  {evBlocked
+                    ? "Add an electric vehicle to your profile to reserve EV charging spots."
+                    : "Enable Accessibility Need in your Account profile to reserve accessible spots."}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigate to specific slot — hidden when user is not eligible */}
+          {!blocked && (
             <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" style={{
-              flex:1, padding:"9px 12px", borderRadius:9,
+              display:"flex", alignItems:"center", justifyContent:"center", gap:4,
+              padding:"9px 12px", borderRadius:9,
               border:`1px solid #34A85355`, background:"rgba(52,168,83,.07)",
               color:"#34A853", fontSize:12, fontWeight:600, textDecoration:"none",
-              display:"flex", alignItems:"center", justifyContent:"center", gap:4,
-            }}>🗺 Navigate Here</a>
-            <div style={{flex:1}}>
-              <GlowBtn full onClick={onReserve}>Reserve</GlowBtn>
-            </div>
-          </div>
+            }}>🗺 Navigate to Slot {String.fromCharCode(64+sl.level)}{sl.slotNum}</a>
+          )}
         </>
       )}
 

@@ -11,11 +11,18 @@ import WalletTab from "../../pages/WalletTab";
 import HistoryTab from "../../pages/HistoryTab";
 import AccountTab from "../../pages/AccountTab";
 
-export default function AppShell({ user, onLogout, onBack, onAuthOpen }){
+export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSpotId, onSpotDetailOpened }){
   const [tab,setTab]=useState("find");
   const [booked,setBooked]=useState(null);
   const { isMobile, isTablet }=useBreakpoint();
   const [mobileNav,setMobileNav]=useState(false);
+  const [profile,setProfile]=useState({
+    vehicles:[
+      { icon:"🚗", label:"Toyota Corolla", sub:"BG 4567", isEV:false },
+      { icon:"🚙", label:"Hyundai Tucson",  sub:"MK 1234", isEV:false },
+    ],
+    accessibility:false,
+  });
 
   const tabs=[
     { id:"find",    label:"Find Parking", icon:"🔍" },
@@ -83,7 +90,7 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen }){
 
       {/* Content */}
       <div style={{ flex:1,overflow:"auto" }}>
-        {tab==="find" && <FindTab user={user} onAuthOpen={onAuthOpen} onReserve={s=>{ setBooked(s); setTab("session"); }} />}
+        {tab==="find" && <FindTab user={user} onAuthOpen={onAuthOpen} onReserve={s=>{ setBooked(s); setTab("session"); }} initialSpotId={initialSpotId} onSpotDetailOpened={onSpotDetailOpened} profile={profile} />}
         {tab!=="find" && !user && (
           <div style={{ padding:28,maxWidth:720,margin:"0 auto" }}>
             <Card style={{ padding:24,textAlign:"center" }}>
@@ -99,7 +106,7 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen }){
         {tab==="session" && user && <SessionTab spot={booked} onEnd={()=>{ setBooked(null); setTab("find"); }} />}
         {tab==="wallet"  && user && <WalletTab />}
         {tab==="history" && user && <HistoryTab />}
-        {tab==="account" && user && <AccountTab user={user} onLogout={onLogout} />}
+        {tab==="account" && user && <AccountTab user={user} onLogout={onLogout} profile={profile} onProfileUpdate={setProfile} />}
       </div>
 
       {/* Mobile bottom nav */}

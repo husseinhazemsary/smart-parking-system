@@ -11,6 +11,7 @@ export default function Ezrakna(){
   const [view,setView]=useState("landing");   // landing | app | business
   const [authOpen,setAuthOpen]=useState(false);
   const [user,setUser]=useState(null);
+  const [initialSpotId,setInitialSpotId]=useState(null);
 
   const go = (v) => { setView(v); };
   // Scroll to top AFTER the new view has mounted in the DOM
@@ -18,6 +19,7 @@ export default function Ezrakna(){
   const handleAuth = (u) => { setUser(u); setAuthOpen(false); go("app"); };
   const handleLogout = () => { setUser(null); go("landing"); };
   const handleEnter = () => { go("app"); };
+  const handleEnterWithSpot = (spot) => { setInitialSpotId(spot.id); go("app"); };
   const handleBusiness = () => { go("business"); };
 
   return(
@@ -47,8 +49,8 @@ export default function Ezrakna(){
         section{scroll-margin-top:68px;}
       `}</style>
 
-      {view==="landing"  && <Landing onEnter={handleEnter} onAuthOpen={()=>setAuthOpen(true)} onBusiness={handleBusiness} user={user} />}
-      {view==="app"      && <AppShell user={user} onLogout={handleLogout} onBack={()=>go("landing")} onAuthOpen={()=>setAuthOpen(true)} />}
+      {view==="landing"  && <Landing onEnter={handleEnter} onViewDetails={handleEnterWithSpot} onAuthOpen={()=>setAuthOpen(true)} onBusiness={handleBusiness} user={user} />}
+      {view==="app"      && <AppShell user={user} onLogout={handleLogout} onBack={()=>go("landing")} onAuthOpen={()=>setAuthOpen(true)} initialSpotId={initialSpotId} onSpotDetailOpened={()=>setInitialSpotId(null)} />}
       {view==="business" && <BusinessPage onBack={()=>go("landing")} />}
 
       <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuth={handleAuth} />
