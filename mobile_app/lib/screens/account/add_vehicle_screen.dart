@@ -22,12 +22,42 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   bool _setAsDefault = true;
   bool _autoPay = true;
 
+  // EV detection — true when the entered make/model matches a known EV brand or model.
+  bool _isEV = false;
+
   // Vehicle type options shown as selectable chips.
   final List<Map<String, dynamic>> _vehicleTypes = [
     {'label': 'Sedan', 'icon': Icons.directions_car},
     {'label': 'SUV', 'icon': Icons.directions_car_filled},
     {'label': 'Truck', 'icon': Icons.local_shipping},
   ];
+
+  // Known EV brands/models. Matched case-insensitively against the make & model text.
+  static const _evKeywords = [
+    'tesla', 'rivian', 'lucid', 'polestar', 'nio', 'fisker', 'canoo',
+    'byd', 'xpeng', 'li auto', 'zeekr',
+    'nissan leaf', 'bolt', 'chevrolet bolt',
+    'ioniq 5', 'ioniq 6', 'ioniq5', 'ioniq6', 'kia ev6', 'kia ev',
+    'bmw i3', 'bmw i4', 'bmw ix', 'bmw i5', 'bmw i7',
+    'mercedes eqs', 'mercedes eqe', 'mercedes eqa', 'mercedes eqb', 'mercedes eqc',
+    'eqs', 'eqe', 'eqa', 'eqb', 'eqc',
+    'audi e-tron', 'audi etron', 'audi q4 e-tron',
+    'porsche taycan',
+    'volkswagen id', 'vw id', 'id.3', 'id.4', 'id.5', 'id.7',
+    'volvo ex30', 'volvo ex40', 'volvo ec40', 'volvo c40',
+    'ford mustang mach-e', 'ford mach-e', 'ford f-150 lightning', 'f-150 lightning',
+    'gmc hummer ev', 'hummer ev',
+    'mini cooper se', 'mini se',
+    'jaguar i-pace', 'i-pace',
+    'hyundai ioniq',
+  ];
+
+  /// Auto-detects EV status from the typed make & model string.
+  void _detectEV(String text) {
+    final lower = text.toLowerCase();
+    final detected = _evKeywords.any((kw) => lower.contains(kw));
+    if (detected != _isEV) setState(() => _isEV = detected);
+  }
 
   @override
   void dispose() {
@@ -213,8 +243,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     _GradientFieldBox(
                       child: TextFormField(
                         controller: _makeController,
+                        onChanged: _detectEV,
                         decoration: InputDecoration(
-                          hintText: 'Search make...',
+                          hintText: 'e.g. Toyota Corolla, Tesla Model 3...',
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -224,6 +255,74 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           suffixIcon: Icon(Icons.search,
                               color: textSecondary, size: 20),
                         ),
+                      ),
+                    ),
+
+                    // EV status — auto-detected from make & model, or toggled manually.
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0x4D000011),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: _isEV
+                                  ? const Color(0xFF22C55E).withOpacity(0.15)
+                                  : AppColors.purple.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.electric_bolt,
+                              color: _isEV
+                                  ? const Color(0xFF22C55E)
+                                  : textSecondary,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Electric Vehicle (EV)',
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _isEV
+                                      ? 'Auto-detected from make & model'
+                                      : 'Not detected — toggle on if this is an EV',
+                                  style: TextStyle(
+                                    color: _isEV
+                                        ? const Color(0xFF22C55E)
+                                        : textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _isEV,
+                            onChanged: (v) => setState(() => _isEV = v),
+                            activeColor: Colors.white,
+                            activeTrackColor: const Color(0xFF22C55E),
+                            inactiveThumbColor: Colors.white,
+                            inactiveTrackColor:
+                                isDark ? AppColors.borderDark : AppColors.borderLight,
+                          ),
+                        ],
                       ),
                     ),
 

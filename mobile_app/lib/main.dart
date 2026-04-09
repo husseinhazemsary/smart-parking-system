@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/user_prefs_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash/splash_screen.dart';
 
@@ -14,6 +15,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => UserPrefsProvider()),
       ],
       child: const EzRaknaApp(),
     ),

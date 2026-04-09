@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/user_prefs_provider.dart';
 import '../../theme/app_colors.dart';
 import 'navigation_screen.dart';
 
@@ -77,6 +79,12 @@ class _ViewSlotsScreenState extends State<ViewSlotsScreen> {
     return null;
   }
 
+  void _onSlotTap(_Slot slot, bool hasEV) {
+    setState(() {
+      _selectedSlotId = (_selectedSlotId == slot.id) ? null : slot.id;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -85,6 +93,7 @@ class _ViewSlotsScreenState extends State<ViewSlotsScreen> {
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final userPrefs = context.watch<UserPrefsProvider>();
 
     final slotsFlat = _grid.expand((r) => r).toList();
 
@@ -217,9 +226,7 @@ class _ViewSlotsScreenState extends State<ViewSlotsScreen> {
                     final isSelected = _selectedSlotId == slot.id;
 
                     return GestureDetector(
-                      onTap: () => setState(() {
-                        _selectedSlotId = isSelected ? null : slot.id;
-                      }),
+                      onTap: () => _onSlotTap(slot, userPrefs.hasEV),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         decoration: BoxDecoration(
@@ -264,14 +271,30 @@ class _ViewSlotsScreenState extends State<ViewSlotsScreen> {
                 textSecondary: textSecondary,
                 surface: surface,
                 border: border,
+                hasEV: userPrefs.hasEV,
                 onCancel: () => setState(() => _selectedSlotId = null),
                 onNavigate: _selectedSlot!.occupied
                     ? null
-                    : () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => NavigationScreen(destinationName: widget.locationName),
-                  ),
-                ),
+                    : () {
+                  final slot = _selectedSlot!;
+                  if (slot.type == _SlotType.ev && !userPrefs.hasEV) {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const _EligibilityDialog(
+                        title: 'EV Charging Spot',
+                        message: 'This spot is for electric vehicles only. '
+                            'Add an EV to your profile to navigate here.',
+                        icon: Icons.bolt,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => NavigationScreen(destinationName: widget.locationName),
+                    ),
+                  );
+                },
               )
                   : _SlotEmptyState(isDark: isDark, textSecondary: textSecondary, border: border, surface: surface),
             ),
@@ -424,6 +447,7 @@ class _SlotDetailPanel extends StatelessWidget {
   final Color textSecondary;
   final Color surface;
   final Color border;
+  final bool hasEV;
   final VoidCallback onCancel;
   final VoidCallback? onNavigate;
   const _SlotDetailPanel({
@@ -433,6 +457,7 @@ class _SlotDetailPanel extends StatelessWidget {
     required this.textSecondary,
     required this.surface,
     required this.border,
+    required this.hasEV,
     required this.onCancel,
     required this.onNavigate,
   });
@@ -502,6 +527,16 @@ class _SlotDetailPanel extends StatelessWidget {
             const SizedBox(height: 10),
             _PredictionLine(isDark: isDark, textPrimary: textPrimary, textSecondary: textSecondary, slotId: slot.id),
           ],
+          if (slot.type == _SlotType.ev && !hasEV) ...[
+            const SizedBox(height: 10),
+            _RestrictionBanner(
+              isDark: isDark,
+              icon: Icons.bolt,
+              color: const Color(0xFF22C55E),
+              message: 'EV charging spots are for electric vehicles only. '
+                  'Add an EV to your profile to use this spot.',
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
@@ -563,38 +598,52 @@ class _SlotDetailPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onCancel,
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: Text('Cancel', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+          if (slot.occupied)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onCancel,
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
+                child: Text('Close', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: onNavigate,
-                  icon: const Icon(Icons.navigation_outlined, size: 16),
-                  label: const Text('Navigate'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.purple,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.purple.withOpacity(0.35),
-                    disabledForegroundColor: Colors.white.withOpacity(0.6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onCancel,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text('Cancel', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onNavigate,
+                    icon: const Icon(Icons.navigation_outlined, size: 16),
+                    label: const Text('Navigate'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.purple,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.purple.withOpacity(0.35),
+                      disabledForegroundColor: Colors.white.withOpacity(0.6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -689,6 +738,106 @@ class _PredictionLine extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RestrictionBanner extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final Color color;
+  final String message;
+  const _RestrictionBanner({
+    required this.isDark,
+    required this.icon,
+    required this.color,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isDark ? 0.08 : 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EligibilityDialog extends StatelessWidget {
+  final String title;
+  final String message;
+  final IconData icon;
+  const _EligibilityDialog({
+    required this.title,
+    required this.message,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    return AlertDialog(
+      backgroundColor: surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.purple.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppColors.purple, size: 26),
+          ),
+          const SizedBox(height: 14),
+          Text(title, style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Text(message, style: TextStyle(color: textSecondary, fontSize: 13), textAlign: TextAlign.center),
+        ],
+      ),
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.purple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+            ),
+            child: const Text('Got it', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ],
     );
   }
 }

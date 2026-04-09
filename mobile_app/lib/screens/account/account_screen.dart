@@ -20,6 +20,9 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   bool _notificationsEnabled = true;
+  // Whether the user requires accessible parking spots.
+  // When enabled, the system prioritizes accessible slots during reservation.
+  bool _isAccessible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +55,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   // Purple hero header with avatar, name, stats bar and settings button.
                   _ProfileHeader(
                     isDark: isDark,
+                    isAccessible: _isAccessible,
                     onSettings: () => Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (_) => const SettingsScreen()),
@@ -186,6 +190,55 @@ class _AccountScreenState extends State<AccountScreen> {
                                       : AppColors.borderLight,
                                 ),
                               ),
+                              _RowDivider(isDark: isDark),
+                              _PreferenceRow(
+                                isDark: isDark,
+                                icon: Icons.accessible_outlined,
+                                label: 'Accessible Parking',
+                                trailing: Switch(
+                                  value: _isAccessible,
+                                  onChanged: (v) =>
+                                      setState(() => _isAccessible = v),
+                                  activeColor: Colors.white,
+                                  activeTrackColor: AppColors.purple,
+                                  inactiveThumbColor: Colors.white,
+                                  inactiveTrackColor: isDark
+                                      ? AppColors.borderDark
+                                      : AppColors.borderLight,
+                                ),
+                              ),
+                              if (_isAccessible)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.purple.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                          color: AppColors.purple.withOpacity(0.2)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.info_outline,
+                                            color: AppColors.purple, size: 16),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Accessible slots will be prioritized when reserving.',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: isDark
+                                                  ? AppColors.textSecondaryDark
+                                                  : AppColors.textSecondaryLight,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -978,8 +1031,13 @@ class _SettingsOption extends StatelessWidget {
 // Full-width purple header with blurred glass stats bar that overhangs the bottom edge.
 class _ProfileHeader extends StatelessWidget {
   final bool isDark;
+  final bool isAccessible;
   final VoidCallback onSettings;
-  const _ProfileHeader({required this.isDark, required this.onSettings});
+  const _ProfileHeader({
+    required this.isDark,
+    required this.isAccessible,
+    required this.onSettings,
+  });
 
   static const double _statsHeight = 76.0;
 
@@ -1084,6 +1142,33 @@ class _ProfileHeader extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+
+              if (isAccessible) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.accessible, color: Colors.white, size: 14),
+                      SizedBox(width: 5),
+                      Text(
+                        'Accessible Parking',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 20),
             ],
