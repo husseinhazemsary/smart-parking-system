@@ -3,6 +3,7 @@ os.environ["CUDNN_PATH"] = os.path.join(os.path.dirname(__file__), "venv", "Lib"
 import cv2
 import time
 import re
+from collections import defaultdict
 from db.db import check_access
 
 from src.Car import Car
@@ -17,8 +18,8 @@ GATE_COOLDOWN = 5  # seconds before the gate can open again
 
 # --- Configuration ---
 
-INPUT_VIDEO = "input/video.mp4"
-OUTPUT_VIDEO = "output/output_video.mp4"
+INPUT_VIDEO = "input/video2.mp4"
+OUTPUT_VIDEO = "output/output_video2.mp4"
 
 FONT_PATH = "fonts/Amiri-Regular.ttf"
 
@@ -207,8 +208,6 @@ def reconstruct_plate_from_partials(candidates):
     if not candidates or len(candidates) < 2:
         return None
 
-    from collections import defaultdict
-
     digit_weights  = defaultdict(float)
     letter_weights = defaultdict(float)
 
@@ -228,7 +227,7 @@ def reconstruct_plate_from_partials(candidates):
     best_letters = max(letter_weights, key=letter_weights.get) if letter_weights else None
 
     if best_digits and best_letters:
-        reconstructed = f"{best_digits} {best_letters}"
+        reconstructed = f"{best_letters} {best_digits}"
 
         # Tiebreaker check: if the single highest-confidence FULL read (one that contains
         # both valid digits and valid letters) disagrees with the weighted winner, the vote
@@ -351,7 +350,7 @@ def detect_and_read_plate(frame, car, plate_detector, plate_reader, frame_index,
         # digits-only before being added to plate_candidates, meaning the letter portion
         # was never available for reconstruction.
         if 2 <= len(letters) <= 3:
-            plate_text = f"{digits} {' '.join(letters)}"
+            plate_text = f"{' '.join(letters)} {digits}"
         else:
             # No usable letter group found — store digits alone so the reconstruction
             # step can still pair them with letters captured in other reads.
@@ -433,8 +432,6 @@ while True:
 
             if car_id not in cars:
                 cars[car_id] = Car(car_id, (x1, y1, x2, y2))
-                cars[car_id].last_plate_process_frame = -999
-                cars[car_id].plate_candidates = []
             else:
                 cars[car_id].update_bbox((x1, y1, x2, y2))
 
@@ -453,9 +450,6 @@ while True:
 
         if frame_index % GATE_CAR_PROCESS_EVERY_N == 0:
 
-            if not hasattr(gate_car, 'last_plate_process_frame'):
-                gate_car.last_plate_process_frame = -999
-
             if frame_index - gate_car.last_plate_process_frame >= GATE_CAR_OCR_EVERY_N:
                 gate_car.last_plate_process_frame = frame_index
 
@@ -467,7 +461,7 @@ while True:
                     frame_index,
                     debug_mode=DEBUG_MODE,
                     save_plates=DEBUG_SAVE_PLATES,
-                    predetected_crop=getattr(gate_car, 'latest_plate_crop', None)
+                    predetected_crop=gate_car.latest_plate_crop
                 )
 
                 if DEBUG_MODE and DEBUG_SHOW_OCR_RESULTS:
@@ -487,9 +481,6 @@ while True:
                         print(f"  └─ ✗ Rejection: {debug_info['rejection_reason']}")
 
                 if plate_text:
-                    if not hasattr(gate_car, 'plate_candidates'):
-                        gate_car.plate_candidates = []
-
                     gate_car.plate_candidates.append((plate_text, debug_info['ocr_confidence']))
 
                     if DEBUG_MODE:
@@ -515,7 +506,6 @@ while True:
                     # Fallback: after 6+ failed reconstruction attempts, accept the
                     # highest confidence-weighted partial read if seen enough times
                     if not gate_car.final_plate and len(gate_car.plate_candidates) >= 6:
-                        from collections import defaultdict
                         weight_map = defaultdict(float)
                         count_map  = defaultdict(int)
                         for t, conf in gate_car.plate_candidates:
@@ -570,8 +560,7 @@ while True:
             )
 
         # Show how many reads have been collected toward the stability threshold
-        if hasattr(gate_car, 'plate_candidates') and gate_car.plate_candidates:
-            from collections import defaultdict
+        if gate_car.plate_candidates:
             count_map = defaultdict(int)
             for t, _ in gate_car.plate_candidates:
                 count_map[t] += 1
