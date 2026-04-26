@@ -47,3 +47,7 @@ Thumbs.db
 
 main_doc.py
 training/TRAINING_RUN_2_NOTES.md
+
+# Evaluation artifacts
+eval_results.png
+scripts/eval/eval_results_analysis.md
