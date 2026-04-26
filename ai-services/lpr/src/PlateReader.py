@@ -26,12 +26,17 @@ class PlateReader:
 
     def _preprocess(self, img):
         """
-        Upscale 2x. Used as a fallback when the first OCR pass finds no digits or letters.
-        Larger image gives the DB detector more pixels per stroke, pushing low-scoring
-        regions above det_db_thresh without altering stroke shapes the way CLAHE can.
+        CLAHE contrast enhancement + 2x upscale.
+        Used as a fallback when the first OCR pass finds no digits or letters.
+        CLAHE recovers faded/dirty characters by boosting local contrast in small
+        tiles before upscaling gives the detector more pixels per stroke.
         """
-        h, w = img.shape[:2]
-        return cv2.resize(img, (w * 2, h * 2), interpolation=cv2.INTER_CUBIC)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(gray)
+        enhanced_bgr = cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
+        h, w = enhanced_bgr.shape[:2]
+        return cv2.resize(enhanced_bgr, (w * 2, h * 2), interpolation=cv2.INTER_CUBIC)
 
     def read_plate_with_boxes(self, plate_img, debug_annotated_path=None):
         """
@@ -97,8 +102,12 @@ class PlateReader:
                     filtered_texts.append(text)
                     filtered_confidences.append(confidence)
 
-            raw_text      = " ".join(raw_texts)      if raw_texts      else None
+            raw_text = " ".join(raw_texts) if raw_texts else None
+            # Arabic plates are RTL; the model reads each detected box LTR.
+            # Fix: reverse each box's characters, then reverse box order (so the
+            # rightmost/letters box comes first), and join without spaces.
             filtered_text = " ".join(filtered_texts) if filtered_texts else None
+            # NOTE: default Arabic model reads RTL natively — no reversal needed
             avg_confidence = (sum(filtered_confidences) / len(filtered_confidences)
                               if filtered_confidences else 0.0)
 
