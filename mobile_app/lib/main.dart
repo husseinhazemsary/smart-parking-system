@@ -3,16 +3,24 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:ezrakna/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/user_prefs_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize auth before runApp so SplashScreen can read state synchronously.
+  final authProvider = AuthProvider();
+  await authProvider.init();
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => UserPrefsProvider()),

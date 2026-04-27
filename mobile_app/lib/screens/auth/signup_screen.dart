@@ -1,11 +1,11 @@
-// Signup screen — collects name, email, phone, date of birth and password.
-// Includes a notification consent checkbox required before account creation.
 import 'package:flutter/material.dart';
 import 'package:ezrakna/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_colors.dart';
+import '../navigation/app_navigator.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -15,15 +15,14 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  // All controllers disposed in dispose() to prevent memory leaks.
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController();
   final _passwordController = TextEditingController();
-  // Tracks password visibility and consent checkbox state.
   bool _obscurePassword = true;
   bool _consentChecked = false;
+  DateTime? _selectedDate;
 
   @override
   void dispose() {
@@ -35,7 +34,6 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  // Opens a native date picker styled with the app's purple color scheme.
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -49,12 +47,57 @@ class _SignupScreenState extends State<SignupScreen> {
         child: child!,
       ),
     );
-    // Format: DD/MM/YYYY for display in the read-only DOB field.
     if (picked != null) {
+      _selectedDate = picked;
       setState(() {
         _dobController.text =
-        '${picked.day}/${picked.month}/${picked.year}';
+            '${picked.day}/${picked.month}/${picked.year}';
       });
+    }
+  }
+
+  Future<void> _register() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+
+    if (name.isEmpty || email.isEmpty || phone.isEmpty || _selectedDate == null || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields.')),
+      );
+      return;
+    }
+
+    if (!_consentChecked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please accept the notification consent to continue.')),
+      );
+      return;
+    }
+
+    // Format date as ISO YYYY-MM-DD for the backend (LocalDate).
+    final dob =
+        '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+
+    final auth = context.read<AuthProvider>();
+    final success = await auth.register(
+      fullName: name,
+      email: email,
+      phoneNumber: phone,
+      dateOfBirth: dob,
+      password: password,
+    );
+
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AppNavigator()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.error ?? 'Registration failed.')),
+      );
     }
   }
 
@@ -65,6 +108,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final localeProvider = context.watch<LocaleProvider>();
     final isDark = themeProvider.isDark;
     final colorScheme = Theme.of(context).colorScheme;
+    final isLoading = context.watch<AuthProvider>().isLoading;
 
     return Scaffold(
       body: SafeArea(
@@ -72,8 +116,7 @@ class _SignupScreenState extends State<SignupScreen> {
           children: [
 
             Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -96,18 +139,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.surfaceDark
-                              : AppColors.surfaceLight,
+                          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isDark
-                                ? AppColors.borderDark
-                                : AppColors.borderLight,
+                            color: isDark ? AppColors.borderDark : AppColors.borderLight,
                           ),
                         ),
                         child: Icon(Icons.arrow_back,
-                            size: 20, color: colorScheme.onBackground),
+                            size: 20, color: colorScheme.onSurface),
                       ),
                     ),
 
@@ -118,7 +157,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: colorScheme.onBackground,
+                        color: colorScheme.onSurface,
                       ),
                     ),
 
@@ -129,8 +168,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextFormField(
                       controller: _nameController,
                       textCapitalization: TextCapitalization.words,
-                      decoration:
-                      InputDecoration(hintText: l10n.fullNameHint),
+                      enabled: !isLoading,
+                      decoration: InputDecoration(hintText: l10n.fullNameHint),
                     ),
 
                     const SizedBox(height: 20),
@@ -140,8 +179,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration:
-                      InputDecoration(hintText: l10n.emailHint),
+                      enabled: !isLoading,
+                      decoration: InputDecoration(hintText: l10n.emailHint),
                     ),
 
                     const SizedBox(height: 20),
@@ -151,8 +190,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      decoration:
-                      InputDecoration(hintText: l10n.phoneHint),
+                      enabled: !isLoading,
+                      decoration: InputDecoration(hintText: l10n.phoneHint),
                     ),
 
                     const SizedBox(height: 20),
@@ -161,9 +200,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _dobController,
-                      // Read-only so the keyboard never appears; tapping opens the date picker.
                       readOnly: true,
-                      onTap: () => _selectDate(context),
+                      onTap: isLoading ? null : () => _selectDate(context),
                       decoration: InputDecoration(
                         hintText: l10n.dobHint,
                         suffixIcon: const Icon(
@@ -180,8 +218,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
-                      // Toggle visibility via the suffix icon to avoid typos.
                       obscureText: _obscurePassword,
+                      enabled: !isLoading,
                       decoration: InputDecoration(
                         hintText: l10n.passwordHint,
                         suffixIcon: IconButton(
@@ -191,8 +229,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 : Icons.visibility_off_outlined,
                             color: AppColors.textHintDark,
                           ),
-                          onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
+                          onPressed: () =>
+                              setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
                     ),
@@ -204,8 +242,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         Checkbox(
                           value: _consentChecked,
-                          onChanged: (v) =>
-                              setState(() => _consentChecked = v ?? false),
+                          onChanged: isLoading
+                              ? null
+                              : (v) => setState(() => _consentChecked = v ?? false),
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -229,10 +268,17 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 24),
 
                     ElevatedButton(
-                      onPressed: () {
-
-                      },
-                      child: Text(l10n.createAccount),
+                      onPressed: isLoading ? null : _register,
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(l10n.createAccount),
                     ),
 
                     const SizedBox(height: 20),
@@ -275,7 +321,6 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 }
 
-// Bold section label shown above each form field.
 class _FieldLabel extends StatelessWidget {
   final String text;
   final bool isDark;
@@ -294,7 +339,6 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-// Language toggle pill shown in the top bar — EN/AR switch.
 class _LangToggle extends StatelessWidget {
   final LocaleProvider localeProvider;
   const _LangToggle({required this.localeProvider});
@@ -311,7 +355,7 @@ class _LangToggle extends StatelessWidget {
           border: Border.all(color: AppColors.borderDark),
         ),
         child: Text(
-          localeProvider.isArabic ? 'EN' : 'EN',
+          localeProvider.isArabic ? 'EN' : 'AR',
           style: const TextStyle(
               color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
         ),
@@ -320,7 +364,6 @@ class _LangToggle extends StatelessWidget {
   }
 }
 
-// Dark/light mode toggle button shown in the top bar.
 class _ThemeToggle extends StatelessWidget {
   final ThemeProvider themeProvider;
   const _ThemeToggle({required this.themeProvider});
@@ -337,9 +380,7 @@ class _ThemeToggle extends StatelessWidget {
           border: Border.all(color: AppColors.borderDark),
         ),
         child: Icon(
-          themeProvider.isDark
-              ? Icons.wb_sunny_outlined
-              : Icons.nightlight_round,
+          themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
           color: Colors.white,
           size: 18,
         ),

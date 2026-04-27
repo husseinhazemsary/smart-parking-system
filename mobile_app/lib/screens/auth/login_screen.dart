@@ -1,8 +1,8 @@
-// Login screen — entry point for returning users.
-// Supports email/password login, Google and Apple sign-in, and remember me.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ezrakna/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_colors.dart';
@@ -17,10 +17,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controllers are disposed in dispose() to avoid memory leaks.
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  // Tracks remember-me checkbox and password visibility toggle.
   bool _rememberMe = false;
   bool _obscurePassword = true;
 
@@ -31,13 +29,45 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email and password.')),
+      );
+      return;
+    }
+
+    final auth = context.read<AuthProvider>();
+    final success = await auth.login(email, password);
+
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AppNavigator()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.error ?? 'Login failed.')),
+      );
+    }
+  }
+
+  void _devBypass() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const AppNavigator()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final themeProvider = context.watch<ThemeProvider>();
-    final localeProvider = context.watch<LocaleProvider>();
     final isDark = themeProvider.isDark;
     final colorScheme = Theme.of(context).colorScheme;
+    final isLoading = context.watch<AuthProvider>().isLoading;
 
     return Scaffold(
       body: SafeArea(
@@ -45,8 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
 
             Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -70,18 +99,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.surfaceDark
-                              : AppColors.surfaceLight,
+                          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isDark
-                                ? AppColors.borderDark
-                                : AppColors.borderLight,
+                            color: isDark ? AppColors.borderDark : AppColors.borderLight,
                           ),
                         ),
                         child: Icon(Icons.arrow_back,
-                            size: 20, color: colorScheme.onBackground),
+                            size: 20, color: colorScheme.onSurface),
                       ),
                     ),
 
@@ -92,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: colorScheme.onBackground,
+                        color: colorScheme.onSurface,
                       ),
                     ),
 
@@ -103,8 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                          hintText: l10n.emailHint),
+                      enabled: !isLoading,
+                      decoration: InputDecoration(hintText: l10n.emailHint),
                     ),
 
                     const SizedBox(height: 20),
@@ -114,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      enabled: !isLoading,
                       decoration: InputDecoration(
                         hintText: l10n.passwordHintLogin,
                         suffixIcon: IconButton(
@@ -123,8 +149,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 : Icons.visibility_off_outlined,
                             color: AppColors.textHintDark,
                           ),
-                          onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
+                          onPressed: () =>
+                              setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
                     ),
@@ -138,19 +164,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             Checkbox(
                               value: _rememberMe,
-                              onChanged: (v) =>
-                                  setState(() => _rememberMe = v ?? false),
+                              onChanged: isLoading
+                                  ? null
+                                  : (v) => setState(() => _rememberMe = v ?? false),
                             ),
                             Text(l10n.rememberMe,
                                 style: TextStyle(
-                                    color: colorScheme.onBackground,
-                                    fontSize: 13)),
+                                    color: colorScheme.onSurface, fontSize: 13)),
                           ],
                         ),
                         GestureDetector(
-                          onTap: () {
-
-                          },
+                          onTap: () {},
                           child: Text(
                             l10n.forgotPassword,
                             style: const TextStyle(
@@ -166,18 +190,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 24),
 
                     ElevatedButton(
-                      // On success replace the login route so back button doesn't return here.
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (_) => const AppNavigator()),
-                        );
-                      },
-                      child: Text(l10n.signIn),
+                      onPressed: isLoading ? null : _login,
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(l10n.signIn),
                     ),
 
                     const SizedBox(height: 24),
 
-                    // Divider with centred label between sign-in and social buttons.
                     Row(
                       children: [
                         Expanded(child: Divider(color: isDark ? AppColors.borderDark : AppColors.borderLight)),
@@ -197,7 +224,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Full-width Google button with icon + label.
                     _SocialButton(
                       icon: _GoogleIcon(),
                       label: 'Continue with Google',
@@ -207,7 +233,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Full-width Apple button with icon + label.
                     _SocialButton(
                       icon: const Icon(Icons.apple, color: Colors.white, size: 22),
                       label: 'Continue with Apple',
@@ -221,8 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (_) => const SignupScreen()),
+                            MaterialPageRoute(builder: (_) => const SignupScreen()),
                           );
                         },
                         child: RichText(
@@ -248,6 +272,33 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
+                    // Dev bypass — only visible in debug builds.
+                    if (kDebugMode) ...[
+                      const SizedBox(height: 20),
+                      Center(
+                        child: GestureDetector(
+                          onTap: _devBypass,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: Colors.orange.withValues(alpha: 0.6)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              '⚡ Dev: Skip Login',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -260,7 +311,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// Bold label displayed above each input field.
 class _FieldLabel extends StatelessWidget {
   final String text;
   final bool isDark;
@@ -279,7 +329,6 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-// Full-width social login button with a leading icon and a centred label.
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;
@@ -322,7 +371,6 @@ class _SocialButton extends StatelessWidget {
   }
 }
 
-// Placeholder Google icon — replace with an SVG asset when available.
 class _GoogleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -338,14 +386,11 @@ class _GoogleIcon extends StatelessWidget {
   }
 }
 
-// EN / AR pill toggle that rebuilds when LocaleProvider changes.
 class _LangToggle extends StatelessWidget {
   const _LangToggle();
 
   @override
   Widget build(BuildContext context) {
-
-    // Watch directly so this widget rebuilds on every locale change.
     final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
 
@@ -407,7 +452,6 @@ class _LangToggle extends StatelessWidget {
   }
 }
 
-// Sun / moon icon button that calls ThemeProvider.toggleTheme.
 class _ThemeToggle extends StatelessWidget {
   final ThemeProvider themeProvider;
   const _ThemeToggle({required this.themeProvider});
@@ -424,9 +468,7 @@ class _ThemeToggle extends StatelessWidget {
           border: Border.all(color: AppColors.borderDark),
         ),
         child: Icon(
-          themeProvider.isDark
-              ? Icons.wb_sunny_outlined
-              : Icons.nightlight_round,
+          themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
           color: Colors.white,
           size: 18,
         ),
