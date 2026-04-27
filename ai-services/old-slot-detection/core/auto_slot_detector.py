@@ -15,7 +15,7 @@ import os
 
 class AutoSlotDetector:
 
-    def __init__(self, image_path):
+    def __init__(self, image_path, debug_dir='output/debug'):
         self.image = cv2.imread(image_path)
         if self.image is None:
             raise ValueError(f"Could not load image: {image_path}")
@@ -24,6 +24,12 @@ class AutoSlotDetector:
         self.slots = []
         self._homography = None          # original → warped
         self._homography_inv = None      # warped → original
+        self.debug_dir = debug_dir
+        os.makedirs(self.debug_dir, exist_ok=True)
+
+    def _dbg(self, filename):
+        """Return full path for a debug image file."""
+        return os.path.join(self.debug_dir, filename)
 
     # ------------------------------------------------------------------
     # Public API
@@ -32,6 +38,7 @@ class AutoSlotDetector:
     def detect_slots(self, min_slot_width=30):
         os.makedirs('output', exist_ok=True)
 
+        print(f"\nDebug images will be saved to: {self.debug_dir}")
         print("Step 1: Detecting parking area mask...")
         parking_mask = self._detect_parking_mask()
 
@@ -58,8 +65,8 @@ class AutoSlotDetector:
             warped_gray = self.gray
             use_warp = False
         else:
-            cv2.imwrite('output/debug_step5_warped.jpg', warped)
-            print("  Saved: debug_step5_warped.jpg")
+            cv2.imwrite(self._dbg('step5_warped.jpg'), warped)
+            print("  Saved: step5_warped.jpg")
             warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
             use_warp = True
             self._homography = M
@@ -178,8 +185,8 @@ class AutoSlotDetector:
             mask = ((labels == largest) * 255).astype(np.uint8)
         coverage = np.sum(mask > 0) / mask.size * 100
         print(f"  Parking area coverage: {coverage:.1f}%")
-        cv2.imwrite('output/debug_step1_mask.jpg', mask)
-        print(f"  Saved: debug_step1_mask.jpg")
+        cv2.imwrite(self._dbg('step1_mask.jpg'), mask)
+        print(f"  Saved: step1_mask.jpg")
         return mask
 
     # ------------------------------------------------------------------
@@ -194,7 +201,7 @@ class AutoSlotDetector:
         edges = cv2.bitwise_and(edges, edges, mask=mask)
 
         tag = f"_{prefix}" if prefix else ""
-        cv2.imwrite(f'output/debug{tag}_edges.jpg', edges)
+        cv2.imwrite(self._dbg(f'step2{tag}_edges.jpg'), edges)
 
         raw = cv2.HoughLinesP(edges, rho=1, theta=np.pi / 180,
                                threshold=20, minLineLength=20, maxLineGap=20)
@@ -237,7 +244,7 @@ class AutoSlotDetector:
         cv2.putText(debug, "Red=boundary  Blue=divider  Gray=discarded",
                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         tag = f"_{prefix}" if prefix else ""
-        cv2.imwrite(f'output/debug{tag}_classified.jpg', debug)
+        cv2.imwrite(self._dbg(f'step3{tag}_classified.jpg'), debug)
         return dividers, boundaries
 
     # ------------------------------------------------------------------
@@ -407,8 +414,8 @@ class AutoSlotDetector:
             cv2.putText(debug, f"Row {idx+1}", (20, mid_y),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
         tag = f"_{prefix}" if prefix else ""
-        cv2.imwrite(f'output/debug{tag}_row_pairs.jpg', debug)
-        print(f"  Saved: debug{tag}_row_pairs.jpg  ({len(pairs)} row pair(s))")
+        cv2.imwrite(self._dbg(f'step4{tag}_row_pairs.jpg'), debug)
+        print(f"  Saved: step4{tag}_row_pairs.jpg  ({len(pairs)} row pair(s))")
         return pairs
 
     # ------------------------------------------------------------------
@@ -463,9 +470,9 @@ class AutoSlotDetector:
         for pt in corners_src.astype(int):
             cv2.circle(debug_corners, tuple(pt), 8, (0, 0, 255), -1)
         cv2.polylines(debug_corners, [corners_src.astype(np.int32)], True, (0, 255, 255), 2)
-        cv2.imwrite('output/debug_warp_corners.jpg', debug_corners)
+        cv2.imwrite(self._dbg('step5_warp_corners.jpg'), debug_corners)
         print(f"  Source corners: {corners_src.tolist()}")
-        print(f"  Saved: debug_warp_corners.jpg")
+        print(f"  Saved: step5_warp_corners.jpg")
 
         # Destination: a flat rectangle.
         # Add 40px padding to dst_h so the bottom row's boundary white line
@@ -595,8 +602,8 @@ class AutoSlotDetector:
                 'width': float(width),
             })
 
-        cv2.imwrite('output/debug_warp_slots.jpg', debug)
-        print(f"  Saved: debug_warp_slots.jpg  ({len(slots)} slot(s))")
+        cv2.imwrite(self._dbg('step9_warp_slots.jpg'), debug)
+        print(f"  Saved: step9_warp_slots.jpg  ({len(slots)} slot(s))")
         return slots
 
     # ------------------------------------------------------------------
