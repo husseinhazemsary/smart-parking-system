@@ -92,27 +92,19 @@ def draw_lines(img, lines, color=(0, 0, 255), show_numbers: bool = True):
 # Line coordinate persistence
 # ============================================================================
 
-def save_lines(image_path: str, lines, mode: str, roi_polygon=None):
+def save_lines(image_path: str, lines, mode: str, roi_polygons=None):
     """
     Save detected line endpoints to output/lines/<image_stem>.json.
 
-    File format:
-    {
-      "image": "path/to/image",
-      "image_size": [width, height],
-      "mode": "white_only" | "white_plus_roi",
-      "roi": [[x, y], ...] or null,
-      "params": { ... },
-      "line_count": N,
-      "lines": [{"x1":…,"y1":…,"x2":…,"y2":…}, …]
-    }
+    roi_polygons is a list of polygons (one per ROI), or None.
+    Saves as "rois" key for multi-ROI; slot_definer reads this format.
     """
     os.makedirs(LINES_DIR, exist_ok=True)
     stem     = Path(image_path).stem
     out_path = os.path.join(LINES_DIR, f"{stem}.json")
 
-    img      = cv2.imread(image_path)
-    h, w     = img.shape[:2] if img is not None else (0, 0)
+    img  = cv2.imread(image_path)
+    h, w = img.shape[:2] if img is not None else (0, 0)
 
     line_records = []
     if lines is not None:
@@ -124,11 +116,12 @@ def save_lines(image_path: str, lines, mode: str, roi_polygon=None):
         "image":      str(image_path),
         "image_size": [w, h],
         "mode":       mode,
-        "roi":        [list(p) for p in roi_polygon] if roi_polygon else None,
+        "rois":       [[list(p) for p in poly] for poly in roi_polygons] if roi_polygons else None,
+        "roi":        None,
         "params": {
-            "white_threshold":  WHITE_THRESHOLD,
+            "white_threshold":   WHITE_THRESHOLD,
             "morph_kernel_size": MORPH_KERNEL_SIZE,
-            "lsd_scale":        LSD_SCALE,
+            "lsd_scale":         LSD_SCALE,
         },
         "line_count": len(line_records),
         "lines":      line_records,
@@ -218,23 +211,30 @@ def pick_roi_interactive(img, window_name="Draw ROI - click points, Enter to fin
     return points
 
 
-def save_roi(image_path: str, polygon):
+def save_roi(image_path: str, polygons):
+    """Save one or more ROI polygons. polygons is a list of polygon point-lists."""
     os.makedirs(ROI_DIR, exist_ok=True)
     stem     = Path(image_path).stem
     roi_path = os.path.join(ROI_DIR, f"{stem}.json")
     with open(roi_path, "w") as f:
-        json.dump({"image": str(image_path), "polygon": polygon}, f, indent=2)
-    print(f"  Saved ROI → {roi_path}")
+        json.dump({"image": str(image_path), "polygons": polygons}, f, indent=2)
+    print(f"  Saved {len(polygons)} ROI(s) → {roi_path}")
 
 
 def load_roi(image_path: str):
+    """Return list of polygons, or None if no saved ROI exists."""
     stem     = Path(image_path).stem
     roi_path = os.path.join(ROI_DIR, f"{stem}.json")
     if not os.path.exists(roi_path):
         return None
     with open(roi_path) as f:
         data = json.load(f)
-    return [tuple(p) for p in data["polygon"]]
+    # support old format ("polygon") and new format ("polygons")
+    if "polygons" in data:
+        return [[tuple(p) for p in poly] for poly in data["polygons"]]
+    if "polygon" in data:
+        return [[tuple(p) for p in data["polygon"]]]
+    return None
 
 
 # ============================================================================
@@ -301,6 +301,31 @@ def detect_white_plus_roi(img, roi_polygon):
     return final, count, lines
 
 
+def detect_white_plus_multi_roi(img, roi_polygons):
+    """
+    Like detect_white_plus_roi but accepts a list of ROI polygons.
+    Builds a union mask so all ROIs are processed in one LSD pass.
+    """
+    name = "white_plus_roi"
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    roi_mask = np.zeros_like(gray)
+    for poly in roi_polygons:
+        cv2.fillPoly(roi_mask, [np.array(poly, dtype=np.int32)], 255)
+
+    masked_gray = cv2.bitwise_and(gray, roi_mask)
+    _, white_mask = cv2.threshold(masked_gray, WHITE_THRESHOLD, 255, cv2.THRESH_BINARY)
+    cleaned = clean_white_mask(white_mask)
+    lines   = run_lsd(cleaned)
+
+    final, count = draw_lines(img, lines)
+    for poly in roi_polygons:
+        cv2.polylines(final, [np.array(poly, dtype=np.int32)],
+                      isClosed=True, color=(0, 255, 0), thickness=2)
+    save_debug(name, "stage_final_multi_roi", final)
+    return final, count, lines
+
+
 # ============================================================================
 # Interactive prompts
 # ============================================================================
@@ -320,12 +345,13 @@ def prompt_image_path() -> str:
 def prompt_mode() -> int:
     print("\nChoose detection mode:")
     print("  1) White filter only")
-    print("  2) White filter + ROI")
+    print("  2) White filter + single ROI")
+    print("  3) White filter + multiple ROIs (one per row)")
     while True:
-        choice = input("Enter 1 or 2: ").strip()
-        if choice in ("1", "2"):
+        choice = input("Enter 1, 2, or 3: ").strip()
+        if choice in ("1", "2", "3"):
             return int(choice)
-        print("  Please enter 1 or 2.")
+        print("  Please enter 1, 2, or 3.")
 
 
 def prompt_yes_no(question: str) -> bool:
@@ -339,10 +365,11 @@ def prompt_yes_no(question: str) -> bool:
 
 
 def get_roi_for_image(img, image_path: str):
+    """Pick a single ROI. Returns a list containing one polygon, or None."""
     saved = load_roi(image_path)
     if saved is not None:
-        print(f"\n  Found a saved ROI for this image ({len(saved)} points).")
-        if prompt_yes_no("  Reuse it?"):
+        print(f"\n  Found {len(saved)} saved ROI(s) for this image.")
+        if prompt_yes_no("  Reuse them?"):
             return saved
         print("  OK, let's draw a new one.")
 
@@ -351,8 +378,36 @@ def get_roi_for_image(img, image_path: str):
     polygon = pick_roi_interactive(img)
     if polygon is None:
         return None
-    save_roi(image_path, polygon)
-    return polygon
+    polygons = [polygon]
+    save_roi(image_path, polygons)
+    return polygons
+
+
+def get_multi_roi_for_image(img, image_path: str):
+    """Pick multiple ROIs one at a time. Returns a list of polygons, or None."""
+    saved = load_roi(image_path)
+    if saved is not None:
+        print(f"\n  Found {len(saved)} saved ROI(s) for this image.")
+        if prompt_yes_no("  Reuse them?"):
+            return saved
+        print("  OK, let's draw new ones.")
+
+    polygons = []
+    while True:
+        idx = len(polygons) + 1
+        print(f"\n  Drawing ROI {idx} — click points, press Enter to finish.")
+        poly = pick_roi_interactive(img, f"ROI {idx} — Enter to finish, Esc to stop adding")
+        if poly is None:
+            break
+        polygons.append(poly)
+        print(f"  ROI {idx} saved ({len(poly)} points).")
+        if not prompt_yes_no("  Add another ROI?"):
+            break
+
+    if not polygons:
+        return None
+    save_roi(image_path, polygons)
+    return polygons
 
 
 # ============================================================================
@@ -376,24 +431,33 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     stem = Path(image_path).stem
 
-    polygon = None
+    polygons = None
     if mode == 1:
         print("\nRunning white filter only …")
         final, count, lines = detect_white_only(img)
         out_path = os.path.join(OUTPUT_DIR, f"{stem}_lsd_white_only.jpg")
         mode_str = "white_only"
-    else:
-        polygon = get_roi_for_image(img, image_path)
-        if polygon is None:
+    elif mode == 2:
+        polygons = get_roi_for_image(img, image_path)
+        if polygons is None:
             print("ROI selection cancelled. Exiting.")
             sys.exit(0)
-        print(f"\nRunning white filter + ROI ({len(polygon)} points) …")
-        final, count, lines = detect_white_plus_roi(img, polygon)
+        print(f"\nRunning white filter + ROI ({len(polygons[0])} points) …")
+        final, count, lines = detect_white_plus_roi(img, polygons[0])
+        out_path = os.path.join(OUTPUT_DIR, f"{stem}_lsd_white_plus_roi.jpg")
+        mode_str = "white_plus_roi"
+    else:
+        polygons = get_multi_roi_for_image(img, image_path)
+        if polygons is None:
+            print("ROI selection cancelled. Exiting.")
+            sys.exit(0)
+        print(f"\nRunning white filter + {len(polygons)} ROI(s) …")
+        final, count, lines = detect_white_plus_multi_roi(img, polygons)
         out_path = os.path.join(OUTPUT_DIR, f"{stem}_lsd_white_plus_roi.jpg")
         mode_str = "white_plus_roi"
 
     cv2.imwrite(out_path, final)
-    save_lines(image_path, lines, mode_str, polygon)
+    save_lines(image_path, lines, mode_str, polygons)
 
     print("\n" + "=" * 60)
     print(f"  Detected {count} line segments")

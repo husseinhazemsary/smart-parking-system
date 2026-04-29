@@ -41,7 +41,7 @@ CLUSTER_TOLERANCE     = 35    # px — merge parallel lines closer than this
 BOUNDARY_MIN_LENGTH_W = 0.05  # minimum merged-cluster span as fraction of warped width
                                # (kept small so fragments survive to the merge step)
 MIN_ROW_FRAC          = 0.04  # row must be >= this fraction of warped height
-MAX_ROW_FRAC          = 0.95  # row must be <= this fraction of warped height
+MAX_ROW_FRAC          = 0.99  # row must be <= this fraction of warped height
 DIVIDER_ROW_OVERLAP   = 0.30  # divider must cover >= this fraction of a row's height
 MIN_SLOT_WIDTH_PX     = 20    # minimum slot width in warped pixels
 VIRTUAL_EDGE_TOL      = 0.50  # tolerance for adding virtual edge dividers
@@ -62,12 +62,13 @@ DEBUG_BASE = os.path.join("output", "debug", "slot_definer")
 def load_lines(image_path):
     """
     Load the lines JSON written by lsd.py or hough_system.py.
-    Returns (lines_list, roi_polygon) where lines_list is [[x1,y1,x2,y2], ...].
-    Handles both JSON formats (list-of-lists and list-of-dicts).
+    Returns (lines_list, rois) where rois is a list of roi polygons (may be empty).
+    Supports both the old single-roi format ("roi" key) and the new multi-roi
+    format ("rois" key).
     """
     path = os.path.join(LINES_DIR, f"{Path(image_path).stem}.json")
     if not os.path.exists(path):
-        return None, None
+        return None, []
     with open(path) as f:
         data = json.load(f)
 
@@ -77,15 +78,33 @@ def load_lines(image_path):
     else:
         lines = raw
 
-    roi = data.get("roi") or data.get("roi_polygon")
-    if roi is not None:
-        roi = [tuple(p) for p in roi]
-    return lines, roi
+    if data.get("rois") is not None:
+        rois = [[tuple(p) for p in r] for r in data["rois"]]
+    elif data.get("roi") or data.get("roi_polygon"):
+        single = data.get("roi") or data.get("roi_polygon")
+        rois = [[tuple(p) for p in single]]
+    else:
+        rois = []
+
+    return lines, rois
 
 
 def lines_to_dicts(lines_list):
     """Convert [[x1,y1,x2,y2], ...] to [{'start':(x1,y1), 'end':(x2,y2)}, ...]."""
     return [{'start': (seg[0], seg[1]), 'end': (seg[2], seg[3])} for seg in lines_list]
+
+
+def filter_lines_for_roi(line_dicts, roi_polygon):
+    """Keep lines that have at least one endpoint inside roi_polygon."""
+    roi_pts = np.array(roi_polygon, dtype=np.float32)
+    result = []
+    for l in line_dicts:
+        s = (float(l['start'][0]), float(l['start'][1]))
+        e = (float(l['end'][0]),   float(l['end'][1]))
+        if (cv2.pointPolygonTest(roi_pts, s, False) >= 0 or
+                cv2.pointPolygonTest(roi_pts, e, False) >= 0):
+            result.append(l)
+    return result
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -352,9 +371,19 @@ def merge_boundaries(boundaries, warped_w, tolerance=CLUSTER_TOLERANCE):
     Cluster boundary segments and return one fitted line per cluster.
     The minimum-length filter is applied here, AFTER clustering, so that
     short fragments that belong to the same boundary are merged first.
+
+    The length threshold is scaled against the actual x-span of all detected
+    boundary fragments rather than the full warped width.  This prevents small
+    ROIs (e.g. a single row along the lot edge) from having their boundaries
+    silently dropped because the warped canvas happens to be wide.
     """
     clusters = _cluster(boundaries, _ymid, tolerance)
-    min_len  = BOUNDARY_MIN_LENGTH_W * warped_w
+    if not clusters:
+        return []
+    all_x    = [l['start'][0] for l in boundaries] + [l['end'][0] for l in boundaries]
+    observed = max(all_x) - min(all_x) if all_x else warped_w
+    ref_w    = max(observed, warped_w * 0.15)   # never go below 15 % of canvas
+    min_len  = BOUNDARY_MIN_LENGTH_W * ref_w
     lines    = []
     for _, segs in clusters:
         fitted = _fit_boundary_line(segs, warped_w)
@@ -651,6 +680,140 @@ def show_steps(steps):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Per-ROI pipeline
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _process_roi(line_dicts, roi, img, img_w, img_h, debug_dir, steps, label=""):
+    """
+    Run the full warp → classify → build → unwarp pipeline for one ROI.
+    Appends debug frames to `steps`. Returns list of unwarped slots (no IDs).
+    """
+    tag = f"[{label}] " if label else ""
+
+    # ── loaded lines ──────────────────────────────────────────────────────────
+    s1 = _draw_line_dicts(img, line_dicts)
+    cv2.polylines(s1, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 2)
+    cv2.putText(s1, f"{tag}{len(line_dicts)} lines",
+                (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+    _save(debug_dir, f"{label}_01_loaded_lines.png" if label else "01_loaded_lines.png", s1)
+    steps.append((f"{tag}Lines ({len(line_dicts)} segments)", s1))
+
+    # ── perspective warp ──────────────────────────────────────────────────────
+    quad   = quad_from_polygon(roi)
+    M, Minv, dst_w, dst_h = compute_homography(quad)
+    warped = cv2.warpPerspective(img, M, (dst_w, dst_h))
+    _save(debug_dir, f"{label}_02_warped.png" if label else "02_warped.png", warped)
+    steps.append((f"{tag}Warped top-down view", warped))
+
+    # ── classify ──────────────────────────────────────────────────────────────
+    wlines                           = transform_lines(line_dicts, M)
+    boundaries_w, dividers_w, disc_w = classify_lines(wlines, dst_w)
+    _b_max, _d_min                   = infer_angle_split(wlines)
+
+    s3 = warped.copy()
+    for l in disc_w:       cv2.line(s3, l['start'], l['end'], (80, 80, 80), 1)
+    for l in boundaries_w: cv2.line(s3, l['start'], l['end'], (0, 0, 255), 2)
+    for l in dividers_w:   cv2.line(s3, l['start'], l['end'], (255, 80, 0), 2)
+    cv2.putText(s3, "RED=boundary  BLUE=divider  GRAY=discarded",
+                (8, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
+    _save(debug_dir, f"{label}_03_classified.png" if label else "03_classified.png", s3)
+    steps.append((f"{tag}Classified: {len(boundaries_w)} boundaries, "
+                  f"{len(dividers_w)} dividers, {len(disc_w)} discarded", s3))
+
+    # ── merge + row pairs ─────────────────────────────────────────────────────
+    b_lines = merge_boundaries(boundaries_w, dst_w)
+    b_lines = infer_missing_boundaries(b_lines, dst_w)
+
+    # If fewer than 2 boundaries survived filtering, synthesise canvas-edge
+    # boundaries so a tightly-drawn single-row ROI still produces one row pair.
+    if len(b_lines) < 2:
+        edge_top = {'start': (0, 0),        'end': (int(dst_w), 0),        'y_mid': 0.0}
+        edge_bot = {'start': (0, int(dst_h)),'end': (int(dst_w), int(dst_h)),'y_mid': float(dst_h)}
+        if len(b_lines) == 0:
+            b_lines = [edge_top, edge_bot]
+            print(f"  {tag}No boundaries found — using canvas edges as fallback")
+        elif b_lines[0]['y_mid'] > dst_h * 0.5:
+            b_lines = [edge_top] + b_lines   # missing top boundary
+            print(f"  {tag}Missing top boundary — synthesised canvas edge")
+        else:
+            b_lines = b_lines + [edge_bot]   # missing bottom boundary
+            print(f"  {tag}Missing bottom boundary — synthesised canvas edge")
+
+    print(f"  {tag}Boundary y-positions: {[int(bl['y_mid']) for bl in b_lines]}")
+
+    row_pairs = []
+    for i in range(len(b_lines) - 1):
+        gap = b_lines[i + 1]['y_mid'] - b_lines[i]['y_mid']
+        if dst_h * MIN_ROW_FRAC < gap < dst_h * MAX_ROW_FRAC:
+            row_pairs.append((b_lines[i], b_lines[i + 1]))
+
+    if len(row_pairs) > 1:
+        heights = [bot['y_mid'] - top['y_mid'] for top, bot in row_pairs]
+        max_h   = max(heights)
+        before  = len(row_pairs)
+        row_pairs = [
+            (top, bot) for (top, bot), h in zip(row_pairs, heights)
+            if h >= max_h * MIN_ROW_HEIGHT_FRAC
+        ]
+        dropped = before - len(row_pairs)
+        if dropped:
+            print(f"  {tag}Dropped {dropped} narrow row(s)")
+
+    print(f"  {tag}Row pairs: {len(row_pairs)}")
+
+    s4 = warped.copy()
+    for bl in b_lines:
+        color = (0, 140, 255) if bl.get('synthetic') else (0, 220, 220)
+        cv2.line(s4, bl['start'], bl['end'], color, 1)
+    for ri, (top_bl, bot_bl) in enumerate(row_pairs):
+        cv2.line(s4, top_bl['start'], top_bl['end'], (0, 255, 255), 2)
+        cv2.line(s4, bot_bl['start'], bot_bl['end'], (255, 0, 255), 2)
+        mid_y = int((top_bl['y_mid'] + bot_bl['y_mid']) / 2)
+        cv2.putText(s4, f"Row {ri + 1}", (8, mid_y),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    cv2.putText(s4, "ORANGE = inferred boundary",
+                (8, dst_h - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 140, 255), 1)
+    _save(debug_dir, f"{label}_04_row_pairs.png" if label else "04_row_pairs.png", s4)
+    steps.append((f"{tag}Row pairs ({len(row_pairs)} rows)", s4))
+
+    if not row_pairs:
+        print(f"  {tag}No row pairs found.")
+        return []
+
+    # ── dividers + warped slots ───────────────────────────────────────────────
+    s5           = warped.copy()
+    warped_slots = []
+    for top_bl, bot_bl in row_pairs:
+        row_divs = dividers_for_row(wlines, top_bl, bot_bl,
+                                    boundary_max=_b_max, divider_min=_d_min)
+        print(f"  {tag}Row y=[{int(top_bl['y_mid'])},{int(bot_bl['y_mid'])}]"
+              f" → {len(row_divs)} dividers")
+        for d in row_divs:
+            cv2.line(s5, d['top'], d['bot'], (0, 200, 255), 1)
+        warped_slots.extend(build_slots_in_row(row_divs, top_bl, bot_bl, dst_w))
+
+    for i, slot in enumerate(warped_slots):
+        pts = np.array(slot['polygon'], dtype=np.int32)
+        cv2.polylines(s5, [pts], True, (0, 255, 0), 2)
+        cx = int(np.mean([p[0] for p in slot['polygon']]))
+        cy = int(np.mean([p[1] for p in slot['polygon']]))
+        cv2.putText(s5, str(i + 1), (cx - 8, cy + 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+    _save(debug_dir, f"{label}_05_warped_slots.png" if label else "05_warped_slots.png", s5)
+    steps.append((f"{tag}Warped slots ({len(warped_slots)} slots)", s5))
+
+    if not warped_slots:
+        return []
+
+    # ── unwarp + clip ─────────────────────────────────────────────────────────
+    full_img_roi = [(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]
+    roi_for_clip = roi if roi != full_img_roi else None
+    slots = unwarp_slots(warped_slots, Minv)
+    slots = clip_slots_to_roi(slots, roi_for_clip)
+    return slots
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Main
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -673,7 +836,7 @@ def main():
     img_h, img_w = img.shape[:2]
 
     # ── Load lines ────────────────────────────────────────────────────────────
-    lines_list, roi = load_lines(image_path)
+    lines_list, rois = load_lines(image_path)
     if lines_list is None:
         stem = Path(image_path).stem
         print(f"\nNo lines found for '{stem}'.")
@@ -685,150 +848,52 @@ def main():
     line_dicts = lines_to_dicts(lines_list)
     print(f"Loaded {len(line_dicts)} line segments from lsd.py")
 
-    if roi is not None:
-        print(f"ROI: {len(roi)} points (from lsd.py)")
+    if rois:
+        print(f"ROI(s): {len(rois)} polygon(s)")
     else:
         print("No ROI — using full image")
-        roi = [(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]
+        rois = [[(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]]
 
     debug_dir = os.path.join(DEBUG_BASE, lot_id)
     os.makedirs(debug_dir, exist_ok=True)
-    steps = []
+    steps     = []
 
-    # ── Step 1: loaded lines ──────────────────────────────────────────────────
-    s1 = _draw_line_dicts(img, line_dicts)
-    cv2.polylines(s1, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 2)
-    cv2.putText(s1, f"{len(line_dicts)} lines loaded from lsd.py",
-                (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-    _save(debug_dir, "01_loaded_lines.png", s1)
-    steps.append((f"Lines from lsd.py  ({len(line_dicts)} segments)", s1))
+    # ── Process each ROI independently ───────────────────────────────────────
+    all_slots    = []
+    multi        = len(rois) > 1
+    for i, roi in enumerate(rois):
+        label = f"roi{i}" if multi else ""
+        if multi:
+            print(f"\n── ROI {i} ({len(roi)} points) ──────────────────────────────")
+        roi_lines = filter_lines_for_roi(line_dicts, roi) if multi else line_dicts
+        slots     = _process_roi(roi_lines, roi, img, img_w, img_h,
+                                 debug_dir, steps, label)
+        all_slots.extend(slots)
+        if not slots and multi:
+            print(f"  ROI {i}: no slots found — check debug images")
 
-    # ── Step 2: perspective warp ──────────────────────────────────────────────
-    quad   = quad_from_polygon(roi)
-    M, Minv, dst_w, dst_h = compute_homography(quad)
-    warped = cv2.warpPerspective(img, M, (dst_w, dst_h))
-    _save(debug_dir, "02_warped.png", warped)
-    steps.append(("Warped top-down view  (ROI rectified to rectangle)", warped))
-
-    # ── Step 3: classify warped lines ─────────────────────────────────────────
-    wlines                            = transform_lines(line_dicts, M)
-    boundaries_w, dividers_w, disc_w  = classify_lines(wlines, dst_w)
-    _b_max, _d_min                    = infer_angle_split(wlines)   # reuse thresholds later
-
-    s3 = warped.copy()
-    for l in disc_w:       cv2.line(s3, l['start'], l['end'], (80, 80, 80), 1)
-    for l in boundaries_w: cv2.line(s3, l['start'], l['end'], (0, 0, 255), 2)
-    for l in dividers_w:   cv2.line(s3, l['start'], l['end'], (255, 80, 0), 2)
-    cv2.putText(s3, "RED=boundary  BLUE=divider  GRAY=discarded",
-                (8, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
-    _save(debug_dir, "03_classified.png", s3)
-    steps.append((f"Classified:  {len(boundaries_w)} boundaries, "
-                  f"{len(dividers_w)} dividers, {len(disc_w)} discarded", s3))
-
-    # ── Step 4: merge + row pairs ─────────────────────────────────────────────
-    b_lines = merge_boundaries(boundaries_w, dst_w)
-    b_lines = infer_missing_boundaries(b_lines, dst_w)
-    print(f"\nBoundary y-positions (merged): {[int(bl['y_mid']) for bl in b_lines]}")
-
-    row_pairs = []
-    for i in range(len(b_lines) - 1):
-        gap = b_lines[i + 1]['y_mid'] - b_lines[i]['y_mid']
-        if dst_h * MIN_ROW_FRAC < gap < dst_h * MAX_ROW_FRAC:
-            row_pairs.append((b_lines[i], b_lines[i + 1]))
-
-    # ── Outlier row filter ────────────────────────────────────────────────────
-    # Drop any row whose height is less than MIN_ROW_HEIGHT_FRAC of the tallest
-    # row. This removes narrow false rows caused by the camera capturing a curb
-    # rail, road edge, or any other bright horizontal line just inside the ROI
-    # that is much closer to the real bottom boundary than a real parking row
-    # would be. A genuine parking row will always be at least half the height of
-    # the tallest row; a rail-gap row is typically 10–25 % of that height.
-    if len(row_pairs) > 1:
-        heights = [bot['y_mid'] - top['y_mid'] for top, bot in row_pairs]
-        max_h   = max(heights)
-        before  = len(row_pairs)
-        row_pairs = [
-            (top, bot) for (top, bot), h in zip(row_pairs, heights)
-            if h >= max_h * MIN_ROW_HEIGHT_FRAC
-        ]
-        dropped = before - len(row_pairs)
-        if dropped:
-            print(f"  Dropped {dropped} narrow row(s) "
-                  f"(< {MIN_ROW_HEIGHT_FRAC*100:.0f}% of tallest row height {int(max_h)} px)")
-
-    print(f"Row pairs: {len(row_pairs)}")
-
-    s4 = warped.copy()
-    for bl in b_lines:
-        color = (0, 140, 255) if bl.get('synthetic') else (0, 220, 220)
-        cv2.line(s4, bl['start'], bl['end'], color, 1)
-    for ri, (top_bl, bot_bl) in enumerate(row_pairs):
-        cv2.line(s4, top_bl['start'], top_bl['end'], (0, 255, 255), 2)
-        cv2.line(s4, bot_bl['start'], bot_bl['end'], (255, 0, 255), 2)
-        mid_y = int((top_bl['y_mid'] + bot_bl['y_mid']) / 2)
-        cv2.putText(s4, f"Row {ri + 1}", (8, mid_y),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-    cv2.putText(s4, "ORANGE = inferred boundary",
-                (8, dst_h - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 140, 255), 1)
-    _save(debug_dir, "04_row_pairs.png", s4)
-    steps.append((f"Row pairs  ({len(row_pairs)} rows)", s4))
-
-    if not row_pairs:
-        print("\nNo row pairs found.")
-        print("  - Check step 3: boundary lines should be RED")
-        print("  - Try re-running lsd.py with a tighter ROI")
+    if not all_slots:
+        print("\nNo slots built across any ROI.")
+        print("  - Check classified step: boundary lines should be RED")
+        print("  - Check classified step: dividers should be BLUE")
         show_steps(steps)
         sys.exit(0)
 
-    # ── Step 5: dividers + warped slots ───────────────────────────────────────
-    s5          = warped.copy()
-    warped_slots = []
+    # ── Finalise: assign IDs, draw, save ─────────────────────────────────────
+    assign_ids_zones(all_slots, img_w, img_h)
 
-    for top_bl, bot_bl in row_pairs:
-        row_divs = dividers_for_row(wlines, top_bl, bot_bl,
-                                    boundary_max=_b_max, divider_min=_d_min)
-        print(f"  Row y=[{int(top_bl['y_mid'])}, {int(bot_bl['y_mid'])}]"
-              f"  ->  {len(row_divs)} dividers")
-        for d in row_divs:
-            cv2.line(s5, d['top'], d['bot'], (0, 200, 255), 1)
-        row_slots = build_slots_in_row(row_divs, top_bl, bot_bl, dst_w)
-        warped_slots.extend(row_slots)
-
-    for i, slot in enumerate(warped_slots):
-        pts = np.array(slot['polygon'], dtype=np.int32)
-        cv2.polylines(s5, [pts], True, (0, 255, 0), 2)
-        cx = int(np.mean([p[0] for p in slot['polygon']]))
-        cy = int(np.mean([p[1] for p in slot['polygon']]))
-        cv2.putText(s5, str(i + 1), (cx - 8, cy + 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-    _save(debug_dir, "05_warped_slots.png", s5)
-    steps.append((f"Warped slots  ({len(warped_slots)} slots)", s5))
-
-    if not warped_slots:
-        print("\nNo slots built.")
-        print("  - Check step 3: dividers should be BLUE")
-        print("  - Try lowering DIVIDER_ROW_OVERLAP or LSD_SCALE in lsd.py")
-        show_steps(steps)
-        sys.exit(0)
-
-    # ── Step 6: unwarp + finalise ─────────────────────────────────────────────
-    final_slots = unwarp_slots(warped_slots, Minv)
-    roi_for_filter = (roi if roi != [(0,0),(img_w,0),(img_w,img_h),(0,img_h)] else None)
-    final_slots = clip_slots_to_roi(final_slots, roi_for_filter)
-    assign_ids_zones(final_slots, img_w, img_h)
-
-    s6 = _draw_slots_on(img, final_slots)
-    cv2.polylines(s6, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 1)
-    cv2.putText(s6, f"Detected: {len(final_slots)} slots", (10, 36),
+    s6 = _draw_slots_on(img, all_slots)
+    for roi in rois:
+        cv2.polylines(s6, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 1)
+    cv2.putText(s6, f"Detected: {len(all_slots)} slots", (10, 36),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
     _save(debug_dir, "06_final_slots.png", s6)
-    steps.append((f"Final slots  ({len(final_slots)} total)", s6))
+    steps.append((f"Final slots  ({len(all_slots)} total)", s6))
 
-    # ── Save JSON ─────────────────────────────────────────────────────────────
-    json_path = save_slots_json(final_slots, img_w, img_h, lot_id)
+    json_path = save_slots_json(all_slots, img_w, img_h, lot_id)
 
     print(f"\n{'=' * 60}")
-    print(f"  Detected {len(final_slots)} parking slot(s)")
+    print(f"  Detected {len(all_slots)} parking slot(s)")
     print(f"  JSON saved:   {json_path}")
     print(f"  Debug images: {debug_dir}/")
     print(f"{'=' * 60}")
