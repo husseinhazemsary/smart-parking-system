@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../account/edit_profile_screen.dart';
+import '../account/change_password_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -105,9 +107,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.person_outline,
                           label: 'Edit Profile',
                           subtitle: 'Name, email, phone number',
-                          onTap: () {
-
-                          },
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const EditProfileScreen()),
+                          ),
                         ),
                         _Divider(isDark: isDark),
                         _NavRow(
@@ -115,9 +118,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.lock_outline,
                           label: 'Change Password',
                           subtitle: 'Update your password',
-                          onTap: () {
-
-                          },
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const ChangePasswordScreen()),
+                          ),
                         ),
                         _Divider(isDark: isDark),
                         _NavRow(

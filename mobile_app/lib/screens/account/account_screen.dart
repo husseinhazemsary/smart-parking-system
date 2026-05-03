@@ -8,7 +8,10 @@ import '../../theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../providers/user_provider.dart';
 import '../account/add_vehicle_screen.dart';
+import '../account/edit_profile_screen.dart';
+import '../account/change_password_screen.dart';
 import '../auth/login_screen.dart';
 import 'settings_screen.dart';
 
@@ -779,7 +782,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 label: 'Edit Profile',
                 onTap: () {
                   Navigator.pop(context);
-
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                  );
                 },
               ),
               const SizedBox(height: 12),
@@ -789,7 +794,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 label: 'Change Password',
                 onTap: () {
                   Navigator.pop(context);
-
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                  );
                 },
               ),
               const SizedBox(height: 12),
@@ -1044,9 +1051,27 @@ class _ProfileHeader extends StatelessWidget {
 
   static const double _statsHeight = 76.0;
 
+  static const _months = [
+    '', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+  ];
+
+  String _formatMemberSince(String? createdAt) {
+    if (createdAt == null || createdAt.isEmpty) return '';
+    final dt = DateTime.tryParse(createdAt);
+    if (dt == null) return '';
+    return 'MEMBER SINCE ${_months[dt.month]} ${dt.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final auth = context.watch<AuthProvider>();
+    final userProfile = context.watch<UserProvider>().profile;
+
+    final displayName = auth.userName ?? userProfile?.fullName ?? '';
+    final displayEmail = auth.userEmail ?? userProfile?.email ?? '';
+    final memberSince = _formatMemberSince(userProfile?.createdAt);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -1121,9 +1146,9 @@ class _ProfileHeader extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              const Text(
-                'Nour Helmy',
-                style: TextStyle(
+              Text(
+                displayName,
+                style: const TextStyle(
                   color: AppColors.accentGreen,
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -1131,13 +1156,13 @@ class _ProfileHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'nour.helmy@gmail.com',
+                displayEmail,
                 style: TextStyle(
                     color: Colors.white.withOpacity(0.85), fontSize: 13),
               ),
               const SizedBox(height: 3),
               Text(
-                'MEMBER SINCE JAN 2025',
+                memberSince,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.6),
                   fontSize: 11,
