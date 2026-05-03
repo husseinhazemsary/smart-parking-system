@@ -17,15 +17,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _phoneController;
   DateTime? _selectedDate;
 
+  // Originals used by the Reset button to undo unsaved changes.
+  late final String _originalName;
+  late final String _originalPhone;
+  late final DateTime? _originalDate;
+
   @override
   void initState() {
     super.initState();
     final profile = context.read<UserProvider>().profile;
-    _nameController = TextEditingController(text: profile?.fullName ?? '');
-    _phoneController = TextEditingController(text: profile?.phoneNumber ?? '');
-    if (profile?.dateOfBirth != null) {
-      _selectedDate = DateTime.tryParse(profile!.dateOfBirth!);
-    }
+    _originalName = profile?.fullName ?? '';
+    _originalPhone = profile?.phoneNumber ?? '';
+    _originalDate = profile?.dateOfBirth != null
+        ? DateTime.tryParse(profile!.dateOfBirth!)
+        : null;
+
+    _nameController = TextEditingController(text: _originalName);
+    _phoneController = TextEditingController(text: _originalPhone);
+    _selectedDate = _originalDate;
   }
 
   @override
@@ -33,6 +42,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  void _reset() {
+    _nameController.text = _originalName;
+    _phoneController.text = _originalPhone;
+    setState(() => _selectedDate = _originalDate);
+    _formKey.currentState?.reset();
   }
 
   String get _dateDisplay {
@@ -89,13 +105,63 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  // ── Validators ─────────────────────────────────────────────────────────────
+
+  String? _validateName(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Full name is required.';
+    final trimmed = v.trim();
+    if (trimmed.length < 3) return 'Name is too short — keep typing.';
+    final words =
+        trimmed.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    if (words.length < 2) return 'Enter both your first and last name.';
+    if (words.any((w) => w.length < 2)) {
+      return 'Each part of your name must be at least 2 characters.';
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Phone number is required.';
+
+    // Strip formatting then normalise +20 → leading 0
+    String cleaned = v.trim().replaceAll(RegExp(r'[\s\-()]'), '');
+    if (cleaned.startsWith('+20')) cleaned = '0${cleaned.substring(3)}';
+
+    final digits = cleaned.replaceAll(RegExp(r'\D'), '');
+    const total = 11;
+
+    // Prefix check kicks in once 3 digits are available
+    if (digits.length >= 3) {
+      const validPrefixes = ['010', '011', '012', '015'];
+      if (!validPrefixes.contains(digits.substring(0, 3))) {
+        return 'Phone must start with 010, 011, 012, or 015.';
+      }
+    }
+
+    if (digits.length > total) {
+      final n = digits.length - total;
+      return '$n digit${n == 1 ? '' : 's'} too many — remove $n to continue.';
+    }
+    if (digits.length < total) {
+      final n = total - digits.length;
+      return '$n more digit${n == 1 ? '' : 's'} needed.';
+    }
+
+    return null;
+  }
+
+  // ── Build ───────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
     final isLoading = context.watch<UserProvider>().isLoading;
-    final bgColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final bgColor =
+        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final inputFill = isDark ? AppColors.inputDark : AppColors.inputLight;
     final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
 
@@ -104,8 +170,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // ── Header ──────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
                 children: [
                   GestureDetector(
@@ -114,11 +182,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                        color: isDark
+                            ? AppColors.surfaceDark
+                            : AppColors.surfaceLight,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: borderColor),
                       ),
-                      child: Icon(Icons.arrow_back, size: 20, color: textPrimary),
+                      child:
+                          Icon(Icons.arrow_back, size: 20, color: textPrimary),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -130,14 +201,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: _reset,
+                    icon: Icon(Icons.restart_alt,
+                        size: 18, color: textSecondary),
+                    label: Text(
+                      'Reset',
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
                 ],
               ),
             ),
+
+            // ── Form ────────────────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Form(
                   key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -147,14 +240,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       TextFormField(
                         controller: _nameController,
                         style: TextStyle(color: textPrimary),
+                        textCapitalization: TextCapitalization.words,
                         decoration: _inputDecoration(
-                          hint: 'Your full name',
+                          hint: 'First and last name',
                           fillColor: inputFill,
                           borderColor: borderColor,
                           textSecondary: textSecondary,
                         ),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Full name is required.' : null,
+                        validator: _validateName,
                       ),
                       const SizedBox(height: 20),
                       _label('Phone Number', textSecondary),
@@ -164,13 +257,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         keyboardType: TextInputType.phone,
                         style: TextStyle(color: textPrimary),
                         decoration: _inputDecoration(
-                          hint: '+20 100 000 0000',
+                          hint: '01X XXXX XXXX',
                           fillColor: inputFill,
                           borderColor: borderColor,
                           textSecondary: textSecondary,
                         ),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Phone number is required.' : null,
+                        validator: _validatePhone,
                       ),
                       const SizedBox(height: 20),
                       _label('Date of Birth', textSecondary),
@@ -179,7 +271,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         onTap: _pickDate,
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 15),
                           decoration: BoxDecoration(
                             color: inputFill,
                             borderRadius: BorderRadius.circular(12),
@@ -196,7 +289,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               Text(
                                 _dateDisplay,
                                 style: TextStyle(
-                                  color: _selectedDate == null ? textSecondary : textPrimary,
+                                  color: _selectedDate == null
+                                      ? textSecondary
+                                      : textPrimary,
                                   fontSize: 15,
                                 ),
                               ),
@@ -228,7 +323,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               : const Text(
                                   'Save Changes',
                                   style: TextStyle(
-                                      fontSize: 16, fontWeight: FontWeight.w600),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600),
                                 ),
                         ),
                       ),
@@ -265,7 +361,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         hintStyle: TextStyle(color: textSecondary, fontSize: 14),
         filled: true,
         fillColor: fillColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: borderColor),

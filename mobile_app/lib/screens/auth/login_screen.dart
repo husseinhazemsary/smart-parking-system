@@ -64,10 +64,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _devBypass() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const AppNavigator()),
-    );
+  Future<void> _devSignIn() async {
+    _emailController.text = 'nour@mail.com';
+    _passwordController.text = 'Nour1234';
+    await _login();
   }
 
   @override
@@ -308,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 20),
                         Center(
                           child: GestureDetector(
-                            onTap: _devBypass,
+                            onTap: _devSignIn,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
@@ -316,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
-                                '⚡ Dev: Skip Login',
+                                '⚡ Dev: Sign in as Nour',
                                 style: TextStyle(
                                   color: Colors.orange,
                                   fontSize: 12,

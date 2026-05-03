@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_provider.dart';
+import '../auth/forgot_password_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -102,6 +103,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Form(
                   key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -126,7 +128,29 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         validator: (v) =>
                             (v == null || v.isEmpty) ? 'Current password is required.' : null,
                       ),
-                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen()),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 4),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: AppColors.purple,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       _label('New Password', textSecondary),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -146,7 +170,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'New password is required.';
-                          if (v.length < 8) return 'Password must be at least 8 characters.';
+                          if (v.length < 8) {
+                            final n = 8 - v.length;
+                            return '$n more character${n == 1 ? '' : 's'} needed.';
+                          }
                           return null;
                         },
                       ),
@@ -170,7 +197,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'Please confirm your new password.';
-                          if (v != _newController.text) return 'Passwords do not match.';
+                          if (v != _newController.text) return 'Passwords don\'t match yet.';
                           return null;
                         },
                       ),

@@ -8,6 +8,8 @@ import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../account/edit_profile_screen.dart';
 import '../account/change_password_screen.dart';
+import '../account/my_vehicles_screen.dart';
+import '../account/payment_methods_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -129,10 +131,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.payment_outlined,
                           label: 'Payment Methods',
                           subtitle: 'Cards and Auto-Pay settings',
-                          onTap: () {
-                            Navigator.of(context).pop();
-
-                          },
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const PaymentMethodsScreen()),
+                          ),
                         ),
                         _Divider(isDark: isDark),
                         _NavRow(
@@ -140,9 +142,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.directions_car_outlined,
                           label: 'My Vehicles',
                           subtitle: 'Manage registered vehicles',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                          },
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const MyVehiclesScreen()),
+                          ),
                         ),
                       ],
                     ),
