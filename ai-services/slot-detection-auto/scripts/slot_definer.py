@@ -39,7 +39,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 # when auto-detection cannot find two clear clusters.
 BOUNDARY_ANGLE_MAX    = 30    # fallback: lines below this are row boundaries
 DIVIDER_ANGLE_MIN     = 40    # fallback: lines above this are slot dividers
-CLUSTER_TOLERANCE     = 35    # px — merge parallel lines closer than this
+CLUSTER_TOLERANCE     = 15    # px — merge parallel lines closer than this
 BOUNDARY_MIN_LENGTH_W = 0.05  # minimum merged-cluster span as fraction of warped width
                                # (kept small so fragments survive to the merge step)
 MIN_ROW_FRAC          = 0.04  # row must be >= this fraction of warped height
@@ -216,6 +216,106 @@ def _line_length(l):
     return float(np.hypot(dx, dy))
 
 
+def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
+                                   img=None, debug_dir=None, steps=None):
+    """
+    Build a single parallelogram ROI whose top and bottom edges are parallel
+    to the detected boundary lines.
+
+    Strategy:
+      1. Classify boundary fragments (near-horizontal lines).
+      2. Fit one slope through all their endpoints (the dominant row angle).
+      3. Project every endpoint onto the perpendicular axis (residual from the
+         fitted slope line) → gives a 1-D "distance-from-line" value per point.
+      4. Top edge  = fitted-slope line at min(residual) - pad
+         Bottom edge = fitted-slope line at max(residual) + pad
+      5. Left/right extents come from all detected lines (boundaries + dividers).
+
+    Returns a list containing one ROI polygon, or [] on failure.
+    """
+    _dbg = img is not None and debug_dir is not None
+
+    if len(line_dicts) < 4:
+        print("  Auto ROI failed: not enough detected lines.")
+        return []
+
+    boundary_max, _ = infer_angle_split(line_dicts)
+
+    boundaries, all_lines = [], []
+    for l in line_dicts:
+        if _line_length(l) < 20:
+            continue
+        all_lines.append(l)
+        if _angle(l) < boundary_max:
+            boundaries.append(l)
+
+    if len(boundaries) < 2:
+        print("  Auto ROI failed: not enough boundary candidates.")
+        return []
+
+    # ── fit slope through all boundary endpoints ──────────────────────────────
+    pts = np.array(
+        [[l['start'][0], l['start'][1]] for l in boundaries] +
+        [[l['end'][0],   l['end'][1]]   for l in boundaries],
+        dtype=np.float64,
+    )
+    xs, ys = pts[:, 0], pts[:, 1]
+
+    if np.ptp(xs) > 5:
+        slope, _ = np.polyfit(xs, ys, 1)
+    else:
+        slope = 0.0
+
+    # Residual = y - slope*x  (intercept offset for each endpoint)
+    residuals = ys - slope * xs
+
+    # ── x-extent from ALL lines ───────────────────────────────────────────────
+    all_xs = (
+        [l['start'][0] for l in all_lines] +
+        [l['end'][0]   for l in all_lines]
+    )
+
+    pad_y, pad_x = 10, 10
+    top_intercept = float(np.min(residuals)) - pad_y
+    bot_intercept = float(np.max(residuals)) + pad_y
+    left_x  = max(0,         int(np.min(all_xs)) - pad_x)
+    right_x = min(img_w - 1, int(np.max(all_xs)) + pad_x)
+
+    def _clamp_y(y):
+        return max(0, min(img_h - 1, int(round(y))))
+
+    tl = (left_x,  _clamp_y(slope * left_x  + top_intercept))
+    tr = (right_x, _clamp_y(slope * right_x + top_intercept))
+    br = (right_x, _clamp_y(slope * right_x + bot_intercept))
+    bl = (left_x,  _clamp_y(slope * left_x  + bot_intercept))
+    roi = [tl, tr, br, bl]
+
+    if right_x - left_x < 50 or br[1] - tl[1] < 10:
+        print("  Auto ROI failed: extent too small.")
+        return []
+
+    print(f"  Auto ROI: slope={slope:.4f}  x=[{left_x},{right_x}]  "
+          f"intercepts=[{top_intercept:.0f},{bot_intercept:.0f}]  "
+          f"({len(boundaries)} boundary fragments)")
+
+    # ── debug ─────────────────────────────────────────────────────────────────
+    if _dbg:
+        dbg = img.copy()
+        for l in boundaries:
+            cv2.line(dbg, l['start'], l['end'], (0, 0, 255), 2)
+        cv2.polylines(dbg, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 2)
+        cv2.putText(
+            dbg,
+            f"Auto ROI from {len(boundaries)} boundary fragments (red)",
+            (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2,
+        )
+        _save(debug_dir, "mode4_01_auto_roi.png", dbg)
+        if steps is not None:
+            steps.append(("Auto ROI extent", dbg))
+
+    return [roi]
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Adaptive angle split
 # ══════════════════════════════════════════════════════════════════════════════
@@ -326,6 +426,7 @@ def _cluster(lines, key_fn, tolerance):
             cur = [line]
     clusters.append(cur)
     return [(float(np.median([key_fn(l) for l in c])), c) for c in clusters]
+
 
 
 def _boundary_y_at_x(bline, x):

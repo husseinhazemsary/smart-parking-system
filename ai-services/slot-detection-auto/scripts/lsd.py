@@ -344,11 +344,12 @@ def prompt_mode() -> int:
     print("  1) White filter only")
     print("  2) White filter + single ROI")
     print("  3) White filter + multiple ROIs (one per row)")
+    print("  4) White filter + automatic warp from detected lines")
     while True:
-        choice = input("Enter 1, 2, or 3: ").strip()
-        if choice in ("1", "2", "3"):
+        choice = input("Enter 1, 2, 3, or 4: ").strip()
+        if choice in ("1", "2", "3", "4"):
             return int(choice)
-        print("  Please enter 1, 2, or 3.")
+        print("  Please enter 1, 2, 3, or 4.")
 
 
 def prompt_yes_no(question: str) -> bool:
@@ -537,7 +538,7 @@ def main():
         print(f"\nRunning white filter + ROI ({len(polygons[0])} points) …")
         final, count, lines = detect_white_plus_roi(img, polygons[0], debug_dir)
         mode_str = "white_plus_roi"
-    else:
+    elif mode == 3:
         polygons = get_multi_roi_for_image(img, image_path)
         if polygons is None:
             print("ROI selection cancelled. Exiting.")
@@ -545,6 +546,12 @@ def main():
         print(f"\nRunning white filter + {len(polygons)} ROI(s) …")
         final, count, lines = detect_white_plus_multi_roi(img, polygons, debug_dir)
         mode_str = "white_plus_roi"
+    else:
+        # Mode 4 only detects/saves the lines here.
+        # The automatic row ROI estimation is done by slot_definer.py / run_pipeline.py.
+        print("\nRunning white filter + automatic warp mode …")
+        final, count, lines = detect_white_only(img, debug_dir)
+        mode_str = "auto_warp"
 
     save_lines(image_path, image_id, lines, mode_str, polygons)
 
