@@ -38,7 +38,7 @@ DETECT_CONF     = 0.40
 FRAME_SKIP  = 5   # run YOLO every Nth frame; interpolate states in between
 
 # ── Occupancy thresholds ───────────────────────────────────────────────────
-MIN_COVERAGE   = 0.30   # vehicle bbox must cover >= this fraction of slot area
+MIN_COVERAGE   = 0.65   # vehicle bbox must cover >= this fraction of slot area
 CONFIRM_FRAMES = 8      # consecutive "occupied" hits to flip state → occupied
 RELEASE_FRAMES = 5      # consecutive "free" hits to flip state → free
 
