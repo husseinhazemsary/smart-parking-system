@@ -16,6 +16,7 @@ import sys
 
 import lsd
 import slot_definer as sd
+import slot_editor as se
 import occupancy_detector as od
 
 def save_converted_lines(line_dicts, image_id):
@@ -57,16 +58,60 @@ def _run_occupancy_only():
     od.run(lot_id, video_name, save_output=(save_ans != 'n'))
 
 
+def _run_slot_editor_only():
+    import json, os
+    print("\n" + "=" * 60)
+    print("  Slot Editor  (edit an existing slot layout)")
+    print("=" * 60)
+    lot_id = input("  Lot ID (must match an existing layout): ").strip()
+    if not lot_id:
+        print("  No lot ID entered. Exiting.")
+        return
+
+    layout_path = os.path.join(sd.LAYOUT_DIR, f"{lot_id}_auto_slots.json")
+    if not os.path.exists(layout_path):
+        print(f"  Layout not found: {layout_path}")
+        return
+
+    with open(layout_path) as f:
+        data = json.load(f)
+    img_w = data.get("image_width",  0)
+    img_h = data.get("image_height", 0)
+
+    img_path = input("  Blueprint image path (leave blank to auto-detect): ").strip()
+    if not img_path:
+        import glob as _glob
+        candidates = _glob.glob(os.path.join(lsd.IMAGES_DIR, f"{lot_id}*"))
+        img_path   = candidates[0] if candidates else None
+
+    if not img_path or not os.path.exists(img_path):
+        print("  Could not find a blueprint image. "
+              "Pass the path explicitly when prompted.")
+        return
+
+    img = cv2.imread(img_path)
+    if img is None:
+        print(f"  Could not read image: {img_path}")
+        return
+
+    img_h, img_w = img.shape[:2]
+    se.run_editor(lot_id, img, img_w, img_h)
+
+
 def main():
     print("=" * 60)
     print("  Parking Slot Pipeline  (LSD → slot definer)")
     print("=" * 60)
     print("  [1] Full pipeline  (detect lines → define slots → occupancy)")
     print("  [2] Occupancy only (use an existing slot layout)")
+    print("  [3] Slot editor    (edit an existing slot layout)")
     print("=" * 60)
     choice = input("  Select mode [1]: ").strip()
     if choice == "2":
         _run_occupancy_only()
+        return
+    if choice == "3":
+        _run_slot_editor_only()
         return
 
     # ── Step 1: image + ID ────────────────────────────────────────────────────
@@ -200,7 +245,15 @@ def main():
     print("\nOpening step viewer …\n")
     sd.show_steps(steps)
 
-    # ── Step 4: occupancy detection ───────────────────────────────────────
+    # ── Step 4: slot editor ───────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("  Slot Editor  (fix any incorrect slots before occupancy)")
+    print("=" * 60)
+    edit_ans = input("  Open slot editor? [Y/n]: ").strip().lower()
+    if edit_ans != 'n':
+        se.run_editor(image_id, img, img_w, img_h)
+
+    # ── Step 5: occupancy detection ───────────────────────────────────────
     print("\n" + "=" * 60)
     print("  Occupancy Detection")
     print(f"  Videos directory: data/videos/")
