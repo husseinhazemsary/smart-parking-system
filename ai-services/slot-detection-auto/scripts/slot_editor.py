@@ -101,6 +101,12 @@ class SlotEditor:
 
         self.avg_size = self._compute_avg_size()
 
+        # zoom / pan
+        self.zoom       = 1.0
+        self.pan_x      = 0.0
+        self.pan_y      = 0.0
+        self._pan_start = None   # (sx, sy, pan_x0, pan_y0) during mid-btn drag
+
     # ── convenience ──────────────────────────────────────────────────────────
 
     @property
@@ -155,6 +161,28 @@ class SlotEditor:
             if i not in self.selection and self._contains(i, x, y):
                 return i
         return None
+
+    # ── zoom / pan helpers ────────────────────────────────────────────────────
+
+    def _s2i(self, sx, sy):
+        """Screen → image coordinates."""
+        return self.pan_x + sx / self.zoom, self.pan_y + sy / self.zoom
+
+    def _clamp_pan(self):
+        ih, iw = self.image.shape[:2]
+        self.pan_x = max(0.0, min(self.pan_x, iw - iw / self.zoom))
+        self.pan_y = max(0.0, min(self.pan_y, ih - ih / self.zoom))
+
+    def _on_scroll(self, sx, sy, flags):
+        delta = (flags >> 16) & 0xFFFF
+        if delta > 32767:
+            delta -= 65536
+        factor    = 1.15 if delta > 0 else 1.0 / 1.15
+        ix, iy    = self._s2i(sx, sy)
+        self.zoom = max(1.0, min(10.0, self.zoom * factor))
+        self.pan_x = ix - sx / self.zoom
+        self.pan_y = iy - sy / self.zoom
+        self._clamp_pan()
 
     def _preview_poly(self, cx, cy):
         w, h = self.avg_size
@@ -219,10 +247,34 @@ class SlotEditor:
     # ── mouse callback ────────────────────────────────────────────────────────
 
     def on_mouse(self, event, x, y, flags, param):
-        self.mouse_xy = (x, y)
         shift = bool(flags & cv2.EVENT_FLAG_SHIFTKEY)
-        if   event == cv2.EVENT_MOUSEMOVE:    self._on_move(x, y)
-        elif event == cv2.EVENT_LBUTTONDOWN:  self._on_down(x, y, shift)
+
+        # scroll-wheel zoom
+        if event == cv2.EVENT_MOUSEWHEEL:
+            self._on_scroll(x, y, flags)
+            return
+
+        # middle-button pan
+        if event == cv2.EVENT_MBUTTONDOWN:
+            self._pan_start = (x, y, self.pan_x, self.pan_y)
+            return
+        if event == cv2.EVENT_MBUTTONUP:
+            self._pan_start = None
+            return
+        if event == cv2.EVENT_MOUSEMOVE and self._pan_start is not None:
+            ox, oy, px0, py0 = self._pan_start
+            self.pan_x = px0 - (x - ox) / self.zoom
+            self.pan_y = py0 - (y - oy) / self.zoom
+            self._clamp_pan()
+            return
+
+        # transform to image coords for all editing events
+        ix, iy = self._s2i(x, y)
+        ixi, iyi = int(ix), int(iy)
+        self.mouse_xy = (ixi, iyi)
+
+        if   event == cv2.EVENT_MOUSEMOVE:    self._on_move(ixi, iyi)
+        elif event == cv2.EVENT_LBUTTONDOWN:  self._on_down(ixi, iyi, shift)
         elif event == cv2.EVENT_LBUTTONUP:    self._on_up()
 
     def _on_move(self, x, y):
@@ -554,9 +606,20 @@ class SlotEditor:
             cv2.addWeighted(overlay, 0.45, vis, 0.55, 0, vis)
             cv2.polylines(vis, [pre_pts], True, COLOR_ADD_PRE, 2)
 
+        # apply zoom / pan viewport (before status bar so bar stays pinned)
+        if self.zoom > 1.0 or self.pan_x != 0.0 or self.pan_y != 0.0:
+            ih, iw = vis.shape[:2]
+            vw = max(1, int(round(iw / self.zoom)))
+            vh = max(1, int(round(ih / self.zoom)))
+            x1 = max(0, int(self.pan_x))
+            y1 = max(0, int(self.pan_y))
+            vis = cv2.resize(vis[y1:min(ih, y1+vh), x1:min(iw, x1+vw)],
+                             (iw, ih), interpolation=cv2.INTER_LINEAR)
+
         # status bar
         h, w  = vis.shape[:2]
         bar_h = 30
+        zoom_txt = f"  |  {self.zoom:.1f}x" if self.zoom > 1.0 else ""
 
         if self.placement_mode == 'add':
             bar_color = (0, 100, 0)
@@ -575,9 +638,9 @@ class SlotEditor:
                 sel_txt = f"  |  {self.slots[solo]['id']} selected"
             else:
                 sel_txt = f"  |  {n_sel} slots selected"
-            hint = (f"Slots: {len(self.slots)}{sel_txt}"
-                    "   |   Shift+Click=Multi   Drag empty=Box-select"
-                    "   |   D=Del   Z=Undo   A=Add   C=Copy   S/Enter=Save   Q/Esc=Discard")
+            hint = (f"Slots: {len(self.slots)}{sel_txt}{zoom_txt}"
+                    "   |   Scroll=Zoom  MidBtn=Pan  R=Reset"
+                    "   |   D=Del  Z=Undo  A=Add  C=Copy  S=Save  Q=Discard")
 
         cv2.rectangle(vis, (0, h - bar_h), (w, h), bar_color, -1)
         cv2.putText(vis, hint, (8, h - 9),
@@ -620,6 +683,10 @@ class SlotEditor:
                     self.enter_add_mode()
                 elif key in (ord('c'), ord('C')):          # C  copy mode
                     self.enter_copy_mode()
+                elif key in (ord('r'), ord('R')):          # R  reset zoom/pan
+                    self.zoom  = 1.0
+                    self.pan_x = 0.0
+                    self.pan_y = 0.0
                 elif key in (ord('s'), ord('S'), 13):     # S / Enter  save
                     cv2.destroyWindow(WIN)
                     return True
