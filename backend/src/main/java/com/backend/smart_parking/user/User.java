@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "app_user")
 public class User implements UserDetails {
 
     @Id
@@ -25,6 +25,7 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(name = "phone")
     private String phoneNumber;
 
     private LocalDate dateOfBirth;
@@ -33,7 +34,7 @@ public class User implements UserDetails {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "auth_provider", nullable = false)
     private AuthProvider provider;
 
     private String providerId;

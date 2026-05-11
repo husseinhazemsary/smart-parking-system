@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "parking_slots", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"parking_lot_id", "slot_label"})
+@Table(name = "parking_spot", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"parking_lot_id", "spot_code"})
 })
 public class ParkingSlot {
 
@@ -18,7 +18,7 @@ public class ParkingSlot {
     @JoinColumn(name = "parking_lot_id", nullable = false)
     private ParkingLot parkingLot;
 
-    @Column(name = "slot_label", nullable = false)
+    @Column(name = "spot_code", nullable = false)
     private String slotLabel;
 
     @Enumerated(EnumType.STRING)

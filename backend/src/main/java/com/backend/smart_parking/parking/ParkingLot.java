@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "parking_lots")
+@Table(name = "parking_lot")
 public class ParkingLot {
 
     @Id
@@ -39,6 +39,9 @@ public class ParkingLot {
 
     @Column(nullable = false)
     private int numberOfGates = 1;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "parking_lot_amenities", joinColumns = @JoinColumn(name = "parking_lot_id"))
