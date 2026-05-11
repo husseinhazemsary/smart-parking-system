@@ -1,0 +1,169 @@
+# =========================
+# Virtual environments
+# =========================
+**/venv/
+**/.venv/
+**/env/
+**/ENV/
+**/env.bak/
+**/venv.bak/
+
+# =========================
+# Python bytecode & cache
+# =========================
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+
+# =========================
+# Python build artifacts
+# =========================
+**/build/
+**/dist/
+**/.eggs/
+**/*.egg-info/
+**/*.egg
+**/pip-wheel-metadata/
+
+# =========================
+# Testing & coverage
+# =========================
+**/.pytest_cache/
+**/.coverage
+**/.coverage.*
+**/htmlcov/
+**/.tox/
+**/nosetests.xml
+**/coverage.xml
+**/*.cover
+
+# =========================
+# Logs & runtime files
+# =========================
+**/*.log
+**/*.pid
+**/*.out
+**/*.err
+
+# =========================
+# Environment variables
+# =========================
+**/.env
+**/.env.*
+!**/.env.example
+
+# =========================
+# IDE & editor settings
+# =========================
+.vscode/
+.idea/
+**/*.iml
+
+# =========================
+# Claude Code (local only)
+# =========================
+.claude/
+CLAUDE.md
+
+Project Updates.md
+backend/API.md
+backend/API_TESTS.md
+ai-services/lpr/training/training_notes.md
+ai-services/lpr/training/kaggle_training.ipynb
+
+# =========================
+# Jupyter
+# =========================
+**/.ipynb_checkpoints/
+
+# =========================
+# OS files
+# =========================
+**/.DS_Store
+**/Thumbs.db
+**/desktop.ini
+
+# =========================
+# Caches & temp files
+# =========================
+**/.cache/
+**/*.tmp
+**/*.swp
+**/*.swo
+**/*.bak
+
+# =========================
+# PyInstaller
+# =========================
+**/*.spec
+
+# =========================
+# Type checking / linting
+# =========================
+**/.mypy_cache/
+**/.dmypy.json
+**/dmypy.json
+**/.ruff_cache/
+
+# =========================
+# Local databases
+# =========================
+**/*.sqlite3
+**/*.db
+
+# =========================
+# AI/ML SPECIFIC (for LPR & Slot Detection)
+# =========================
+# Raw datasets (videos, labels, etc.)
+**/data/
+**/datasets/
+
+# Roboflow Egyptian License Plate dataset
+ai-services/Egyptian License Plate Dataset.v1i.coco/
+ai-services/Egyptian License Plate Dataset.v1i.coco.zip
+
+# Generated outputs (processed videos, results)
+**/output/
+**/outputs/
+
+# Model files (large files)
+**/*.h5
+**/*.pth
+**/*.pt
+**/*.onnx
+**/*.pb
+**/*.weights
+**/checkpoints/
+**/models/saved/
+**/runs/
+**/wandb/
+
+# =========================
+# NODE.JS (for Mobile App & Admin Dashboard)
+# =========================
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnpm-debug.log*
+**/.next/
+**/out/
+**/.nuxt/
+**/.cache/
+
+# =========================
+# React Native specific
+# =========================
+**/android/app/build/
+**/android/.gradle/
+**/ios/Pods/
+**/ios/build/
+**/*.jks
+**/*.p8
+**/*.p12
+**/*.mobileprovision
+
+# =========================
+# LPR dataset (large, keep local)
+# =========================
+ai-services/lpr-dataset/

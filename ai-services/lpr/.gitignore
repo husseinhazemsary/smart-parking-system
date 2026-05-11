@@ -1,0 +1,53 @@
+# Virtual environment
+venv/
+env/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ML models
+*.pt
+*.pth
+*.onnx
+*.pb
+
+# Debug outputs
+debug/
+inference_results/
+output/
+log_output/
+
+# Input videos (large binaries — keep locally, not in repo)
+input/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+main_doc.py
+training/TRAINING_RUN_2_NOTES.md
+
+# Evaluation artifacts
+eval_results.png
+scripts/eval/eval_results_analysis.md

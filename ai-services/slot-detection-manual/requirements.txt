@@ -1,0 +1,16 @@
+# requirements.txt
+
+# Core AI / Detection
+ultralytics>=8.1.0
+torch>=2.2.0
+torchvision>=0.17.0
+
+# Computer Vision
+opencv-python>=4.9.0
+numpy>=1.26.0
+
+# Clustering
+scikit-learn>=1.4.0
+
+# Utilities
+tqdm>=4.66.0
