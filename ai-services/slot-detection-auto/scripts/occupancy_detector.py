@@ -24,35 +24,34 @@ from ultralytics import YOLO
 from shapely.geometry import Polygon as ShapelyPolygon
 from shapely.geometry import box as ShapelyBox
 
-# ── Paths (relative to slot-detection-auto/ working directory) ─────────────
+# Paths
 LAYOUT_DIR = os.path.join("data", "layouts")
 VIDEO_DIR  = os.path.join("data", "videos")
 OUTPUT_DIR = os.path.join("output", "processed_videos")
 
-# ── YOLO settings ──────────────────────────────────────────────────────────
+# YOLO settings
 YOLO_MODEL      = "yolov8n.pt"
 VEHICLE_CLASSES = [2, 5, 7]   # car, bus, truck (COCO)
 DETECT_CONF     = 0.40
 
-# ── Frame processing ───────────────────────────────────────────────────────
+# Frame processing
 FRAME_SKIP  = 5   # run YOLO every Nth frame; interpolate states in between
 
-# ── Occupancy thresholds ───────────────────────────────────────────────────
+# Occupancy thresholds
 MIN_COVERAGE   = 0.40   # vehicle bbox must cover >= this fraction of slot area
 CONFIRM_FRAMES = 8      # consecutive "occupied" hits to flip state → occupied
 RELEASE_FRAMES = 5      # consecutive "free" hits to flip state → free
 
-# ── Visualisation ──────────────────────────────────────────────────────────
+# Visualisation
 COLOR_FREE     = ( 30, 200,  30)   # green  (BGR)
 COLOR_OCCUPIED = ( 30,  30, 220)   # red
 ALPHA          = 0.38              # polygon fill opacity
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Helpers
-# ══════════════════════════════════════════════════════════════════════════
 
 def load_slots(lot_id):
+    """Load slot definitions from the JSON file for the given lot_id. Returns (slots, ref_w, ref_h)."""
     path = os.path.join(LAYOUT_DIR, f"{lot_id}_auto_slots.json")
     if not os.path.exists(path):
         raise FileNotFoundError(f"Slot layout not found: {path}\n"
@@ -62,7 +61,6 @@ def load_slots(lot_id):
     ref_w = data.get("image_width")
     ref_h = data.get("image_height")
     return data["slots"], ref_w, ref_h
-
 
 def scale_slots(slots, ref_w, ref_h, vid_w, vid_h):
     """Rescale slot polygon coordinates from the reference image space to the video frame size."""
@@ -80,7 +78,6 @@ def scale_slots(slots, ref_w, ref_h, vid_w, vid_h):
         scaled.append(ns)
     return scaled
 
-
 def _build_shapes(slots):
     shapes = []
     for s in slots:
@@ -91,7 +88,6 @@ def _build_shapes(slots):
         shapes.append(shape)
     return shapes
 
-
 def _vehicle_covers_slot(bbox, slot_shape, min_coverage):
     x1, y1, x2, y2 = bbox
     veh_box = ShapelyBox(x1, y1, x2, y2)
@@ -101,13 +97,11 @@ def _vehicle_covers_slot(bbox, slot_shape, min_coverage):
     except Exception:
         return False
 
-
 def _draw_slot(vis, pts, color, alpha):
     overlay = vis.copy()
     cv2.fillPoly(overlay, [pts], color)
     cv2.addWeighted(overlay, alpha, vis, 1 - alpha, 0, vis)
     cv2.polylines(vis, [pts], True, color, 2)
-
 
 def _draw_hud(vis, occupied, free):
     h_pad, w_pad = 10, 10
@@ -119,9 +113,7 @@ def _draw_hud(vis, occupied, free):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.75, COLOR_FREE, 2, cv2.LINE_AA)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Main entry point
-# ══════════════════════════════════════════════════════════════════════════
 
 def run(lot_id, video_name, save_output=True):
     """
@@ -133,12 +125,12 @@ def run(lot_id, video_name, save_output=True):
     video_name  : str   — filename inside data/videos/ (e.g. "lot_cam.mp4")
     save_output : bool  — write annotated video to output/processed_videos/
     """
-    # ── Load slots ────────────────────────────────────────────────────────
+    # Load slots
     slots, ref_w, ref_h = load_slots(lot_id)
     print(f"  Loaded {len(slots)} slot(s) from {lot_id}_auto_slots.json  "
           f"(reference image: {ref_w}×{ref_h})")
 
-    # ── Open video ────────────────────────────────────────────────────────
+    # Open video
     video_path = os.path.join(VIDEO_DIR, video_name)
     if not os.path.exists(video_path):
         print(f"  Error: video not found at {video_path}")
@@ -158,9 +150,9 @@ def run(lot_id, video_name, save_output=True):
     print(f"  Video  : {fw}×{fh}  {fps:.1f} fps  "
           f"{total} frames  ({dur:.1f}s)")
 
-    # ── Scale slot coordinates to video resolution ────────────────────────
+    # Scale slot coordinates to video resolution
     if ref_w and ref_h and (ref_w != fw or ref_h != fh):
-        print(f"  Scaling slots from {ref_w}×{ref_h} → {fw}×{fh}  "
+        print(f"  Scaling slots from {ref_w}x{ref_h} → {fw}×{fh}  "
               f"(sx={fw/ref_w:.3f}  sy={fh/ref_h:.3f})")
     slots  = scale_slots(slots, ref_w, ref_h, fw, fh)
     shapes = _build_shapes(slots)
@@ -168,7 +160,7 @@ def run(lot_id, video_name, save_output=True):
     print(f"  YOLO   : every {FRAME_SKIP} frame(s)  conf={DETECT_CONF}")
     print(f"  Overlap: ≥{int(MIN_COVERAGE*100)}% of slot area to count")
 
-    # ── Debug: overlay slots on first frame ───────────────────────────────
+    # Debug: overlay slots on first frame
     ret0, first_frame = cap.read()
     if not ret0:
         print("  Error: could not read first frame.")
@@ -210,7 +202,7 @@ def run(lot_id, video_name, save_output=True):
 
     print("  Press Q or Esc to quit during playback\n")
 
-    # ── Output writer ─────────────────────────────────────────────────────
+    # Output writer
     writer   = None
     out_path = None
     if save_output:
@@ -222,10 +214,10 @@ def run(lot_id, video_name, save_output=True):
         writer   = cv2.VideoWriter(out_path, fourcc, out_fps, (fw, fh))
         print(f"  Output : {out_path}  ({out_fps:.1f} fps)")
 
-    # ── Load YOLO ─────────────────────────────────────────────────────────
+    # Load YOLO
     model = YOLO(YOLO_MODEL)
 
-    # ── Per-slot state ────────────────────────────────────────────────────
+    # Per-slot state
     states = [False] * len(slots)
     scores = [0]     * len(slots)   # up = occupied evidence, down = free
     score_cap = max(CONFIRM_FRAMES, RELEASE_FRAMES) * 2
@@ -241,7 +233,7 @@ def run(lot_id, video_name, save_output=True):
         if frame_idx % FRAME_SKIP != 0:
             continue
 
-        # ── YOLO detection ────────────────────────────────────────────────
+        # YOLO detection
         results = model(frame,
                         conf=DETECT_CONF,
                         classes=VEHICLE_CLASSES,
@@ -249,7 +241,7 @@ def run(lot_id, video_name, save_output=True):
         bboxes = (results.boxes.xyxy.cpu().numpy().tolist()
                   if results.boxes is not None else [])
 
-        # ── Update scores and states ──────────────────────────────────────
+        # Update scores and states
         for i, (slot, shape) in enumerate(zip(slots, shapes)):
             if shape is None or shape.is_empty:
                 continue
@@ -265,7 +257,7 @@ def run(lot_id, video_name, save_output=True):
             elif scores[i] <= -RELEASE_FRAMES:
                 states[i] = False
 
-        # ── Visualise ─────────────────────────────────────────────────────
+        # Visualise
         vis = frame.copy()
 
         for i, slot in enumerate(slots):
@@ -302,9 +294,7 @@ def run(lot_id, video_name, save_output=True):
         print(f"  Saved : {out_path}")
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Standalone CLI
-# ══════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

@@ -10,8 +10,7 @@ slot_editor.py — interactive parking slot polygon editor.
   D                      delete all selected slots
   Z                      undo last action (delete / move / resize / add vertex / add / stamp)
   A                      toggle Add mode  — click to place an average-sized slot
-  C                      Copy mode  — copies the solo-selected slot's exact shape;
-                          click to stamp copies
+  C                      Copy mode  — copies the solo-selected slot's exact shape; click to stamp copies
   Esc  (in Add/Copy)     exit placement mode
   S / Enter              save and exit
   Q / Esc  (normal)      discard and exit
@@ -35,7 +34,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 LAYOUT_DIR = os.path.join("data", "layouts")
 IMAGES_DIR = os.path.join("data", "blueprints")
 
-# ── Visual constants ───────────────────────────────────────────────────────────
+# Visual constants
 COLOR_NORMAL    = (  0, 200, 255)   # yellow-ish  unselected
 COLOR_SELECTED  = (255, 200,   0)   # cyan        selected
 COLOR_HOVER     = (180, 180,   0)   # dim         hovered (not selected)
@@ -62,11 +61,7 @@ _HANDLE_AXES = [
     (True,  False, False, False),   # 7  ML
 ]
 
-
-# ══════════════════════════════════════════════════════════════════════════════
 class SlotEditor:
-# ══════════════════════════════════════════════════════════════════════════════
-
     def __init__(self, slots, image, lot_id, img_w, img_h):
         self.slots          = copy.deepcopy(slots)
         self.image          = image.copy()
@@ -107,14 +102,10 @@ class SlotEditor:
         self.pan_y      = 0.0
         self._pan_start = None   # (sx, sy, pan_x0, pan_y0) during mid-btn drag
 
-    # ── convenience ──────────────────────────────────────────────────────────
-
     @property
     def _solo(self):
         """The single selected index when exactly one slot is selected, else None."""
         return next(iter(self.selection)) if len(self.selection) == 1 else None
-
-    # ── geometry helpers ──────────────────────────────────────────────────────
 
     def _compute_avg_size(self):
         if not self.slots:
@@ -161,8 +152,6 @@ class SlotEditor:
             if i not in self.selection and self._contains(i, x, y):
                 return i
         return None
-
-    # ── zoom / pan helpers ────────────────────────────────────────────────────
 
     def _s2i(self, sx, sy):
         """Screen → image coordinates."""
@@ -244,7 +233,7 @@ class SlotEditor:
                  int(ny1 + (p[1] - oy1) / oh * nh)]
                 for p in poly]
 
-    # ── mouse callback ────────────────────────────────────────────────────────
+    # mouse callback
 
     def on_mouse(self, event, x, y, flags, param):
         shift = bool(flags & cv2.EVENT_FLAG_SHIFTKEY)
@@ -343,7 +332,7 @@ class SlotEditor:
 
         solo = self._solo
 
-        # ── multi-select resize handles (2+ selected) ─────────────────────
+        # multi-select resize handles (2+ selected)
         if len(self.selection) >= 2:
             hi = self._hit_multi_handle(x, y)
             if hi is not None:
@@ -355,7 +344,7 @@ class SlotEditor:
                 self.drag_start      = (x, y)
                 return
 
-        # ── corner handle (solo-select only) ──────────────────────────────
+        # corner handle (solo-select only)
         if solo is not None and solo < len(self.slots):
             ci = self._hit_corner(solo, x, y)
             if ci is not None:
@@ -365,7 +354,7 @@ class SlotEditor:
                 self.drag_start = (x, y)
                 return
 
-            # ── edge midpoint → insert vertex and immediately drag it ──────
+            # edge midpoint → insert vertex and immediately drag it
             ei = self._hit_edge_midpoint(solo, x, y)
             if ei is not None:
                 old_poly = copy.deepcopy(self.slots[solo]["polygon"])
@@ -376,7 +365,7 @@ class SlotEditor:
                 self.drag_start = (x, y)
                 return
 
-        # ── click on a slot ───────────────────────────────────────────────
+        # click on a slot
         hit = self._slot_at(x, y)
         if hit is not None:
             if shift:
@@ -394,7 +383,7 @@ class SlotEditor:
                                for i in self.selection}
             self.drag_start = (x, y)
         else:
-            # ── empty space → rubber-band ──────────────────────────────────
+            # empty space → rubber-band
             if not shift:
                 self.selection.clear()
             self.drag_mode    = 'rubber'
@@ -432,8 +421,6 @@ class SlotEditor:
         self.rubber_start    = None
         self.rubber_end      = None
 
-    # ── rubber-band ───────────────────────────────────────────────────────────
-
     def _finalize_rubber(self):
         if not self.rubber_start or not self.rubber_end:
             return
@@ -446,8 +433,6 @@ class SlotEditor:
         self.selection = {i for i in range(len(self.slots))
                           if rx1 <= self._centroid(i)[0] <= rx2
                           and ry1 <= self._centroid(i)[1] <= ry2}
-
-    # ── actions ───────────────────────────────────────────────────────────────
 
     def delete_selected(self):
         if not self.selection:
@@ -526,8 +511,6 @@ class SlotEditor:
     def exit_placement_mode(self):
         self.placement_mode = None
         self.copy_template  = None
-
-    # ── rendering ─────────────────────────────────────────────────────────────
 
     def render(self):
         vis  = self.image.copy()
@@ -647,8 +630,6 @@ class SlotEditor:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.46, (200, 200, 200), 1, cv2.LINE_AA)
         return vis
 
-    # ── main loop ─────────────────────────────────────────────────────────────
-
     def run(self):
         """Open the editor. Returns True if saved, False if discarded."""
         cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
@@ -694,8 +675,6 @@ class SlotEditor:
                     cv2.destroyWindow(WIN)
                     return False
 
-    # ── persistence ───────────────────────────────────────────────────────────
-
     def save_json(self):
         for slot in self.slots:
             pts = np.array(slot["polygon"], dtype=np.float32)
@@ -718,11 +697,6 @@ class SlotEditor:
             json.dump(payload, f, indent=2)
         return path
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Public API
-# ══════════════════════════════════════════════════════════════════════════════
-
 def run_editor(lot_id, image, img_w, img_h):
     layout_path = os.path.join(LAYOUT_DIR, f"{lot_id}_auto_slots.json")
     if not os.path.exists(layout_path):
@@ -744,11 +718,6 @@ def run_editor(lot_id, image, img_w, img_h):
         print("  [editor] No changes made.")
 
     return editor.slots
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Standalone CLI
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _find_blueprint(lot_id):
     for ext in ("jpg", "jpeg", "png", "bmp", "tiff"):

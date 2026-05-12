@@ -22,11 +22,6 @@ Outputs:
 Dependencies:
   - lsd.py must be run first to produce output/lines/<image_id>.json
   - shapely (pip install shapely) for polygon clipping
-
-Viewer controls:
-    N / Space / Enter   next step
-    P / Backspace       previous step
-    Q / Esc             quit
 """
 
 import cv2
@@ -34,50 +29,48 @@ import numpy as np
 import json
 import os
 import sys
+import glob as _glob
 from shapely.geometry import Polygon as ShapelyPolygon
+from utils import draw_lines, save_debug
 
+# Slot-building parameters
 
-# ── Slot-building parameters ──────────────────────────────────────────────────
 # Angle is measured as degrees from horizontal, range [0, 90].
 # 0° = perfectly horizontal, 90° = perfectly vertical.
-#
-# BOUNDARY_ANGLE_MAX / DIVIDER_ANGLE_MIN are AUTO-DETECTED from the line
-# population (see infer_angle_split()).  The values below are fallbacks used
-# when auto-detection cannot find two clear clusters.
-BOUNDARY_ANGLE_MAX    = 30    # fallback: lines below this are row boundaries
-DIVIDER_ANGLE_MIN     = 40    # fallback: lines above this are slot dividers
-CLUSTER_TOLERANCE     = 15    # px — merge parallel lines closer than this
-BOUNDARY_MIN_LENGTH_W = 0.05  # minimum merged-cluster span as fraction of warped width
-                               # (kept small so fragments survive to the merge step)
-MIN_ROW_FRAC          = 0.04  # row must be >= this fraction of warped height
-MAX_ROW_FRAC          = 0.99  # row must be <= this fraction of warped height
-DIVIDER_ROW_OVERLAP   = 0.30  # divider must cover >= this fraction of a row's height
-MIN_SLOT_WIDTH_PX     = 20    # minimum slot width in warped pixels
-VIRTUAL_EDGE_TOL      = 0.50  # tolerance for adding virtual edge dividers
-INFER_MISSING_BOUNDARY = True  # synthesise a boundary when a double-height gap is found
-MIN_ROW_HEIGHT_FRAC   = 0.40  # drop rows shorter than this fraction of the tallest row
-                               # — removes narrow false rows from curb/rail lines
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
+BOUNDARY_ANGLE_MAX     = 30    # lines below this are row boundaries
+DIVIDER_ANGLE_MIN      = 40    # lines above this are slot dividers
+CLUSTER_TOLERANCE      = 15    # px — merge parallel lines closer than this
+BOUNDARY_MIN_LENGTH_W  = 0.05  # boundary lines must be at least this fraction of warped width (after clustering)
+MIN_ROW_FRAC           = 0.04  # row must be >= this fraction of warped height
+MAX_ROW_FRAC           = 0.99  # row must be <= this fraction of warped height
+DIVIDER_ROW_OVERLAP    = 0.30  # divider must cover >= this fraction of a row's height
+MIN_SLOT_WIDTH_PX      = 20    # minimum slot width in warped pixels
+VIRTUAL_EDGE_TOL       = 0.50  # tolerance for adding virtual edge dividers
+INFER_MISSING_BOUNDARY = True  # synthesise a boundary when a double-height gap is found
+MIN_ROW_HEIGHT_FRAC    = 0.40  # drop rows shorter than this fraction of the tallest row — removes narrow false rows from curb/rail lines
+
+# Paths
 IMAGES_DIR = os.path.join("data", "blueprints")
 LINES_DIR  = os.path.join("output", "lines")
 LAYOUT_DIR = os.path.join("data", "layouts")
 DEBUG_BASE = os.path.join("output", "debug", "slot_definer")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Load lines saved by lsd.py / hough_system.py
-# ══════════════════════════════════════════════════════════════════════════════
+# Load lines saved by lsd.py 
 
 def load_lines(image_id):
     """
     Load the lines JSON written by lsd.py for the given image_id.
     Returns (lines_list, rois, image_path).
-    rois is a list of roi polygons (may be empty).
     """
     path = os.path.join(LINES_DIR, f"{image_id}.json")
     if not os.path.exists(path):
-        return None, [], None
+        # lsd.py saves to a stem subdirectory when image_id != stem
+        matches = _glob.glob(os.path.join(LINES_DIR, "**", f"{image_id}.json"))
+        if not matches:
+            return None, [], None
+        path = matches[0]
     with open(path) as f:
         data = json.load(f)
 
@@ -98,11 +91,9 @@ def load_lines(image_id):
     image_path = data.get("image", "")
     return lines, rois, image_path
 
-
 def lines_to_dicts(lines_list):
     """Convert [[x1,y1,x2,y2], ...] to [{'start':(x1,y1), 'end':(x2,y2)}, ...]."""
     return [{'start': (seg[0], seg[1]), 'end': (seg[2], seg[3])} for seg in lines_list]
-
 
 def filter_lines_for_roi(line_dicts, roi_polygon):
     """Keep lines that have at least one endpoint inside roi_polygon."""
@@ -117,9 +108,7 @@ def filter_lines_for_roi(line_dicts, roi_polygon):
     return result
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Perspective warp
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _order_quad(pts):
     """Order 4 points as [TL, TR, BR, BL] using the x+y / x-y trick."""
@@ -133,16 +122,16 @@ def _order_quad(pts):
         pts[np.argmin(d)],
     ], dtype=np.float32)
 
-
 def _quad_valid(quad):
+    """Check that all points are sufficiently far apart."""
     for i in range(4):
         for j in range(i + 1, 4):
             if np.linalg.norm(quad[i] - quad[j]) < 5:
                 return False
     return True
 
-
 def _quad_from_halves(pts):
+    """Fallback quad ordering by splitting points into top/bottom halves."""
     cy = float(np.median(pts[:, 1]))
     top = pts[pts[:, 1] <= cy]
     bot = pts[pts[:, 1] >  cy]
@@ -154,7 +143,6 @@ def _quad_from_halves(pts):
     br = bot[np.argmax(bot[:, 0])]
     bl = bot[np.argmin(bot[:, 0])]
     return np.array([tl, tr, br, bl], dtype=np.float32)
-
 
 def quad_from_polygon(polygon):
     """Reduce any polygon to an ordered [TL, TR, BR, BL] quad for perspective warp."""
@@ -179,7 +167,6 @@ def quad_from_polygon(polygon):
         return q
     return _quad_from_halves(pts)
 
-
 def compute_homography(quad):
     """Returns M (original->warped), Minv (warped->original), dst_w, dst_h."""
     tl, tr, br, bl = quad
@@ -192,9 +179,7 @@ def compute_homography(quad):
     return M, Minv, w, h
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Line handling in warped space
-# ══════════════════════════════════════════════════════════════════════════════
 
 def transform_lines(line_dicts, M):
     """Project line dicts through homography M."""
@@ -209,22 +194,19 @@ def transform_lines(line_dicts, M):
         })
     return result
 
-
 def _angle(line):
     """Angle from horizontal in [0, 90]: 0 = horizontal, 90 = vertical."""
     dx = abs(line['end'][0] - line['start'][0])
     dy = abs(line['end'][1] - line['start'][1])
     return float(np.degrees(np.arctan2(dy, dx)))
 
-
 def _line_length(l):
+    """Euclidean length of a line segment."""
     dx = l['end'][0] - l['start'][0]
     dy = l['end'][1] - l['start'][1]
     return float(np.hypot(dx, dy))
 
-
-def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
-                                   img=None, debug_dir=None, steps=None):
+def auto_roi_from_boundary_extent(line_dicts, img_w, img_h, img=None, debug_dir=None, steps=None):
     """
     Build a single parallelogram ROI whose top and bottom edges are parallel
     to the detected boundary lines.
@@ -232,10 +214,8 @@ def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
     Strategy:
       1. Classify boundary fragments (near-horizontal lines).
       2. Fit one slope through all their endpoints (the dominant row angle).
-      3. Project every endpoint onto the perpendicular axis (residual from the
-         fitted slope line) → gives a 1-D "distance-from-line" value per point.
-      4. Top edge  = fitted-slope line at min(residual) - pad
-         Bottom edge = fitted-slope line at max(residual) + pad
+      3. Project every endpoint onto the perpendicular axis (residual from the fitted slope line) → gives a 1-D "distance-from-line" value per point.
+      4. Top edge  = fitted-slope line at min(residual) - pad Bottom edge = fitted-slope line at max(residual) + pad
       5. Left/right extents come from all detected lines (boundaries + dividers).
 
     Returns a list containing one ROI polygon, or [] on failure.
@@ -246,7 +226,7 @@ def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
         print("  Auto ROI failed: not enough detected lines.")
         return []
 
-    boundary_max, _ = infer_angle_split(line_dicts)
+    boundary_max, _ = infer_angle_split(line_dicts)   # auto-detect angle threshold for boundaries vs dividers
 
     boundaries, all_lines = [], []
     for l in line_dicts:
@@ -260,7 +240,7 @@ def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
         print("  Auto ROI failed: not enough boundary candidates.")
         return []
 
-    # ── fit slope through all boundary endpoints ──────────────────────────────
+    # Fit a slope through all boundary endpoints, weighted equally (not by length, to avoid long fragments dominating the angle when there are multiple rows).
     pts = np.array(
         [[l['start'][0], l['start'][1]] for l in boundaries] +
         [[l['end'][0],   l['end'][1]]   for l in boundaries],
@@ -276,7 +256,7 @@ def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
     # Residual = y - slope*x  (intercept offset for each endpoint)
     residuals = ys - slope * xs
 
-    # ── x-extent from ALL lines ───────────────────────────────────────────────
+    # Use all detected lines (not just boundaries) to determine left/right extents, so that the ROI includes all relevant lines even if some boundaries are missed.
     all_xs = (
         [l['start'][0] for l in all_lines] +
         [l['end'][0]   for l in all_lines]
@@ -305,7 +285,7 @@ def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
           f"intercepts=[{top_intercept:.0f},{bot_intercept:.0f}]  "
           f"({len(boundaries)} boundary fragments)")
 
-    # ── debug ─────────────────────────────────────────────────────────────────
+    # Debug: draw the ROI and the lines used to determine it
     if _dbg:
         dbg = img.copy()
         for l in boundaries:
@@ -316,16 +296,14 @@ def auto_roi_from_boundary_extent(line_dicts, img_w, img_h,
             f"Auto ROI from {len(boundaries)} boundary fragments (red)",
             (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2,
         )
-        _save(debug_dir, "mode4_01_auto_roi.png", dbg)
+        save_debug(debug_dir, "mode4_01_auto_roi.png", dbg)
         if steps is not None:
             steps.append(("Auto ROI extent", dbg))
 
     return [roi]
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Adaptive angle split
-# ══════════════════════════════════════════════════════════════════════════════
 
 def infer_angle_split(warped_lines):
     """
@@ -333,11 +311,9 @@ def infer_angle_split(warped_lines):
 
     Uses a length-weighted bimodal split:
       1. Compute the length-weighted median angle M.
-      2. Compute the weighted mean of lines below M (boundary family)
-         and above M (divider family).
+      2. Compute the weighted mean of lines below M (boundary family) and above M (divider family).
       3. Place the split halfway between those two means, with a +-3 dead-band.
-      4. Guard: if families are < 10 deg apart or split is outside [12, 75],
-         fall back to hardcoded constants.
+      4. Guard: if families are < 10 deg apart or split is outside [12, 75], fall back to hardcoded constants.
 
     Returns (boundary_max, divider_min).
     """
@@ -381,9 +357,7 @@ def infer_angle_split(warped_lines):
     return boundary_max, divider_min
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Classify
-# ══════════════════════════════════════════════════════════════════════════════
 
 def classify_lines(warped_lines, warped_w):
     """
@@ -411,13 +385,10 @@ def classify_lines(warped_lines, warped_w):
     return boundaries, dividers, discarded
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Clustering helpers
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _ymid(l): return (l['start'][1] + l['end'][1]) / 2.0
 def _xmid(l): return (l['start'][0] + l['end'][0]) / 2.0
-
 
 def _cluster(lines, key_fn, tolerance):
     """Cluster lines by a scalar key. Returns [(median_key, [lines]), ...]."""
@@ -434,8 +405,6 @@ def _cluster(lines, key_fn, tolerance):
     clusters.append(cur)
     return [(float(np.median([key_fn(l) for l in c])), c) for c in clusters]
 
-
-
 def _boundary_y_at_x(bline, x):
     """Y value of a boundary line at a given x (linear extrapolation)."""
     x1, y1 = float(bline['start'][0]), float(bline['start'][1])
@@ -443,7 +412,6 @@ def _boundary_y_at_x(bline, x):
     if abs(x2 - x1) < 1.0:
         return (y1 + y2) / 2.0
     return y1 + (y2 - y1) * (x - x1) / (x2 - x1)
-
 
 def _fit_boundary_line(cluster_lines, warped_w):
     """
@@ -473,9 +441,7 @@ def _fit_boundary_line(cluster_lines, warped_w):
             'y_mid': y_mid}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Merge boundaries (length filter applied after clustering)
-# ══════════════════════════════════════════════════════════════════════════════
 
 def merge_boundaries(boundaries, warped_w, tolerance=CLUSTER_TOLERANCE):
     """
@@ -505,9 +471,7 @@ def merge_boundaries(boundaries, warped_w, tolerance=CLUSTER_TOLERANCE):
     return sorted(lines, key=lambda l: l['y_mid'])
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Missing boundary inference
-# ══════════════════════════════════════════════════════════════════════════════
 
 def infer_missing_boundaries(b_lines, dst_w):
     """
@@ -551,9 +515,7 @@ def infer_missing_boundaries(b_lines, dst_w):
     return result
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Dividers per row
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _make_divider_rep(cluster_lines, top_bline, bot_bline):
     """
@@ -577,10 +539,7 @@ def _make_divider_rep(cluster_lines, top_bline, bot_bline):
         'x_mid': x_center,
     }
 
-
-def dividers_for_row(all_warped_lines, top_bline, bot_bline,
-                     tolerance=CLUSTER_TOLERANCE,
-                     boundary_max=None, divider_min=None):
+def dividers_for_row(all_warped_lines, top_bline, bot_bline, tolerance=CLUSTER_TOLERANCE, boundary_max=None, divider_min=None):
     """Find, cluster, and return representative dividers for a row."""
     if boundary_max is None: boundary_max = float(BOUNDARY_ANGLE_MAX)
     if divider_min  is None: divider_min  = float(DIVIDER_ANGLE_MIN)
@@ -602,9 +561,7 @@ def dividers_for_row(all_warped_lines, top_bline, bot_bline,
     return sorted(reps, key=lambda d: d['x_mid'])
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Slot building
-# ══════════════════════════════════════════════════════════════════════════════
 
 def build_slots_in_row(dividers, top_bline, bot_bline, img_w):
     """Build slot polygons for one row from sorted representative dividers."""
@@ -642,9 +599,7 @@ def build_slots_in_row(dividers, top_bline, bot_bline, img_w):
     return slots
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Unwarp / filter / assign
-# ══════════════════════════════════════════════════════════════════════════════
 
 def unwarp_slots(warped_slots, Minv):
     """Transform slot polygons from warped space back to original image space."""
@@ -658,7 +613,6 @@ def unwarp_slots(warped_slots, Minv):
         result.append(s)
     return result
 
-
 def filter_slots_by_roi(slots, roi_polygon):
     """Remove slots whose centroid falls outside the ROI polygon."""
     if roi_polygon is None or len(roi_polygon) < 3:
@@ -670,7 +624,6 @@ def filter_slots_by_roi(slots, roi_polygon):
                 float(np.mean([p[1] for p in pts])))
     return [s for s in slots
             if cv2.pointPolygonTest(roi_pts, _centroid(s), False) >= 0]
-
 
 def clip_slots_to_roi(slots, roi_polygon):
     """Clip each slot polygon to the ROI boundary instead of rejecting it."""
@@ -690,7 +643,6 @@ def clip_slots_to_roi(slots, roi_polygon):
         result.append(s)
     return result
 
-
 def assign_ids_zones(slots, img_w, img_h):
     for i, slot in enumerate(slots):
         slot['id'] = f'slot_{i + 1}'
@@ -701,9 +653,7 @@ def assign_ids_zones(slots, img_w, img_h):
         slot['zone'] = f"{chr(65 + min(int(cy / img_h * 3), 2))}{int(cx / img_w * 20) + 1}"
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Save JSON
-# ══════════════════════════════════════════════════════════════════════════════
 
 def save_slots_json(slots, img_w, img_h, lot_id):
     def _cvt(o):
@@ -725,20 +675,7 @@ def save_slots_json(slots, img_w, img_h, lot_id):
     return path
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Debug helpers
-# ══════════════════════════════════════════════════════════════════════════════
-
-def _save(debug_dir, name, img):
-    cv2.imwrite(os.path.join(debug_dir, name), img)
-
-
-def _draw_line_dicts(base, lines, color=(0, 0, 255)):
-    out = base.copy()
-    for l in lines:
-        cv2.line(out, l['start'], l['end'], color, 2)
-    return out
-
 
 def _draw_slots_on(base, slots):
     out, overlay = base.copy(), base.copy()
@@ -754,12 +691,9 @@ def _draw_slots_on(base, slots):
     return cv2.addWeighted(overlay, 0.25, out, 0.75, 0)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Interactive viewer
-# ══════════════════════════════════════════════════════════════════════════════
 
 _HELP = "[N/Space] next   [P/Backspace] prev   [Q/Esc] quit"
-
 
 def show_steps(steps):
     if not steps:
@@ -790,9 +724,7 @@ def show_steps(steps):
     cv2.destroyAllWindows()
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # Per-ROI pipeline
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _process_roi(line_dicts, roi, img, img_w, img_h, debug_dir, steps, label=""):
     """
@@ -801,44 +733,41 @@ def _process_roi(line_dicts, roi, img, img_w, img_h, debug_dir, steps, label="")
     """
     tag = f"[{label}] " if label else ""
 
-    # ── loaded lines ──────────────────────────────────────────────────────────
-    s1 = _draw_line_dicts(img, line_dicts)
+    # Loaded lines
+    s1, _ = draw_lines(img, line_dicts)
     cv2.polylines(s1, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 2)
-    cv2.putText(s1, f"{tag}{len(line_dicts)} lines",
-                (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-    _save(debug_dir, f"{label}_01_loaded_lines.png" if label else "01_loaded_lines.png", s1)
+    cv2.putText(s1, f"{tag}{len(line_dicts)} lines", (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+    save_debug(debug_dir, f"{label}_01_loaded_lines.png" if label else "01_loaded_lines.png", s1)
     steps.append((f"{tag}Lines ({len(line_dicts)} segments)", s1))
 
-    # ── perspective warp ──────────────────────────────────────────────────────
-    quad   = quad_from_polygon(roi)
+    # Perspective warp
+    quad = quad_from_polygon(roi)
     M, Minv, dst_w, dst_h = compute_homography(quad)
     warped = cv2.warpPerspective(img, M, (dst_w, dst_h))
-    _save(debug_dir, f"{label}_02_warped.png" if label else "02_warped.png", warped)
+    save_debug(debug_dir, f"{label}_02_warped.png" if label else "02_warped.png", warped)
     steps.append((f"{tag}Warped top-down view", warped))
 
-    # ── classify ──────────────────────────────────────────────────────────────
-    wlines                           = transform_lines(line_dicts, M)
+    # Classify
+    wlines = transform_lines(line_dicts, M)
     boundaries_w, dividers_w, disc_w = classify_lines(wlines, dst_w)
-    _b_max, _d_min                   = infer_angle_split(wlines)
+    _b_max, _d_min = infer_angle_split(wlines)
 
     s3 = warped.copy()
     for l in disc_w:       cv2.line(s3, l['start'], l['end'], (80, 80, 80), 1)
     for l in boundaries_w: cv2.line(s3, l['start'], l['end'], (0, 0, 255), 2)
     for l in dividers_w:   cv2.line(s3, l['start'], l['end'], (255, 80, 0), 2)
-    cv2.putText(s3, "RED=boundary  BLUE=divider  GRAY=discarded",
-                (8, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
-    _save(debug_dir, f"{label}_03_classified.png" if label else "03_classified.png", s3)
-    steps.append((f"{tag}Classified: {len(boundaries_w)} boundaries, "
-                  f"{len(dividers_w)} dividers, {len(disc_w)} discarded", s3))
+    cv2.putText(s3, "RED=boundary  BLUE=divider  GRAY=discarded", (8, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
+    save_debug(debug_dir, f"{label}_03_classified.png" if label else "03_classified.png", s3)
+    steps.append((f"{tag}Classified: {len(boundaries_w)} boundaries, " f"{len(dividers_w)} dividers, {len(disc_w)} discarded", s3))
 
-    # ── merge + row pairs ─────────────────────────────────────────────────────
+    # Merge + row pairs
     b_lines = merge_boundaries(boundaries_w, dst_w)
     b_lines = infer_missing_boundaries(b_lines, dst_w)
 
     # If fewer than 2 boundaries survived filtering, synthesise canvas-edge
     # boundaries so a tightly-drawn single-row ROI still produces one row pair.
     if len(b_lines) < 2:
-        edge_top = {'start': (0, 0),        'end': (int(dst_w), 0),        'y_mid': 0.0}
+        edge_top = {'start': (0, 0), 'end': (int(dst_w), 0), 'y_mid': 0.0}
         edge_bot = {'start': (0, int(dst_h)),'end': (int(dst_w), int(dst_h)),'y_mid': float(dst_h)}
         if len(b_lines) == 0:
             b_lines = [edge_top, edge_bot]
@@ -880,23 +809,20 @@ def _process_roi(line_dicts, roi, img, img_w, img_h, debug_dir, steps, label="")
         cv2.line(s4, top_bl['start'], top_bl['end'], (0, 255, 255), 2)
         cv2.line(s4, bot_bl['start'], bot_bl['end'], (255, 0, 255), 2)
         mid_y = int((top_bl['y_mid'] + bot_bl['y_mid']) / 2)
-        cv2.putText(s4, f"Row {ri + 1}", (8, mid_y),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-    cv2.putText(s4, "ORANGE = inferred boundary",
-                (8, dst_h - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 140, 255), 1)
-    _save(debug_dir, f"{label}_04_row_pairs.png" if label else "04_row_pairs.png", s4)
+        cv2.putText(s4, f"Row {ri + 1}", (8, mid_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    cv2.putText(s4, "ORANGE = inferred boundary", (8, dst_h - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 140, 255), 1)
+    save_debug(debug_dir, f"{label}_04_row_pairs.png" if label else "04_row_pairs.png", s4)
     steps.append((f"{tag}Row pairs ({len(row_pairs)} rows)", s4))
 
     if not row_pairs:
         print(f"  {tag}No row pairs found.")
         return []
 
-    # ── dividers + warped slots ───────────────────────────────────────────────
-    s5           = warped.copy()
+    # Dividers + warped slots 
+    s5 = warped.copy()
     warped_slots = []
     for top_bl, bot_bl in row_pairs:
-        row_divs = dividers_for_row(wlines, top_bl, bot_bl,
-                                    boundary_max=_b_max, divider_min=_d_min)
+        row_divs = dividers_for_row(wlines, top_bl, bot_bl, boundary_max=_b_max, divider_min=_d_min)
         print(f"  {tag}Row y=[{int(top_bl['y_mid'])},{int(bot_bl['y_mid'])}]"
               f" → {len(row_divs)} dividers")
         for d in row_divs:
@@ -908,25 +834,83 @@ def _process_roi(line_dicts, roi, img, img_w, img_h, debug_dir, steps, label="")
         cv2.polylines(s5, [pts], True, (0, 255, 0), 2)
         cx = int(np.mean([p[0] for p in slot['polygon']]))
         cy = int(np.mean([p[1] for p in slot['polygon']]))
-        cv2.putText(s5, str(i + 1), (cx - 8, cy + 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-    _save(debug_dir, f"{label}_05_warped_slots.png" if label else "05_warped_slots.png", s5)
+        cv2.putText(s5, str(i + 1), (cx - 8, cy + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+    save_debug(debug_dir, f"{label}_05_warped_slots.png" if label else "05_warped_slots.png", s5)
     steps.append((f"{tag}Warped slots ({len(warped_slots)} slots)", s5))
 
     if not warped_slots:
         return []
 
-    # ── unwarp + clip ─────────────────────────────────────────────────────────
+    # Unwarp + clip 
     full_img_roi = [(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]
     roi_for_clip = roi if roi != full_img_roi else None
     slots = unwarp_slots(warped_slots, Minv)
     slots = clip_slots_to_roi(slots, roi_for_clip)
     return slots
 
+def run_slot_definer(image_id, img, img_w, img_h, mode, final):
+    """
+    Run the full slot definition pipeline for a given image.
+    Returns (all_slots, steps, sd_debug_dir).
+    """
+    lines_list, rois, _ = load_lines(image_id)
+    line_dicts = lines_to_dicts(lines_list)
+    print(f"  Loaded {len(line_dicts)} line segments")
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Main
-# ══════════════════════════════════════════════════════════════════════════════
+    sd_debug_dir = os.path.join(DEBUG_BASE, image_id)
+    os.makedirs(sd_debug_dir, exist_ok=True)
+    steps = []
+
+    if mode == 3 and final is not None:
+        print("  Auto-warp mode — estimating one ROI per detected row")
+        steps.append(("LSD detected lines", final))
+        save_debug(sd_debug_dir, "00_lsd_lines.png", final)
+
+        auto_rois = auto_roi_from_boundary_extent(
+            line_dicts, img_w, img_h,
+            img=img, debug_dir=sd_debug_dir, steps=steps,
+        )
+
+        if auto_rois:
+            rois = auto_rois
+            print(f"  Auto ROIs: {len(rois)}")
+        else:
+            print("  Auto ROI failed — falling back to full image")
+            rois = [[(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]]
+
+    elif rois:
+        print(f"  ROI(s): {len(rois)} polygon(s)")
+    else:
+        print("  No ROI — using full image")
+        rois = [[(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]]
+
+    all_slots = []
+    multi     = len(rois) > 1
+    for i, roi in enumerate(rois):
+        label     = f"roi{i}" if multi else ""
+        if multi:
+            print(f"\n── ROI {i} ({len(roi)} points) ──────────────────────────────")
+        roi_lines = filter_lines_for_roi(line_dicts, roi) if multi else line_dicts
+        slots     = _process_roi(roi_lines, roi, img, img_w, img_h,
+                                 sd_debug_dir, steps, label)
+        all_slots.extend(slots)
+        if not slots and multi:
+            print(f"  ROI {i}: no slots found — check debug images")
+
+    if not all_slots:
+        return [], steps, sd_debug_dir
+
+    assign_ids_zones(all_slots, img_w, img_h)
+
+    s6 = _draw_slots_on(img, all_slots)
+    for roi in rois:
+        cv2.polylines(s6, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 1)
+    cv2.putText(s6, f"Detected: {len(all_slots)} slots", (10, 36),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+    save_debug(sd_debug_dir, "06_final_slots.png", s6)
+    steps.append((f"Final slots  ({len(all_slots)} total)", s6))
+
+    return all_slots, steps, sd_debug_dir
 
 def main():
     if len(sys.argv) < 2:
@@ -936,18 +920,14 @@ def main():
     image_id = sys.argv[1]
     lot_id   = sys.argv[2] if len(sys.argv) > 2 else image_id
 
-    # ── Load lines (image_path comes from inside the JSON) ────────────────────
     lines_list, rois, image_path = load_lines(image_id)
     if lines_list is None:
         print(f"\nNo lines found for image_id '{image_id}'.")
-        print("Run lsd.py first to detect lines:")
-        print(f"    python lsd.py")
-        print(f"Expected file: {LINES_DIR}/{image_id}.json")
+        print(f"Run lsd.py first.  Expected: {LINES_DIR}/{image_id}.json")
         sys.exit(1)
 
     if not image_path or not os.path.exists(image_path):
         print(f"Error: image not found: {image_path!r}")
-        print(f"  (path stored inside {LINES_DIR}/{image_id}.json)")
         sys.exit(1)
 
     img = cv2.imread(image_path)
@@ -956,32 +936,9 @@ def main():
         sys.exit(1)
     img_h, img_w = img.shape[:2]
 
-    line_dicts = lines_to_dicts(lines_list)
-    print(f"Loaded {len(line_dicts)} line segments from lsd.py")
-
-    if rois:
-        print(f"ROI(s): {len(rois)} polygon(s)")
-    else:
-        print("No ROI — using full image")
-        rois = [[(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]]
-
-    debug_dir = os.path.join(DEBUG_BASE, lot_id)
-    os.makedirs(debug_dir, exist_ok=True)
-    steps     = []
-
-    # ── Process each ROI independently ───────────────────────────────────────
-    all_slots    = []
-    multi        = len(rois) > 1
-    for i, roi in enumerate(rois):
-        label = f"roi{i}" if multi else ""
-        if multi:
-            print(f"\n── ROI {i} ({len(roi)} points) ──────────────────────────────")
-        roi_lines = filter_lines_for_roi(line_dicts, roi) if multi else line_dicts
-        slots     = _process_roi(roi_lines, roi, img, img_w, img_h,
-                                 debug_dir, steps, label)
-        all_slots.extend(slots)
-        if not slots and multi:
-            print(f"  ROI {i}: no slots found — check debug images")
+    all_slots, steps, debug_dir = run_slot_definer(
+        lot_id, img, img_w, img_h, mode=None, final=None
+    )
 
     if not all_slots:
         print("\nNo slots built across any ROI.")
@@ -989,17 +946,6 @@ def main():
         print("  - Check classified step: dividers should be BLUE")
         show_steps(steps)
         sys.exit(0)
-
-    # ── Finalise: assign IDs, draw, save ─────────────────────────────────────
-    assign_ids_zones(all_slots, img_w, img_h)
-
-    s6 = _draw_slots_on(img, all_slots)
-    for roi in rois:
-        cv2.polylines(s6, [np.array(roi, dtype=np.int32)], True, (0, 255, 0), 1)
-    cv2.putText(s6, f"Detected: {len(all_slots)} slots", (10, 36),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-    _save(debug_dir, "06_final_slots.png", s6)
-    steps.append((f"Final slots  ({len(all_slots)} total)", s6))
 
     json_path = save_slots_json(all_slots, img_w, img_h, lot_id)
 
@@ -1010,7 +956,6 @@ def main():
     print(f"{'=' * 60}")
     print("\nOpening step viewer...\n")
     show_steps(steps)
-
 
 if __name__ == "__main__":
     main()
