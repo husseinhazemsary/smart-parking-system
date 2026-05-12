@@ -1,20 +1,27 @@
 """
-slot_definer.py — build parking slot polygons from lines detected by lsd.py
-                  (or hough_system.py — both produce the same output/lines/<image_id>.json format).
+slot_definer.py
+Run directly: python slot_definer.py <image_id> [lot_id]
 
-Workflow:
-    1. Run lsd.py on your image  →  detects lines, saves output/lines/<image_id>.json
-    2. Run this script           →  loads those lines, defines slot polygons
+Reads the line segments saved by lsd.py and builds parking slot polygons
+from them. Outputs a JSON layout file and an interactive debug viewer.
 
-Usage:
-    python slot_definer.py <image_id> [lot_id]
-
-    image_id   the ID entered during lsd.py (output/lines/<image_id>.json must exist)
-    lot_id     optional override for the output filename (defaults to image_id)
+Pipeline (per ROI):
+  1. Load lines JSON written by lsd.py
+  2. Warp the ROI to a bird's-eye view (perspective correction)
+  3. Classify lines into boundaries (row edges) and dividers (slot separators)
+  4. Merge boundary fragments into full-width row lines
+  5. Pair consecutive boundaries to form rows
+  6. Find dividers per row and build slot polygons in warped space
+  7. Unwarp slots back to original image coordinates
+  8. Clip slots to ROI boundary
 
 Outputs:
-    data/layouts/<lot_id>_auto_slots.json           slot JSON (compatible with main.py)
-    output/debug/slot_definer/<lot_id>/             step-by-step debug images
+  data/layouts/<lot_id>_auto_slots.json   — slot polygons + metadata
+  output/debug/slot_definer/<lot_id>/     — debug image per pipeline stage
+
+Dependencies:
+  - lsd.py must be run first to produce output/lines/<image_id>.json
+  - shapely (pip install shapely) for polygon clipping
 
 Viewer controls:
     N / Space / Enter   next step
