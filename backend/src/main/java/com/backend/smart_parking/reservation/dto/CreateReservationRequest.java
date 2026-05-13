@@ -1,10 +1,10 @@
 package com.backend.smart_parking.reservation.dto;
 
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotNull;
-
 import java.time.Instant;
 import java.util.UUID;
+
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.NotNull;
 
 public class CreateReservationRequest {
 
@@ -21,6 +21,8 @@ public class CreateReservationRequest {
     @Future
     private Instant startTime;
 
+    @NotNull
+    @Future
     private Instant endTime;
 
     public UUID getVehicleId() { return vehicleId; }
