@@ -91,7 +91,7 @@ export default function AuthModal({ open, onClose, onAuth }){
           )}
           {mode === "signup" && (
             <input value={form.dob} onChange={set("dob")} onKeyDown={handleKey}
-              placeholder="Date of birth (YYYY-MM-DD)" style={inputStyle} />
+              type="date" placeholder="Date of birth" style={inputStyle} />
           )}
           <input value={form.password} onChange={set("password")} onKeyDown={handleKey}
             placeholder="Password (min 8 characters)" type="password" style={inputStyle} />

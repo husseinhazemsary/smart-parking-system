@@ -48,6 +48,12 @@ public class ReservationController {
         return reservationService.cancelReservation(id, user.getId());
     }
 
+    @GetMapping("/current")
+    public ResponseEntity<ReservationResponse> getCurrentSession(@AuthenticationPrincipal User user) {
+        ReservationResponse session = reservationService.getCurrentSession(user.getId());
+        return session != null ? ResponseEntity.ok(session) : ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/active")
     public ResponseEntity<ActiveSessionResponse> getActiveSession(@AuthenticationPrincipal User user) {
         ActiveSessionResponse session = reservationService.getActiveSession(user.getId());

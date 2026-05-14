@@ -174,9 +174,18 @@ public class ReservationService {
         return reservation;
     }
 
+    @Transactional(readOnly = true)
+    public ReservationResponse getCurrentSession(UUID userId) {
+        return reservationRepository.findByUserIdAndStatus(userId, ReservationStatus.ACTIVE)
+                .or(() -> reservationRepository.findByUserIdAndStatus(userId, ReservationStatus.PENDING))
+                .map(this::toResponse)
+                .orElse(null);
+    }
+
     private ReservationResponse toResponse(Reservation r) {
-        String lotName = r.getGate().getParkingLot() != null
-                ? r.getGate().getParkingLot().getName() : null;
+        var lot = r.getGate().getParkingLot();
+        String lotName = lot != null ? lot.getName() : null;
+        java.math.BigDecimal hourlyRate = lot != null ? lot.getHourlyRate() : null;
         return new ReservationResponse(
                 r.getId(),
                 r.getUser().getId(),
@@ -187,6 +196,7 @@ public class ReservationService {
                 r.getSpot().getId(),
                 r.getSpot().getSlotLabel(),
                 lotName,
+                hourlyRate,
                 r.getStartTime(),
                 r.getEndTime(),
                 r.getStatus(),

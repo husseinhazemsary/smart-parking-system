@@ -32,15 +32,15 @@ function Login() {
     const email    = e.target.email.value
     const password = e.target.password.value
 
-    fetch('http://localhost:8080/api/auth/login', {
+    fetch('http://localhost:8081/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     })
     .then(r => r.json())
     .then(data => {
-      if (data.token) {
-        localStorage.setItem('token', data.token)
+      if (data.accessToken) {
+        localStorage.setItem('token', data.accessToken)
         window.location.href = '/'
       } else {
         alert('Invalid credentials')

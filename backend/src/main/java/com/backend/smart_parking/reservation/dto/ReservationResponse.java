@@ -2,6 +2,7 @@ package com.backend.smart_parking.reservation.dto;
 
 import com.backend.smart_parking.reservation.ReservationStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ public class ReservationResponse {
     private UUID spotId;
     private String spotCode;
     private String parkingLotName;
+    private BigDecimal hourlyRate;
     private Instant startTime;
     private Instant endTime;
     private ReservationStatus status;
@@ -25,7 +27,8 @@ public class ReservationResponse {
 
     public ReservationResponse(UUID id, UUID userId, UUID vehicleId, String plateNumber,
                                UUID gateId, String gateName, UUID spotId, String spotCode,
-                               String parkingLotName, Instant startTime, Instant endTime,
+                               String parkingLotName, BigDecimal hourlyRate,
+                               Instant startTime, Instant endTime,
                                ReservationStatus status, Instant enteredAt, Instant exitedAt,
                                Instant createdAt) {
         this.id = id;
@@ -37,6 +40,7 @@ public class ReservationResponse {
         this.spotId = spotId;
         this.spotCode = spotCode;
         this.parkingLotName = parkingLotName;
+        this.hourlyRate = hourlyRate;
         this.startTime = startTime;
         this.endTime = endTime;
         this.status = status;
@@ -54,6 +58,7 @@ public class ReservationResponse {
     public UUID getSpotId() { return spotId; }
     public String getSpotCode() { return spotCode; }
     public String getParkingLotName() { return parkingLotName; }
+    public BigDecimal getHourlyRate() { return hourlyRate; }
     public Instant getStartTime() { return startTime; }
     public Instant getEndTime() { return endTime; }
     public ReservationStatus getStatus() { return status; }

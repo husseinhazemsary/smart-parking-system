@@ -1,6 +1,7 @@
 package com.backend.smart_parking.parking;
 
 import com.backend.smart_parking.parking.dto.*;
+import com.backend.smart_parking.parking.GateRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,14 +17,17 @@ public class ParkingLotService {
 
     private final ParkingLotRepository parkingLotRepository;
     private final ParkingSlotRepository parkingSlotRepository;
+    private final GateRepository gateRepository;
 
     @Value("${app.share.base-url:https://ezrakna.app/lots}")
     private String shareBaseUrl;
 
     public ParkingLotService(ParkingLotRepository parkingLotRepository,
-                              ParkingSlotRepository parkingSlotRepository) {
+                              ParkingSlotRepository parkingSlotRepository,
+                              GateRepository gateRepository) {
         this.parkingLotRepository = parkingLotRepository;
         this.parkingSlotRepository = parkingSlotRepository;
+        this.gateRepository = gateRepository;
     }
 
     public List<ParkingLotSummaryResponse> getAllLots(Double lat, Double lng) {
@@ -64,6 +68,13 @@ public class ParkingLotService {
         int total = parkingSlotRepository.countByParkingLotId(id);
         int available = parkingSlotRepository.countByParkingLotIdAndStatus(id, SlotStatus.AVAILABLE);
         return new AvailabilityResponse(available, total);
+    }
+
+    public List<GateResponse> getGates(UUID id) {
+        findLotOrThrow(id);
+        return gateRepository.findAllByParkingLotIdAndIsActiveTrue(id).stream()
+                .map(g -> new GateResponse(g.getId(), g.getName()))
+                .toList();
     }
 
     public ShareResponse getShareLink(UUID id) {

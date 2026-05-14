@@ -69,6 +69,15 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- 8b. Drop NOT NULL on LPR-derived vehicle columns — manual entry won't have OCR data.
+--     Run this if you hit "null value violates not-null constraint" on plate_raw / num_main / num_side / letters_ar / plate_norm.
+ALTER TABLE vehicle
+    ALTER COLUMN plate_raw  DROP NOT NULL,
+    ALTER COLUMN num_main   DROP NOT NULL,
+    ALTER COLUMN num_side   DROP NOT NULL,
+    ALTER COLUMN letters_ar DROP NOT NULL,
+    ALTER COLUMN plate_norm DROP NOT NULL;
+
 -- 8. Ensure reservation_status enum has all required values
 DO $$
 BEGIN
