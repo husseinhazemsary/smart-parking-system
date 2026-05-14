@@ -144,6 +144,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get orContinueWith => 'أو تابع باستخدام';
 
   @override
+  String get continueWithGoogle => 'المتابعة عبر Google';
+
+  @override
+  String get continueWithApple => 'المتابعة عبر Apple';
+
+  @override
   String get noAccount => 'ليس لديك حساب؟';
 
   @override
@@ -580,4 +586,276 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get whatsappSubtitle => 'الدردشة مع الدعم';
+
+  @override
+  String get accessibleParking => 'ذوو الاحتياجات الخاصة';
+
+  @override
+  String get accessibleParkingHint => 'طلب مواقف مخصصة لذوي الاحتياجات الخاصة';
+
+  @override
+  String get accessibleParkingDialogTitle =>
+      'تفعيل وقوف ذوي الاحتياجات الخاصة؟';
+
+  @override
+  String get accessibleParkingDialogBody =>
+      'بتفعيل هذا الخيار، تؤكد أنك تحمل تصريحاً سارياً لذوي الإعاقة أو الاحتياجات الخاصة. قد يؤدي إساءة استخدام هذه الميزة إلى تعليق حسابك.\n\nسيتم تسجيل هذا التفضيل في حسابك.';
+
+  @override
+  String get accessibleParkingConfirm => 'أؤكد';
+
+  @override
+  String get contactUsSubheading => 'تواصل معنا عبر أي من هذه القنوات:';
+
+  @override
+  String get helpCenterSubheading => 'تصفح مقالات المساعدة والأسئلة الشائعة';
+
+  @override
+  String get visitHelpCenter => 'زيارة مركز المساعدة';
+
+  @override
+  String get liveChat => 'الدردشة المباشرة';
+
+  @override
+  String get liveChatSubtitle => 'تحدث مع أحد وكلاء الدعم';
+
+  @override
+  String get enjoyingEzRakna => 'هل تستمتع بتطبيق EzRakna؟';
+
+  @override
+  String get feedbackHelpsUs => 'ملاحظاتك تساعدنا على التحسين.';
+
+  @override
+  String get rateOnGooglePlay => 'قيّم على Google Play';
+
+  @override
+  String get rateOnPlayStoreSubtitle => 'اترك تقييماً في متجر Play';
+
+  @override
+  String get sendFeedback => 'إرسال ملاحظات';
+
+  @override
+  String get sendFeedbackSubtitle => 'شاركنا أفكارك';
+
+  @override
+  String get privacyPolicySheetSubtitle => 'آخر تحديث: يناير 2025';
+
+  @override
+  String get readFullPrivacyPolicy => 'قراءة سياسة الخصوصية كاملة';
+
+  @override
+  String get privacyInquiries => 'استفسارات الخصوصية';
+
+  @override
+  String get termsSheetSubtitle => 'آخر تحديث: يناير 2025';
+
+  @override
+  String get readFullTerms => 'قراءة الشروط كاملة';
+
+  @override
+  String get legalInquiries => 'الاستفسارات القانونية';
+
+  @override
+  String get deleteVehicle => 'حذف السيارة';
+
+  @override
+  String removeVehicleConfirm(String name) {
+    return 'هل أنت متأكد من إزالة $name؟';
+  }
+
+  @override
+  String get failedToDeleteVehicle => 'فشل حذف السيارة';
+
+  @override
+  String get myVehiclesTitle => 'سياراتي';
+
+  @override
+  String get vehicleDefaultHint =>
+      'ستُستخدم هذه السيارة تلقائياً للدفع التلقائي والتعرف على الدخول.';
+
+  @override
+  String get takeAPhoto => 'التقاط صورة';
+
+  @override
+  String get chooseFromGallery => 'الاختيار من المعرض';
+
+  @override
+  String get couldNotReadPlate => 'تعذّر قراءة اللوحة. يرجى الإدخال يدوياً.';
+
+  @override
+  String get plateRequired => 'رقم لوحة السيارة مطلوب.';
+
+  @override
+  String get failedToSaveVehicle => 'فشل حفظ السيارة';
+
+  @override
+  String get editVehicle => 'تعديل السيارة';
+
+  @override
+  String get makeHint => 'مثال: تويوتا';
+
+  @override
+  String get electricVehicle => 'سيارة كهربائية';
+
+  @override
+  String get evAutoDetected => 'سيارة كهربائية — تم الكشف تلقائياً';
+
+  @override
+  String get evNotDetected => 'لم يتم الكشف عنها كسيارة كهربائية';
+
+  @override
+  String get updateVehicle => 'تحديث السيارة';
+
+  @override
+  String get vehicleTypeMotorcycle => 'دراجة نارية';
+
+  @override
+  String get passwordChangedSuccess => 'تم تغيير كلمة المرور بنجاح';
+
+  @override
+  String get failedToChangePassword => 'فشل تغيير كلمة المرور';
+
+  @override
+  String get currentPassword => 'كلمة المرور الحالية';
+
+  @override
+  String get currentPasswordHint => 'أدخل كلمة مرورك الحالية';
+
+  @override
+  String get newPassword => 'كلمة المرور الجديدة';
+
+  @override
+  String get newPasswordHint => 'أدخل كلمة مرورك الجديدة';
+
+  @override
+  String get confirmNewPassword => 'تأكيد كلمة المرور الجديدة';
+
+  @override
+  String get confirmNewPasswordHint => 'أعد إدخال كلمة مرورك الجديدة';
+
+  @override
+  String get selectDateOfBirth => 'اختر تاريخ الميلاد';
+
+  @override
+  String get dobRequired => 'تاريخ الميلاد مطلوب';
+
+  @override
+  String get profileUpdatedSuccess => 'تم تحديث الملف الشخصي بنجاح';
+
+  @override
+  String get failedToUpdateProfile => 'فشل تحديث الملف الشخصي';
+
+  @override
+  String get reset => 'إعادة تعيين';
+
+  @override
+  String get firstAndLastNameHint => 'الاسم الأول والأخير';
+
+  @override
+  String get saveChanges => 'حفظ التغييرات';
+
+  @override
+  String get allTransactions => 'جميع المعاملات';
+
+  @override
+  String get elapsedTime => 'الوقت المنقضي';
+
+  @override
+  String get startedAt => 'بدأت في';
+
+  @override
+  String get slot => 'المكان';
+
+  @override
+  String get levelAndGate => 'المستوى والبوابة';
+
+  @override
+  String get vehicleLabel => 'السيارة';
+
+  @override
+  String get endSession => 'إنهاء الجلسة';
+
+  @override
+  String get parkingReceipt => 'إيصال الوقوف';
+
+  @override
+  String get receiptLocation => 'الموقع';
+
+  @override
+  String get receiptAddress => 'العنوان';
+
+  @override
+  String get receiptDateTime => 'التاريخ والوقت';
+
+  @override
+  String get receiptDuration => 'المدة';
+
+  @override
+  String get receiptSlot => 'المكان';
+
+  @override
+  String get receiptTotalPaid => 'الإجمالي المدفوع';
+
+  @override
+  String get downloadPdf => 'تحميل PDF';
+
+  @override
+  String get filterAll => 'الكل';
+
+  @override
+  String get filterThisMonth => 'هذا الشهر';
+
+  @override
+  String get filterLast3Months => 'آخر 3 أشهر';
+
+  @override
+  String get filterThisYear => 'هذه السنة';
+
+  @override
+  String get parkingHistory => 'سجل الوقوف';
+
+  @override
+  String get statusCompleted => 'مكتمل';
+
+  @override
+  String get statusCancelled => 'ملغي';
+
+  @override
+  String get viewReceipt => 'عرض الإيصال';
+
+  @override
+  String get noReceipt => 'لا يوجد إيصال';
+
+  @override
+  String get savedPlaces => 'الأماكن المحفوظة';
+
+  @override
+  String get savedPlacesSubtitle => 'لا توجد أماكن محفوظة بعد';
+
+  @override
+  String get monthlySnapshot => 'ملخص الشهر';
+
+  @override
+  String get recentSessions => 'الجلسات الأخيرة';
+
+  @override
+  String get searchDestination => 'ابحث عن وجهتك...';
+
+  @override
+  String get activeParkingSession => 'جلسة الوقوف النشطة';
+
+  @override
+  String get nearbyParking => 'مواقف قريبة';
+
+  @override
+  String get viewAll => 'عرض الكل';
+
+  @override
+  String get available => 'متاح';
+
+  @override
+  String get limitedSpots => 'أماكن محدودة';
+
+  @override
+  String get free => 'مجاني';
 }

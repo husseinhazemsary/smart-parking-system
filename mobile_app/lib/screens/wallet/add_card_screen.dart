@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 class AddCardScreen extends StatefulWidget {
   const AddCardScreen({super.key});
@@ -38,6 +39,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary =
     isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor:
@@ -57,7 +59,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     child: Icon(Icons.arrow_back, color: textPrimary),
                   ),
                   Text(
-                    'Add new card',
+                    l10n.addNewCardTitle,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 18,
@@ -66,8 +68,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      'Cancel',
+                    child: Text(
+                      l10n.cancel,
                       style: TextStyle(
                         color: AppColors.accentGreen,
                         fontSize: 15,
@@ -87,7 +89,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   children: [
                     const SizedBox(height: 8),
 
-                    _FieldLabel('Card Number', textColor: textPrimary),
+                    _FieldLabel(l10n.cardNumber, textColor: textPrimary),
                     const SizedBox(height: 8),
                     _GradientFieldBox(
                       child: TextFormField(
@@ -123,7 +125,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _FieldLabel('Expiry Date',
+                              _FieldLabel(l10n.expiryDate,
                                   textColor: textPrimary),
                               const SizedBox(height: 8),
                               _GradientFieldBox(
@@ -154,7 +156,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _FieldLabel('CVC / CVV',
+                              _FieldLabel(l10n.cvcCvv,
                                   textColor: textPrimary),
                               const SizedBox(height: 8),
                               _GradientFieldBox(
@@ -187,7 +189,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     const SizedBox(height: 20),
 
-                    _FieldLabel('Name on card', textColor: textPrimary),
+                    _FieldLabel(l10n.nameOnCard, textColor: textPrimary),
                     const SizedBox(height: 8),
                     _GradientFieldBox(
                       child: TextFormField(
@@ -216,7 +218,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     const SizedBox(height: 16),
 
                     Text(
-                      'AUTO-PAY SETTINGS',
+                      l10n.autoPaySettingsSection,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -231,7 +233,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                       child: _CheckboxRow(
                         isDark: isDark,
                         value: _setAsDefault,
-                        label: 'Set as default Auto-Pay card',
+                        label: l10n.setAsDefaultCard,
                         onChanged: (v) =>
                             setState(() => _setAsDefault = v ?? false),
                         textColor: textPrimary,
@@ -244,7 +246,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                       child: _CheckboxRow(
                         isDark: isDark,
                         value: _useAsBackup,
-                        label: 'Use as backup payment method',
+                        label: l10n.useAsBackup,
                         onChanged: (v) =>
                             setState(() => _useAsBackup = v ?? false),
                         textColor: textPrimary,
@@ -261,7 +263,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                               size: 14, color: textSecondary),
                           const SizedBox(width: 6),
                           Text(
-                            'Your info is encrypted and stored securely',
+                            l10n.encryptedNote,
                             style: TextStyle(
                                 color: textSecondary, fontSize: 12),
                           ),
@@ -273,7 +275,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Save Card'),
+                      child: Text(l10n.saveCard),
                     ),
 
                     const SizedBox(height: 24),

@@ -130,15 +130,18 @@ class _SignupScreenState extends State<SignupScreen> {
         child: Column(
           children: [
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _LangToggle(localeProvider: localeProvider),
-                  const SizedBox(width: 10),
-                  _ThemeToggle(themeProvider: themeProvider),
-                ],
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _LangToggle(localeProvider: localeProvider),
+                    const SizedBox(width: 10),
+                    _ThemeToggle(themeProvider: themeProvider),
+                  ],
+                ),
               ),
             ),
 
@@ -467,20 +470,61 @@ class _LangToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: localeProvider.toggleLocale,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderDark),
-        ),
-        child: Text(
-          localeProvider.isArabic ? 'EN' : 'AR',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
-        ),
+    final isArabic = localeProvider.isArabic;
+
+    return Container(
+      height: 34,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderDark),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: isArabic ? localeProvider.toggleLocale : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 40,
+              height: 34,
+              decoration: BoxDecoration(
+                color: !isArabic ? AppColors.purple : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'EN',
+                style: TextStyle(
+                  color: !isArabic ? Colors.white : AppColors.textSecondaryDark,
+                  fontWeight: !isArabic ? FontWeight.w700 : FontWeight.w400,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: isArabic ? null : localeProvider.toggleLocale,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 40,
+              height: 34,
+              decoration: BoxDecoration(
+                color: isArabic ? AppColors.purple : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'AR',
+                style: TextStyle(
+                  color: isArabic ? Colors.white : AppColors.textSecondaryDark,
+                  fontWeight: isArabic ? FontWeight.w700 : FontWeight.w400,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

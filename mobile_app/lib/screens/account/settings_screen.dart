@@ -6,6 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../auth/login_screen.dart';
 import '../account/edit_profile_screen.dart';
 import '../account/change_password_screen.dart';
 import '../account/my_vehicles_screen.dart';
@@ -41,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themeProvider = context.watch<ThemeProvider>();
     final localeProvider = context.watch<LocaleProvider>();
     final isDark = themeProvider.isDark;
+    final l10n = AppLocalizations.of(context)!;
     final textPrimary =
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary =
@@ -81,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(width: 14),
                   Text(
-                    'Settings',
+                    l10n.settings,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 20,
@@ -99,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    _SectionTitle('ACCOUNT', textSecondary),
+                    _SectionTitle(l10n.settingsAccount, textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
                       isDark: isDark,
@@ -107,8 +111,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.person_outline,
-                          label: 'Edit Profile',
-                          subtitle: 'Name, email, phone number',
+                          label: l10n.editProfile,
+                          subtitle: l10n.editProfileSubtitle,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                                 builder: (_) => const EditProfileScreen()),
@@ -118,8 +122,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.lock_outline,
-                          label: 'Change Password',
-                          subtitle: 'Update your password',
+                          label: l10n.changePassword,
+                          subtitle: l10n.changePasswordSubtitle,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                                 builder: (_) => const ChangePasswordScreen()),
@@ -129,8 +133,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.payment_outlined,
-                          label: 'Payment Methods',
-                          subtitle: 'Cards and Auto-Pay settings',
+                          label: l10n.paymentMethods,
+                          subtitle: l10n.paymentMethodsSubtitle,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                                 builder: (_) => const PaymentMethodsScreen()),
@@ -140,8 +144,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.directions_car_outlined,
-                          label: 'My Vehicles',
-                          subtitle: 'Manage registered vehicles',
+                          label: l10n.myVehicles,
+                          subtitle: l10n.myVehiclesSubtitle,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                                 builder: (_) => const MyVehiclesScreen()),
@@ -152,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    _SectionTitle('APPEARANCE', textSecondary),
+                    _SectionTitle(l10n.settingsAppearance, textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
                       isDark: isDark,
@@ -160,8 +164,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.nightlight_outlined,
-                          label: 'Dark Mode',
-                          subtitle: 'Switch app theme',
+                          label: l10n.darkMode,
+                          subtitle: l10n.darkModeSubtitle,
                           value: themeProvider.isDark,
                           onChanged: (_) => themeProvider.toggleTheme(),
                         ),
@@ -172,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    _SectionTitle('NOTIFICATIONS', textSecondary),
+                    _SectionTitle(l10n.settingsNotifications, textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
                       isDark: isDark,
@@ -180,8 +184,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.notifications_outlined,
-                          label: 'Push Notifications',
-                          subtitle: 'Receive alerts on your device',
+                          label: l10n.pushNotifications,
+                          subtitle: l10n.pushNotificationsSubtitle,
                           value: _pushNotifications,
                           onChanged: (v) =>
                               setState(() => _pushNotifications = v),
@@ -190,8 +194,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.email_outlined,
-                          label: 'Email Notifications',
-                          subtitle: 'Receipts and account updates',
+                          label: l10n.emailNotifications,
+                          subtitle: l10n.emailNotificationsSubtitle,
                           value: _emailNotifications,
                           onChanged: (v) =>
                               setState(() => _emailNotifications = v),
@@ -200,8 +204,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.timer_outlined,
-                          label: 'Session Reminders',
-                          subtitle: 'Get notified before your session ends',
+                          label: l10n.sessionReminders,
+                          subtitle: l10n.sessionRemindersSubtitle,
                           value: _sessionReminders,
                           onChanged: (v) =>
                               setState(() => _sessionReminders = v),
@@ -210,8 +214,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.local_parking_outlined,
-                          label: 'Parking Expiry Alerts',
-                          subtitle: 'Alert when time is about to run out',
+                          label: l10n.parkingExpiryAlerts,
+                          subtitle: l10n.parkingExpirySubtitle,
                           value: _parkingExpiry,
                           onChanged: (v) =>
                               setState(() => _parkingExpiry = v),
@@ -220,8 +224,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.campaign_outlined,
-                          label: 'Promotions & Offers',
-                          subtitle: 'Deals, discounts and news',
+                          label: l10n.promotionsOffers,
+                          subtitle: l10n.promotionsSubtitle,
                           value: _promoAlerts,
                           onChanged: (v) =>
                               setState(() => _promoAlerts = v),
@@ -231,7 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    _SectionTitle('AUTO-PAY', textSecondary),
+                    _SectionTitle(l10n.settingsAutoPay, textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
                       isDark: isDark,
@@ -239,8 +243,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.bolt_outlined,
-                          label: 'Auto-Pay Enabled',
-                          subtitle: 'Automatically pay when exiting',
+                          label: l10n.autoPayEnabled,
+                          subtitle: l10n.autoPayEnabledSubtitle,
                           value: _autoPayEnabled,
                           onChanged: (v) =>
                               setState(() => _autoPayEnabled = v),
@@ -249,8 +253,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.receipt_outlined,
-                          label: 'Email Receipt',
-                          subtitle: 'Send receipt to your email after payment',
+                          label: l10n.emailReceipt,
+                          subtitle: l10n.emailReceiptSubtitle,
                           value: _receiptByEmail,
                           onChanged: (v) =>
                               setState(() => _receiptByEmail = v),
@@ -259,8 +263,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.credit_card_outlined,
-                          label: 'Spending Limit',
-                          subtitle: 'Set a maximum Auto-Pay amount',
+                          label: l10n.spendingLimit,
+                          subtitle: l10n.spendingLimitSubtitle,
                           onTap: () => _showSpendingLimitSheet(context, isDark),
                         ),
                       ],
@@ -268,7 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    _SectionTitle('PRIVACY & SECURITY', textSecondary),
+                    _SectionTitle(l10n.settingsPrivacySecurity, textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
                       isDark: isDark,
@@ -276,8 +280,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.fingerprint,
-                          label: 'Biometric Login',
-                          subtitle: 'Use fingerprint or Face ID to sign in',
+                          label: l10n.biometricLogin,
+                          subtitle: l10n.biometricLoginSubtitle,
                           value: _biometricLogin,
                           onChanged: (v) =>
                               setState(() => _biometricLogin = v),
@@ -286,8 +290,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.location_on_outlined,
-                          label: 'Background Location',
-                          subtitle: 'Allow location access when app is closed',
+                          label: l10n.backgroundLocation,
+                          subtitle: l10n.backgroundLocationSubtitle,
                           value: _locationAlways,
                           onChanged: (v) =>
                               setState(() => _locationAlways = v),
@@ -296,8 +300,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SwitchRow(
                           isDark: isDark,
                           icon: Icons.analytics_outlined,
-                          label: 'Share Analytics',
-                          subtitle: 'Help improve the app with usage data',
+                          label: l10n.shareAnalytics,
+                          subtitle: l10n.shareAnalyticsSubtitle,
                           value: _shareAnalytics,
                           onChanged: (v) =>
                               setState(() => _shareAnalytics = v),
@@ -306,8 +310,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.history_outlined,
-                          label: 'Clear Search History',
-                          subtitle: 'Remove all saved searches',
+                          label: l10n.clearSearchHistory,
+                          subtitle: l10n.clearSearchHistorySubtitle,
                           onTap: () => _confirmClearHistory(context, isDark),
                         ),
                       ],
@@ -315,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    _SectionTitle('SUPPORT & LEGAL', textSecondary),
+                    _SectionTitle(l10n.settingsSupportLegal, textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
                       isDark: isDark,
@@ -323,8 +327,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.help_outline,
-                          label: 'Help Center',
-                          subtitle: 'FAQs and support articles',
+                          label: l10n.helpCenter,
+                          subtitle: l10n.helpCenterSubtitle,
                           onTap: () =>
                               _launchUrl('https://ezrakna.com/help'),
                         ),
@@ -332,8 +336,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.chat_bubble_outline,
-                          label: 'Contact Support',
-                          subtitle: 'Chat, email or call us',
+                          label: l10n.contactSupport,
+                          subtitle: l10n.contactSupportSubtitle,
                           onTap: () =>
                               _showContactSheet(context, isDark),
                         ),
@@ -341,8 +345,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.star_outline,
-                          label: 'Rate EzRakna',
-                          subtitle: 'Share your feedback on the store',
+                          label: l10n.rateEzRakna,
+                          subtitle: l10n.rateSubtitle,
                           onTap: () => _launchUrl(
                               'https://play.google.com/store/apps/details?id=com.ezrakna.app'),
                         ),
@@ -350,8 +354,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.privacy_tip_outlined,
-                          label: 'Privacy Policy',
-                          subtitle: 'How we handle your data',
+                          label: l10n.privacyPolicy,
+                          subtitle: l10n.privacyPolicySubtitle,
                           onTap: () =>
                               _launchUrl('https://ezrakna.com/privacy'),
                         ),
@@ -359,8 +363,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.description_outlined,
-                          label: 'Terms of Service',
-                          subtitle: 'Our terms and conditions',
+                          label: l10n.termsOfService,
+                          subtitle: l10n.termsSubtitle,
                           onTap: () =>
                               _launchUrl('https://ezrakna.com/terms'),
                         ),
@@ -368,7 +372,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _NavRow(
                           isDark: isDark,
                           icon: Icons.info_outline,
-                          label: 'About EzRakna',
+                          label: l10n.aboutEzRakna,
                           subtitle: 'Version 1.0.0  •  Build 100',
                           onTap: () => _showAboutDialog(context, isDark),
                           showChevron: false,
@@ -378,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    _SectionTitle('DANGER ZONE', textSecondary),
+                    _SectionTitle(l10n.settingsDangerZone, textSecondary),
                     const SizedBox(height: 10),
                     _SettingsCard(
                       isDark: isDark,
@@ -386,14 +390,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _DangerRow(
                           isDark: isDark,
                           icon: Icons.logout,
-                          label: 'Log Out',
+                          label: l10n.logOut,
                           onTap: () => _confirmLogout(context),
                         ),
                         _Divider(isDark: isDark),
                         _DangerRow(
                           isDark: isDark,
                           icon: Icons.delete_forever_outlined,
-                          label: 'Delete Account',
+                          label: l10n.deleteAccount,
                           onTap: () =>
                               _confirmDeleteAccount(context, isDark),
                         ),
@@ -426,6 +430,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Bottom sheet with a numeric input for the max Auto-Pay charge per session.
   // viewInsets.bottom pushes the sheet above the keyboard when it opens.
   void _showSpendingLimitSheet(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
@@ -464,27 +469,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Spending Limit',
+            Text(l10n.spendingLimitTitle,
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: textColor)),
             const SizedBox(height: 4),
-            Text('Set the maximum amount Auto-Pay can charge per session.',
+            Text(l10n.spendingLimitDescription,
                 style: TextStyle(fontSize: 13, color: subColor)),
             const SizedBox(height: 20),
             TextFormField(
               controller: controller,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: 'e.g. 200',
+              decoration: InputDecoration(
+                hintText: l10n.spendingLimitHint,
                 prefixText: 'EGP  ',
               ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Save Limit'),
+              child: Text(l10n.saveLimit),
             ),
           ],
         ),
@@ -494,6 +499,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Bottom sheet listing email, phone and WhatsApp support channels.
   void _showContactSheet(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -525,19 +531,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Contact Support',
+            Text(l10n.contactSupportTitle,
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: textColor)),
             const SizedBox(height: 6),
-            Text('Reach us through any of these channels:',
+            Text(l10n.contactSupportSubheading,
                 style: TextStyle(fontSize: 13, color: subColor)),
             const SizedBox(height: 20),
             _ContactTile(
               isDark: isDark,
               icon: Icons.email_outlined,
-              label: 'Email Support',
+              label: l10n.emailSupport,
               subtitle: 'support@ezrakna.com',
               onTap: () => _launchUrl('mailto:support@ezrakna.com'),
             ),
@@ -545,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _ContactTile(
               isDark: isDark,
               icon: Icons.phone_outlined,
-              label: 'Call Us',
+              label: l10n.callUs,
               subtitle: '+20 100 000 0000',
               onTap: () => _launchUrl('tel:+201000000000'),
             ),
@@ -553,8 +559,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _ContactTile(
               isDark: isDark,
               icon: Icons.chat_outlined,
-              label: 'WhatsApp',
-              subtitle: 'Chat with support',
+              label: l10n.whatsapp,
+              subtitle: l10n.whatsappSubtitle,
               onTap: () => _launchUrl('https://wa.me/201000000000'),
             ),
           ],
@@ -565,6 +571,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Dialog showing app name, version, tagline and copyright.
   void _showAboutDialog(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -601,20 +608,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(fontSize: 13, color: subColor)),
             const SizedBox(height: 12),
             Text(
-              'Smart parking, made simple.\nFind, navigate, and pay for parking effortlessly.',
+              l10n.aboutTagline,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: subColor, height: 1.5),
             ),
             const SizedBox(height: 16),
-            Text('© 2025 EzRakna. All rights reserved.',
+            Text(l10n.copyright,
                 style: TextStyle(fontSize: 11, color: subColor)),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close',
-                style: TextStyle(
+            child: Text(l10n.close,
+                style: const TextStyle(
                     color: AppColors.purple, fontWeight: FontWeight.w600)),
           ),
         ],
@@ -624,6 +631,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Confirmation dialog before wiping all saved search history — irreversible.
   void _confirmClearHistory(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -636,21 +644,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: bgColor,
         shape:
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Clear Search History',
+        title: Text(l10n.clearHistoryConfirmTitle,
             style: TextStyle(
                 fontWeight: FontWeight.w700, color: textColor)),
-        content: Text('This will remove all your saved searches. This cannot be undone.',
+        content: Text(l10n.clearHistoryConfirmMessage,
             style: TextStyle(color: subColor)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
+            child: Text(l10n.cancel,
                 style: TextStyle(color: subColor)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Clear',
-                style: TextStyle(
+            child: Text(l10n.clear,
+                style: const TextStyle(
                     color: Colors.redAccent,
                     fontWeight: FontWeight.w700)),
           ),
@@ -662,6 +670,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Confirmation dialog before logout — clears the nav stack and pushes /login.
   void _confirmLogout(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor =
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
@@ -674,27 +683,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: bgColor,
         shape:
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Log Out',
+        title: Text(l10n.logOutConfirmTitle,
             style: TextStyle(
                 fontWeight: FontWeight.w700, color: textColor)),
-        content: Text('Are you sure you want to log out?',
+        content: Text(l10n.logOutConfirmMessage,
             style: TextStyle(color: subColor)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: subColor)),
+            child: Text(l10n.cancel, style: TextStyle(color: subColor)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/login',
-                    (route) => false,
+              await context.read<AuthProvider>().logout();
+              if (!context.mounted) return;
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
               );
             },
-            child: const Text('Log Out',
-                style: TextStyle(
+            child: Text(l10n.logOut,
+                style: const TextStyle(
                     color: Colors.redAccent,
                     fontWeight: FontWeight.w700)),
           ),
@@ -705,6 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Confirmation dialog for permanent account deletion — all data is lost.
   void _confirmDeleteAccount(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final subColor =
     isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -715,25 +726,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: bgColor,
         shape:
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Account',
-            style: TextStyle(
+        title: Text(l10n.deleteAccountTitle,
+            style: const TextStyle(
                 color: Colors.redAccent, fontWeight: FontWeight.w700)),
         content: Text(
-          'This is permanent and cannot be undone. All your data, vehicles, and payment methods will be removed.',
+          l10n.deleteAccountFullMessage,
           style: TextStyle(color: subColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: subColor)),
+            child: Text(l10n.cancel, style: TextStyle(color: subColor)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
 
             },
-            child: const Text('Delete',
-                style: TextStyle(
+            child: Text(l10n.delete,
+                style: const TextStyle(
                     color: Colors.redAccent,
                     fontWeight: FontWeight.w700)),
           ),
@@ -927,7 +938,7 @@ class _LanguageRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
+    final l10n = AppLocalizations.of(context)!;
     // Watch directly so language row rebuilds on locale change without rebuilding the full screen.
     final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
@@ -946,13 +957,13 @@ class _LanguageRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Language',
+                Text(l10n.language,
                     style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: textPrimary)),
                 const SizedBox(height: 2),
-                Text(isArabic ? 'العربية' : 'English',
+                Text(isArabic ? l10n.languageCurrentAr : l10n.languageCurrent,
                     style:
                     TextStyle(fontSize: 12, color: textSecondary)),
               ],

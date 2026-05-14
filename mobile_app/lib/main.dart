@@ -8,6 +8,7 @@ import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/user_prefs_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/vehicle_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash/splash_screen.dart';
 
@@ -28,6 +29,11 @@ void main() async {
         ChangeNotifierProxyProvider<AuthProvider, UserProvider>(
           create: (_) => UserProvider(),
           update: (_, auth, user) => user!..onAuthChanged(auth.isAuthenticated),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, VehicleProvider>(
+          create: (_) => VehicleProvider(),
+          update: (_, auth, vehicles) =>
+              vehicles!..onAuthChanged(auth.isAuthenticated),
         ),
       ],
       child: const EzRaknaApp(),

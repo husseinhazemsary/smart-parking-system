@@ -144,6 +144,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orContinueWith => 'or continue with';
 
   @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get continueWithApple => 'Continue with Apple';
+
+  @override
   String get noAccount => 'Don\'t have an account?';
 
   @override
@@ -580,4 +586,276 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsappSubtitle => 'Chat with support';
+
+  @override
+  String get accessibleParking => 'Accessible Parking';
+
+  @override
+  String get accessibleParkingHint => 'Require accessible parking spots';
+
+  @override
+  String get accessibleParkingDialogTitle => 'Enable Accessible Parking?';
+
+  @override
+  String get accessibleParkingDialogBody =>
+      'By enabling this, you confirm that you hold a valid disability or accessibility permit. Misuse of this feature may result in account suspension.\n\nThis preference will be recorded on your account.';
+
+  @override
+  String get accessibleParkingConfirm => 'I Confirm';
+
+  @override
+  String get contactUsSubheading => 'Reach us through any of these channels:';
+
+  @override
+  String get helpCenterSubheading => 'Browse help articles and FAQs';
+
+  @override
+  String get visitHelpCenter => 'Visit Help Center';
+
+  @override
+  String get liveChat => 'Live Chat';
+
+  @override
+  String get liveChatSubtitle => 'Chat with a support agent';
+
+  @override
+  String get enjoyingEzRakna => 'Enjoying EzRakna?';
+
+  @override
+  String get feedbackHelpsUs => 'Your feedback helps us improve.';
+
+  @override
+  String get rateOnGooglePlay => 'Rate on Google Play';
+
+  @override
+  String get rateOnPlayStoreSubtitle => 'Leave a review on the Play Store';
+
+  @override
+  String get sendFeedback => 'Send Feedback';
+
+  @override
+  String get sendFeedbackSubtitle => 'Share your thoughts with us';
+
+  @override
+  String get privacyPolicySheetSubtitle => 'Last updated: January 2025';
+
+  @override
+  String get readFullPrivacyPolicy => 'Read Full Privacy Policy';
+
+  @override
+  String get privacyInquiries => 'Privacy Inquiries';
+
+  @override
+  String get termsSheetSubtitle => 'Last updated: January 2025';
+
+  @override
+  String get readFullTerms => 'Read Full Terms';
+
+  @override
+  String get legalInquiries => 'Legal Inquiries';
+
+  @override
+  String get deleteVehicle => 'Delete Vehicle';
+
+  @override
+  String removeVehicleConfirm(String name) {
+    return 'Are you sure you want to remove $name?';
+  }
+
+  @override
+  String get failedToDeleteVehicle => 'Failed to delete vehicle';
+
+  @override
+  String get myVehiclesTitle => 'My Vehicles';
+
+  @override
+  String get vehicleDefaultHint =>
+      'This vehicle will be used for Auto-Pay and entry recognition by default.';
+
+  @override
+  String get takeAPhoto => 'Take a Photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from Gallery';
+
+  @override
+  String get couldNotReadPlate =>
+      'Could not read plate. Please enter manually.';
+
+  @override
+  String get plateRequired => 'License plate number is required.';
+
+  @override
+  String get failedToSaveVehicle => 'Failed to save vehicle';
+
+  @override
+  String get editVehicle => 'Edit Vehicle';
+
+  @override
+  String get makeHint => 'e.g. Toyota';
+
+  @override
+  String get electricVehicle => 'Electric Vehicle';
+
+  @override
+  String get evAutoDetected => 'EV — auto-detected';
+
+  @override
+  String get evNotDetected => 'Not detected as EV';
+
+  @override
+  String get updateVehicle => 'Update Vehicle';
+
+  @override
+  String get vehicleTypeMotorcycle => 'Motorcycle';
+
+  @override
+  String get passwordChangedSuccess => 'Password changed successfully';
+
+  @override
+  String get failedToChangePassword => 'Failed to change password';
+
+  @override
+  String get currentPassword => 'Current Password';
+
+  @override
+  String get currentPasswordHint => 'Enter your current password';
+
+  @override
+  String get newPassword => 'New Password';
+
+  @override
+  String get newPasswordHint => 'Enter your new password';
+
+  @override
+  String get confirmNewPassword => 'Confirm New Password';
+
+  @override
+  String get confirmNewPasswordHint => 'Re-enter your new password';
+
+  @override
+  String get selectDateOfBirth => 'Select date of birth';
+
+  @override
+  String get dobRequired => 'Date of birth is required';
+
+  @override
+  String get profileUpdatedSuccess => 'Profile updated successfully';
+
+  @override
+  String get failedToUpdateProfile => 'Failed to update profile';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get firstAndLastNameHint => 'First and last name';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get allTransactions => 'All Transactions';
+
+  @override
+  String get elapsedTime => 'Elapsed Time';
+
+  @override
+  String get startedAt => 'Started At';
+
+  @override
+  String get slot => 'Slot';
+
+  @override
+  String get levelAndGate => 'Level & Gate';
+
+  @override
+  String get vehicleLabel => 'Vehicle';
+
+  @override
+  String get endSession => 'End Session';
+
+  @override
+  String get parkingReceipt => 'Parking Receipt';
+
+  @override
+  String get receiptLocation => 'Location';
+
+  @override
+  String get receiptAddress => 'Address';
+
+  @override
+  String get receiptDateTime => 'Date & Time';
+
+  @override
+  String get receiptDuration => 'Duration';
+
+  @override
+  String get receiptSlot => 'Slot';
+
+  @override
+  String get receiptTotalPaid => 'Total Paid';
+
+  @override
+  String get downloadPdf => 'Download PDF';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterThisMonth => 'This Month';
+
+  @override
+  String get filterLast3Months => 'Last 3 Months';
+
+  @override
+  String get filterThisYear => 'This Year';
+
+  @override
+  String get parkingHistory => 'Parking History';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get viewReceipt => 'View Receipt';
+
+  @override
+  String get noReceipt => 'No receipt available';
+
+  @override
+  String get savedPlaces => 'Saved Places';
+
+  @override
+  String get savedPlacesSubtitle => 'No saved places yet';
+
+  @override
+  String get monthlySnapshot => 'Monthly Snapshot';
+
+  @override
+  String get recentSessions => 'Recent Sessions';
+
+  @override
+  String get searchDestination => 'Search destination...';
+
+  @override
+  String get activeParkingSession => 'Active Parking Session';
+
+  @override
+  String get nearbyParking => 'Nearby Parking';
+
+  @override
+  String get viewAll => 'View All';
+
+  @override
+  String get available => 'Available';
+
+  @override
+  String get limitedSpots => 'Limited Spots';
+
+  @override
+  String get free => 'Free';
 }

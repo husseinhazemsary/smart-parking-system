@@ -83,15 +83,18 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           children: [
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _LangToggle(),
-                  const SizedBox(width: 10),
-                  _ThemeToggle(themeProvider: themeProvider),
-                ],
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _LangToggle(),
+                    const SizedBox(width: 10),
+                    _ThemeToggle(themeProvider: themeProvider),
+                  ],
+                ),
               ),
             ),
 
@@ -258,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       _SocialButton(
                         icon: _GoogleIcon(),
-                        label: 'Continue with Google',
+                        label: l10n.continueWithGoogle,
                         onTap: () {},
                         isDark: isDark,
                       ),
@@ -267,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       _SocialButton(
                         icon: const Icon(Icons.apple, color: Colors.white, size: 22),
-                        label: 'Continue with Apple',
+                        label: l10n.continueWithApple,
                         onTap: () {},
                         isDark: isDark,
                       ),

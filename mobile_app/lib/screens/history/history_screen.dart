@@ -2,6 +2,7 @@
 // Supports filter chips: All, This Month, Last 3 Months, This Year.
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 // Data model for a single parking session entry.
 class _Session {
@@ -45,8 +46,6 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   // Active filter index — 0=All, 1=This Month, 2=Last 3 Months, 3=This Year.
   int _filterIndex = 0;
-
-  final List<String> _filters = ['All', 'This Month', 'Last 3 Months', 'This Year'];
 
   // Sample data — replace with real API-fetched sessions.
   final List<_MonthGroup> _allGroups = const [
@@ -136,7 +135,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   ];
 
   // Opens the receipt bottom sheet for a completed session.
-  void _showReceiptSheet(BuildContext context, bool isDark, _Session session) {
+  void _showReceiptSheet(BuildContext context, bool isDark, _Session session, AppLocalizations l10n) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -187,7 +186,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Parking Receipt',
+                      Text(l10n.parkingReceipt,
                           style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -202,22 +201,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               const SizedBox(height: 24),
 
-              _ReceiptRow(label: 'Location', value: session.location, textColor: textColor, subColor: subColor),
+              _ReceiptRow(label: l10n.receiptLocation, value: session.location, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _ReceiptRow(label: 'Address', value: session.address, textColor: textColor, subColor: subColor),
+              _ReceiptRow(label: l10n.receiptAddress, value: session.address, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _ReceiptRow(label: 'Date & Time', value: session.date, textColor: textColor, subColor: subColor),
+              _ReceiptRow(label: l10n.receiptDateTime, value: session.date, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _ReceiptRow(label: 'Duration', value: session.duration, textColor: textColor, subColor: subColor),
+              _ReceiptRow(label: l10n.receiptDuration, value: session.duration, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _ReceiptRow(label: 'Slot', value: session.slot, textColor: textColor, subColor: subColor),
+              _ReceiptRow(label: l10n.receiptSlot, value: session.slot, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
 
               // Total — highlighted in green
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total Paid',
+                  Text(l10n.receiptTotalPaid,
                       style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -242,14 +241,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     color: AppColors.purple,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.download_outlined, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
+                      const Icon(Icons.download_outlined, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
                       Text(
-                        'Download PDF',
-                        style: TextStyle(
+                        l10n.downloadPdf,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 15),
@@ -270,6 +269,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final l10n = AppLocalizations.of(context)!;
+    final filters = [l10n.filterAll, l10n.filterThisMonth, l10n.filterLast3Months, l10n.filterThisYear];
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -284,7 +285,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Parking History',
+                      l10n.parkingHistory,
                       style: TextStyle(
                         color: textPrimary,
                         fontSize: 22,
@@ -305,7 +306,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _filters.length,
+                itemCount: filters.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
                   final active = _filterIndex == i;
@@ -325,7 +326,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        _filters[i],
+                        filters[i],
                         style: TextStyle(
                           color: active ? Colors.white : textSecondary,
                           fontSize: 13,
@@ -357,7 +358,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: _SessionCard(
                           session: s,
                           isDark: isDark,
-                          onViewReceipt: () => _showReceiptSheet(context, isDark, s),
+                          onViewReceipt: () => _showReceiptSheet(context, isDark, s, l10n),
                         ),
                       )),
                       const SizedBox(height: 4),
@@ -413,6 +414,7 @@ class _SessionCard extends StatelessWidget {
     final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final l10n = AppLocalizations.of(context)!;
     final isCompleted = session.status == 'completed';
 
     const radius = 16.0;
@@ -546,7 +548,7 @@ class _SessionCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          isCompleted ? 'Completed' : 'Cancelled',
+                          isCompleted ? l10n.statusCompleted : l10n.statusCancelled,
                           style: TextStyle(
                             color: isCompleted
                                 ? const Color(0xFF22C55E)
@@ -566,8 +568,8 @@ class _SessionCard extends StatelessWidget {
                       child: Row(
                         children: [
                           Text(
-                            'View Receipt',
-                            style: TextStyle(
+                            l10n.viewReceipt,
+                            style: const TextStyle(
                                 color: AppColors.accentGreen,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600),
@@ -579,7 +581,7 @@ class _SessionCard extends StatelessWidget {
                       ),
                     )
                   else
-                    Text('No Receipt',
+                    Text(l10n.noReceipt,
                         style: TextStyle(color: textSecondary, fontSize: 13)),
                 ],
               ),

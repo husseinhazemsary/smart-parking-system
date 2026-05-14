@@ -23,6 +23,7 @@ dependencies:
   flutter_glass_morphism: ^1.0.0
   url_launcher: ^6.2.0
   step_circle_progressbar: ^0.0.3
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

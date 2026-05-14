@@ -8,6 +8,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../parking/select_location_screen.dart';
 import '../parking/parking_details_screen.dart';
 
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Opens the active session detail bottom sheet.
-  void _showActiveSessionSheet(BuildContext context, bool isDark) {
+  void _showActiveSessionSheet(BuildContext context, bool isDark, AppLocalizations l10n) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Elapsed Time',
+                        Text(l10n.elapsedTime,
                             style: TextStyle(fontSize: 11, color: subColor)),
                         const SizedBox(height: 2),
                         StatefulBuilder(
@@ -137,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('Started at', style: TextStyle(fontSize: 11, color: subColor)),
+                        Text(l10n.startedAt, style: TextStyle(fontSize: 11, color: subColor)),
                         const SizedBox(height: 2),
                         Text('09:30 PM',
                             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor)),
@@ -150,16 +151,16 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
 
               // Detail rows
-              _SheetDetailRow(label: 'Slot', value: 'A2', icon: Icons.local_parking, textColor: textColor, subColor: subColor),
+              _SheetDetailRow(label: l10n.slot, value: 'A2', icon: Icons.local_parking, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _SheetDetailRow(label: 'Level & Gate', value: 'Level C  •  Gate A', icon: Icons.layers_outlined, textColor: textColor, subColor: subColor),
+              _SheetDetailRow(label: l10n.levelAndGate, value: 'Level C  •  Gate A', icon: Icons.layers_outlined, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _SheetDetailRow(label: 'Vehicle', value: 'Toyota Corolla  •  BG 4567', icon: Icons.directions_car_outlined, textColor: textColor, subColor: subColor),
+              _SheetDetailRow(label: l10n.vehicleLabel, value: 'Toyota Corolla  •  BG 4567', icon: Icons.directions_car_outlined, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Est. Cost', style: TextStyle(fontSize: 13, color: subColor)),
+                  Text(l10n.estCost, style: TextStyle(fontSize: 13, color: subColor)),
                   Text('EGP 50.00',
                       style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF22C55E))),
@@ -179,13 +180,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 20),
-                      SizedBox(width: 8),
-                      Text('End Session',
-                          style: TextStyle(
+                      const Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 20),
+                      const SizedBox(width: 8),
+                      Text(l10n.endSession,
+                          style: const TextStyle(
                               color: Colors.redAccent,
                               fontWeight: FontWeight.w600,
                               fontSize: 15)),
@@ -201,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Opens the saved / favourite locations bottom sheet.
-  void _showSavedSheet(BuildContext context, bool isDark) {
+  void _showSavedSheet(BuildContext context, bool isDark, AppLocalizations l10n) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -236,10 +237,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Saved Places',
+              Text(l10n.savedPlaces,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 4),
-              Text('Your favourite parking locations',
+              Text(l10n.savedPlacesSubtitle,
                   style: TextStyle(fontSize: 13, color: subColor)),
               const SizedBox(height: 20),
               ...saved.map((s) => Column(
@@ -297,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Opens the notifications bottom sheet.
-  void _showNotificationsSheet(BuildContext context, bool isDark) {
+  void _showNotificationsSheet(BuildContext context, bool isDark, AppLocalizations l10n) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -335,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Notifications',
+                  Text(l10n.notifications,
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -392,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Opens the monthly snapshot detail bottom sheet.
-  void _showMonthlySnapshotSheet(BuildContext context, bool isDark) {
+  void _showMonthlySnapshotSheet(BuildContext context, bool isDark, AppLocalizations l10n) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -445,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Monthly Snapshot',
+                      Text(l10n.monthlySnapshot,
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
                       const SizedBox(height: 2),
                       Text('December 2025',
@@ -470,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 20),
 
-              Text('Recent Sessions',
+              Text(l10n.recentSessions,
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
               const SizedBox(height: 12),
 
@@ -590,6 +591,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -634,12 +636,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   // Favourite and notification action buttons.
                   GestureDetector(
-                    onTap: () => _showSavedSheet(context, isDark),
+                    onTap: () => _showSavedSheet(context, isDark, l10n),
                     child: _IconBtn(icon: Icons.favorite_border, isDark: isDark),
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => _showNotificationsSheet(context, isDark),
+                    onTap: () => _showNotificationsSheet(context, isDark, l10n),
                     child: _IconBtn(icon: Icons.notifications_outlined, isDark: isDark),
                   ),
                 ],
@@ -658,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 style: TextStyle(color: textPrimary, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'Search destination...',
+                  hintText: l10n.searchDestination,
                   hintStyle: TextStyle(color: textSecondary, fontSize: 14),
                   prefixIcon: Icon(Icons.search, color: textSecondary, size: 20),
                   suffixIcon: Icon(Icons.tune, color: textSecondary, size: 20),
@@ -683,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Active Parking Session',
+                    l10n.activeParkingSession,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 16,
@@ -728,7 +730,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // ── Active Parking Session card ──────────────────────────────
               GestureDetector(
-                onTap: () => _showActiveSessionSheet(context, isDark),
+                onTap: () => _showActiveSessionSheet(context, isDark, l10n),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -784,12 +786,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 8),
                           // "View Details" text + small frosted arrow circle.
                           GestureDetector(
-                            onTap: () => _showActiveSessionSheet(context, isDark),
+                            onTap: () => _showActiveSessionSheet(context, isDark, l10n),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text(
-                                  'View Details',
+                                Text(
+                                  l10n.viewDetails,
                                   style: TextStyle(
                                     color: Colors.white70,
                                     fontSize: 12,
@@ -901,7 +903,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Nearby Parking',
+                  Text(l10n.nearbyParking,
                       style: TextStyle(
                           color: textPrimary,
                           fontSize: 18,
@@ -911,7 +913,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SelectLocationScreen()),
                     ),
-                    child: Text('View all',
+                    child: Text(l10n.viewAll,
                         style: TextStyle(
                             color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                             fontSize: 13,
@@ -949,12 +951,12 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Monthly Snapshot',
+                  Text(l10n.monthlySnapshot,
                       style: TextStyle(
                           color: textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w700)),
-                  Text('View Details',
+                  Text(l10n.viewDetails,
                       style: TextStyle(
                           color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                           fontSize: 13,
@@ -966,7 +968,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Three-stat snapshot card — entire card is tappable.
               GestureDetector(
-                onTap: () => _showMonthlySnapshotSheet(context, isDark),
+                onTap: () => _showMonthlySnapshotSheet(context, isDark, l10n),
                 child: CustomPaint(
                   painter: _GradientBorderPainter(
                     gradient: isDark
@@ -1219,28 +1221,34 @@ class _NearbyCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              isAvailable ? 'Available' : 'Limited Spots',
-                              style: TextStyle(
-                                color: isAvailable
-                                    ? const Color(0xFF22C55E)
-                                    : Colors.orangeAccent,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            Builder(builder: (ctx) {
+                              final l = AppLocalizations.of(ctx)!;
+                              return Text(
+                                isAvailable ? l.available : l.limitedSpots,
+                                style: TextStyle(
+                                  color: isAvailable
+                                      ? const Color(0xFF22C55E)
+                                      : Colors.orangeAccent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            }),
                           ],
                         ),
                         // Rate label.
-                        Text(
-                          location.ratePerHour == 0
-                              ? 'Free'
-                              : 'EGP ${location.ratePerHour} /hr',
-                          style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500),
-                        ),
+                        Builder(builder: (ctx) {
+                          final l = AppLocalizations.of(ctx)!;
+                          return Text(
+                            location.ratePerHour == 0
+                                ? l.free
+                                : 'EGP ${location.ratePerHour} /hr',
+                            style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500),
+                          );
+                        }),
                       ],
                     ),
                   ],

@@ -2,6 +2,7 @@
 // and recent transaction history.
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'add_card_screen.dart';
 import '../account/settings_screen.dart';
 
@@ -14,7 +15,7 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   // Opens the full transactions list bottom sheet.
-  void _showAllTransactionsSheet(BuildContext context, bool isDark) {
+  void _showAllTransactionsSheet(BuildContext context, bool isDark, AppLocalizations l10n) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -71,7 +72,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           child: const Icon(Icons.receipt_long_outlined, color: AppColors.purple, size: 22),
                         ),
                         const SizedBox(width: 12),
-                        Text('All Transactions',
+                        Text(l10n.allTransactions,
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
                       ],
                     ),
@@ -144,7 +145,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   // Opens the active session detail bottom sheet — mirrors the one on the home screen.
-  void _showActiveSessionSheet(BuildContext context, bool isDark) {
+  void _showActiveSessionSheet(BuildContext context, bool isDark, AppLocalizations l10n) {
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -209,7 +210,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Elapsed Time', style: TextStyle(fontSize: 11, color: subColor)),
+                        Text(l10n.elapsedTime, style: TextStyle(fontSize: 11, color: subColor)),
                         const SizedBox(height: 2),
                         const Text('01:23:45',
                             style: TextStyle(color: AppColors.purple, fontSize: 26, fontWeight: FontWeight.w700)),
@@ -218,7 +219,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('Started at', style: TextStyle(fontSize: 11, color: subColor)),
+                        Text(l10n.startedAt, style: TextStyle(fontSize: 11, color: subColor)),
                         const SizedBox(height: 2),
                         Text('09:30 PM',
                             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor)),
@@ -228,16 +229,16 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _WalletDetailRow(label: 'Slot', value: 'B4', icon: Icons.local_parking, textColor: textColor, subColor: subColor),
+              _WalletDetailRow(label: l10n.slot, value: 'B4', icon: Icons.local_parking, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _WalletDetailRow(label: 'Level & Gate', value: 'Level 2  •  Gate B', icon: Icons.layers_outlined, textColor: textColor, subColor: subColor),
+              _WalletDetailRow(label: l10n.levelAndGate, value: 'Level 2  •  Gate B', icon: Icons.layers_outlined, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
-              _WalletDetailRow(label: 'Vehicle', value: 'Toyota Corolla  •  BG 4567', icon: Icons.directions_car_outlined, textColor: textColor, subColor: subColor),
+              _WalletDetailRow(label: l10n.vehicleLabel, value: 'Toyota Corolla  •  BG 4567', icon: Icons.directions_car_outlined, textColor: textColor, subColor: subColor),
               Divider(height: 24, color: divColor),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Est. Cost', style: TextStyle(fontSize: 13, color: subColor)),
+                  Text(l10n.estCost, style: TextStyle(fontSize: 13, color: subColor)),
                   const Text('EGP 50.00',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF22C55E))),
                 ],
@@ -253,13 +254,13 @@ class _WalletScreenState extends State<WalletScreen> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 20),
-                      SizedBox(width: 8),
-                      Text('End Session',
-                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 15)),
+                      const Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 20),
+                      const SizedBox(width: 8),
+                      Text(l10n.endSession,
+                          style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 15)),
                     ],
                   ),
                 ),
@@ -278,6 +279,7 @@ class _WalletScreenState extends State<WalletScreen> {
     isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary =
     isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor:
@@ -295,7 +297,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Wallet',
+                        l10n.wallet,
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 22,
@@ -319,7 +321,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Payment Methods',
+                    l10n.paymentMethods,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 18,
@@ -332,7 +334,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           builder: (_) => const AddCardScreen()),
                     ),
                     child: Text(
-                      '+ Add new card',
+                      l10n.addNewCard,
                       style: TextStyle(
                         color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                         fontSize: 13,
@@ -393,7 +395,7 @@ class _WalletScreenState extends State<WalletScreen> {
                               Icon(Icons.add, color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A), size: 26),
                               const SizedBox(height: 6),
                               Text(
-                                'Add card',
+                                l10n.addCard,
                                 style: TextStyle(
                                   color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                                   fontSize: 13,
@@ -414,7 +416,7 @@ class _WalletScreenState extends State<WalletScreen> {
               Row(
                 children: [
                   Text(
-                    'Active Session',
+                    l10n.activeSession,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 18,
@@ -462,7 +464,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              'EST. COST',
+                              l10n.estCost,
                               style: TextStyle(
                                 color: textSecondary,
                                 fontSize: 10,
@@ -499,12 +501,12 @@ class _WalletScreenState extends State<WalletScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         GestureDetector(
-                          onTap: () => _showActiveSessionSheet(context, isDark),
+                          onTap: () => _showActiveSessionSheet(context, isDark, l10n),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'View Details',
+                                l10n.viewDetails,
                                 style: TextStyle(
                                   color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                                   fontSize: 12,
@@ -532,7 +534,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Recent Activity',
+                    l10n.recentActivity,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 18,
@@ -540,9 +542,9 @@ class _WalletScreenState extends State<WalletScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => _showAllTransactionsSheet(context, isDark),
+                    onTap: () => _showAllTransactionsSheet(context, isDark, l10n),
                     child: Text(
-                      'View all transactions',
+                      l10n.viewAllTransactions,
                       style: TextStyle(
                         color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
                         fontSize: 13,
@@ -778,18 +780,18 @@ class _PaymentCard extends StatelessWidget {
                     border: Border.all(
                         color: AppColors.purple.withOpacity(0.4)),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Text(
-                        'Primary',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.primary,
+                        style: const TextStyle(
                           color: AppColors.purple,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      SizedBox(width: 2),
-                      Icon(Icons.chevron_right,
+                      const SizedBox(width: 2),
+                      const Icon(Icons.chevron_right,
                           size: 14, color: AppColors.purple),
                     ],
                   ),
@@ -800,7 +802,7 @@ class _PaymentCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Card Number',
+              Text(AppLocalizations.of(context)!.cardNumberLabel,
                   style: TextStyle(color: textSecondary, fontSize: 12)),
               Text(
                 lastFour != null ? '.... $lastFour' : '—',
@@ -815,7 +817,7 @@ class _PaymentCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Expiry',
+              Text(AppLocalizations.of(context)!.expiry,
                   style: TextStyle(color: textSecondary, fontSize: 12)),
               Text(
                 expiry ?? '—',

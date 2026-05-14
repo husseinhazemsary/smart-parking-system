@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../auth/forgot_password_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -42,14 +43,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (!mounted) return;
 
     if (success) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password changed successfully.')),
+        SnackBar(content: Text(l10n.passwordChangedSuccess)),
       );
       Navigator.of(context).pop();
     } else {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(userProvider.error ?? 'Failed to change password.')),
+            content: Text(userProvider.error ?? l10n.failedToChangePassword)),
       );
     }
   }
@@ -58,6 +61,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
     final isLoading = context.watch<UserProvider>().isLoading;
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -88,7 +92,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   const SizedBox(width: 14),
                   Text(
-                    'Change Password',
+                    l10n.changePassword,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 20,
@@ -108,14 +112,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      _label('Current Password', textSecondary),
+                      _label(l10n.currentPassword, textSecondary),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _currentController,
                         obscureText: !_showCurrent,
                         style: TextStyle(color: textPrimary),
                         decoration: _inputDecoration(
-                          hint: 'Enter current password',
+                          hint: l10n.currentPasswordHint,
                           fillColor: inputFill,
                           borderColor: borderColor,
                           textSecondary: textSecondary,
@@ -140,8 +144,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 horizontal: 4, vertical: 4),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text(
-                            'Forgot Password?',
+                          child: Text(
+                            l10n.forgotPassword,
                             style: TextStyle(
                               color: AppColors.purple,
                               fontSize: 13,
@@ -151,14 +155,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _label('New Password', textSecondary),
+                      _label(l10n.newPassword, textSecondary),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _newController,
                         obscureText: !_showNew,
                         style: TextStyle(color: textPrimary),
                         decoration: _inputDecoration(
-                          hint: 'At least 8 characters',
+                          hint: l10n.newPasswordHint,
                           fillColor: inputFill,
                           borderColor: borderColor,
                           textSecondary: textSecondary,
@@ -178,14 +182,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      _label('Confirm New Password', textSecondary),
+                      _label(l10n.confirmNewPassword, textSecondary),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _confirmController,
                         obscureText: !_showConfirm,
                         style: TextStyle(color: textPrimary),
                         decoration: _inputDecoration(
-                          hint: 'Repeat new password',
+                          hint: l10n.confirmNewPasswordHint,
                           fillColor: inputFill,
                           borderColor: borderColor,
                           textSecondary: textSecondary,
@@ -222,9 +226,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   child: CircularProgressIndicator(
                                       color: Colors.white, strokeWidth: 2.5),
                                 )
-                              : const Text(
-                                  'Change Password',
-                                  style: TextStyle(
+                              : Text(
+                                  l10n.changePassword,
+                                  style: const TextStyle(
                                       fontSize: 16, fontWeight: FontWeight.w600),
                                 ),
                         ),

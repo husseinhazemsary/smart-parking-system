@@ -9,6 +9,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/vehicle_model.dart';
+import '../../providers/vehicle_provider.dart';
 import '../account/add_vehicle_screen.dart';
 import '../account/edit_profile_screen.dart';
 import '../account/change_password_screen.dart';
@@ -28,11 +31,43 @@ class _AccountScreenState extends State<AccountScreen> {
   // When enabled, the system prioritizes accessible slots during reservation.
   bool _isAccessible = false;
 
+  Future<void> _onAccessibleToggle(bool newValue) async {
+    if (!newValue) {
+      setState(() => _isAccessible = false);
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.accessibleParkingDialogTitle),
+        content: Text(l10n.accessibleParkingDialogBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              l10n.accessibleParkingConfirm,
+              style: const TextStyle(color: AppColors.purple, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _isAccessible = true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final localeProvider = context.watch<LocaleProvider>();
     final isDark = themeProvider.isDark;
+    final l10n = AppLocalizations.of(context)!;
     final textSecondary =
     isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
@@ -75,7 +110,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MY VEHICLES',
+                          l10n.myVehicles,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -84,57 +119,7 @@ class _AccountScreenState extends State<AccountScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _SectionCard(
-                          isDark: isDark,
-                          child: Column(
-                            children: [
-                              _VehicleRow(isDark: isDark),
-                              Divider(
-                                color: isDark
-                                    ? AppColors.borderDark
-                                    : AppColors.borderLight,
-                                height: 1,
-                              ),
-                              GestureDetector(
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    // Navigate to the add vehicle flow.
-                                      builder: (_) => const AddVehicleScreen()),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 14),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                              color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
-                                              width: 1.5),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Icon(Icons.add,
-                                            color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
-                                            size: 18),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'Add Vehicle',
-                                        style: TextStyle(
-                                          color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildVehiclesCard(context, isDark),
                       ],
                     ),
                   ),
@@ -147,7 +132,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'PREFERENCES',
+                          l10n.preferences,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -165,7 +150,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               _PreferenceRow(
                                 isDark: isDark,
                                 icon: Icons.notifications_outlined,
-                                label: 'Notifications',
+                                label: l10n.notifications,
                                 trailing: Switch(
                                   value: _notificationsEnabled,
                                   onChanged: (v) =>
@@ -182,7 +167,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               _PreferenceRow(
                                 isDark: isDark,
                                 icon: Icons.nightlight_outlined,
-                                label: 'Dark Mode',
+                                label: l10n.darkMode,
                                 trailing: Switch(
                                   value: themeProvider.isDark,
                                   onChanged: (_) => themeProvider.toggleTheme(),
@@ -198,11 +183,10 @@ class _AccountScreenState extends State<AccountScreen> {
                               _PreferenceRow(
                                 isDark: isDark,
                                 icon: Icons.accessible_outlined,
-                                label: 'Accessible Parking',
+                                label: l10n.accessibleParking,
                                 trailing: Switch(
                                   value: _isAccessible,
-                                  onChanged: (v) =>
-                                      setState(() => _isAccessible = v),
+                                  onChanged: _onAccessibleToggle,
                                   activeColor: Colors.white,
                                   activeTrackColor: AppColors.purple,
                                   inactiveThumbColor: Colors.white,
@@ -230,7 +214,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            'Accessible slots will be prioritized when reserving.',
+                                            l10n.accessibleParkingHint,
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: isDark
@@ -258,7 +242,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'SUPPORT',
+                          l10n.support,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -274,19 +258,19 @@ class _AccountScreenState extends State<AccountScreen> {
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.help_outline,
-                                  label: 'Help Center',
+                                  label: l10n.helpCenter,
                                   onTap: () => _showHelpCenterSheet(context, isDark)),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.chat_bubble_outline,
-                                  label: 'Contact Us',
+                                  label: l10n.contactUs,
                                   onTap: () => _showContactSheet(context, isDark)),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.star_outline,
-                                  label: 'Rate the App',
+                                  label: l10n.rateTheApp,
                                   onTap: () => _showRateAppSheet(context, isDark)),
                             ],
                           ),
@@ -303,7 +287,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'LEGAL',
+                          l10n.legal,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -319,13 +303,13 @@ class _AccountScreenState extends State<AccountScreen> {
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.privacy_tip_outlined,
-                                  label: 'Privacy Policy',
+                                  label: l10n.privacyPolicy,
                                   onTap: () => _showPrivacyPolicySheet(context, isDark)),
                               _RowDivider(isDark: isDark),
                               _NavRow(
                                   isDark: isDark,
                                   icon: Icons.description_outlined,
-                                  label: 'Terms of Service',
+                                  label: l10n.termsOfService,
                                   onTap: () => _showTermsSheet(context, isDark)),
                             ],
                           ),
@@ -348,14 +332,14 @@ class _AccountScreenState extends State<AccountScreen> {
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.red.withOpacity(0.2)),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.logout, color: Colors.redAccent, size: 20),
-                            SizedBox(width: 8),
+                            const Icon(Icons.logout, color: Colors.redAccent, size: 20),
+                            const SizedBox(width: 8),
                             Text(
-                              'Log Out',
-                              style: TextStyle(
+                              l10n.logOut,
+                              style: const TextStyle(
                                 color: Colors.redAccent,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
@@ -385,6 +369,81 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  Widget _buildVehiclesCard(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+    final vehicleProvider = context.watch<VehicleProvider>();
+    final vehicles = vehicleProvider.vehicles;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    return _SectionCard(
+      isDark: isDark,
+      child: Column(
+        children: [
+          if (vehicleProvider.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            ...vehicles.map((v) => Column(
+                  children: [
+                    _VehicleRow(
+                      isDark: isDark,
+                      vehicle: v,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AddVehicleScreen(existing: v),
+                        ),
+                      ),
+                    ),
+                    Divider(color: borderColor, height: 1),
+                  ],
+                )),
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AddVehicleScreen()),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: isDark
+                              ? AppColors.accentGreen
+                              : const Color(0xFF16A34A),
+                          width: 1.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.add,
+                        color: isDark
+                            ? AppColors.accentGreen
+                            : const Color(0xFF16A34A),
+                        size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    l10n.addVehicle,
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.accentGreen
+                          : const Color(0xFF16A34A),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Opens a URL in the device's default external browser or app.
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
@@ -400,6 +459,7 @@ class _AccountScreenState extends State<AccountScreen> {
   // Bottom sheet listing email, phone and WhatsApp contact options.
   // Uses isScrollControlled + viewPadding so content clears the Android nav bar.
   void _showContactSheet(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -429,17 +489,17 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Contact Us',
+              Text(l10n.contactUs,
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 6),
-              Text('Reach out to us through any of these channels:',
+              Text(l10n.contactUsSubheading,
                   style: TextStyle(fontSize: 14, color: subColor)),
               const SizedBox(height: 20),
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.email_outlined,
-                label: 'Email Support',
+                label: l10n.emailSupport,
                 subtitle: 'support@ezrakna.com',
                 onTap: () => _launchUrl('mailto:support@ezrakna.com'),
               ),
@@ -447,7 +507,7 @@ class _AccountScreenState extends State<AccountScreen> {
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.phone_outlined,
-                label: 'Call Us',
+                label: l10n.callUs,
                 subtitle: '+20 100 000 0000',
                 onTap: () => _launchUrl('tel:+201000000000'),
               ),
@@ -455,8 +515,8 @@ class _AccountScreenState extends State<AccountScreen> {
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.chat_outlined,
-                label: 'WhatsApp',
-                subtitle: 'Chat on WhatsApp',
+                label: l10n.whatsapp,
+                subtitle: l10n.chatOnWhatsApp,
                 onTap: () => _launchUrl('https://wa.me/201000000000'),
               ),
             ],
@@ -468,6 +528,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   // Bottom sheet for Help Center — links to the website, email and live chat.
   void _showHelpCenterSheet(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -497,17 +558,17 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Help Center',
+              Text(l10n.helpCenter,
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 6),
-              Text('Find answers or get in touch with our team.',
+              Text(l10n.helpCenterSubheading,
                   style: TextStyle(fontSize: 14, color: subColor)),
               const SizedBox(height: 20),
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.language_outlined,
-                label: 'Visit Help Center',
+                label: l10n.visitHelpCenter,
                 subtitle: 'ezrakna.com/help',
                 onTap: () {
                   Navigator.pop(context);
@@ -518,7 +579,7 @@ class _AccountScreenState extends State<AccountScreen> {
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.email_outlined,
-                label: 'Email Support',
+                label: l10n.emailSupport,
                 subtitle: 'support@ezrakna.com',
                 onTap: () {
                   Navigator.pop(context);
@@ -529,8 +590,8 @@ class _AccountScreenState extends State<AccountScreen> {
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.chat_bubble_outline,
-                label: 'Live Chat',
-                subtitle: 'Chat with our support team',
+                label: l10n.liveChat,
+                subtitle: l10n.liveChatSubtitle,
                 onTap: () {
                   Navigator.pop(context);
                   _showContactSheet(context, isDark);
@@ -545,6 +606,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   // Bottom sheet prompting the user to rate on Play Store or send feedback.
   void _showRateAppSheet(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -574,18 +636,18 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Enjoying EzRakna?',
+              Text(l10n.enjoyingEzRakna,
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 6),
-              Text('Your feedback helps us improve the app for everyone.',
+              Text(l10n.feedbackHelpsUs,
                   style: TextStyle(fontSize: 14, color: subColor)),
               const SizedBox(height: 20),
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.star_outline,
-                label: 'Rate on Google Play',
-                subtitle: 'Leave a review on the Play Store',
+                label: l10n.rateOnGooglePlay,
+                subtitle: l10n.rateOnPlayStoreSubtitle,
                 onTap: () {
                   Navigator.pop(context);
                   _launchUrl('https://play.google.com/store/apps/details?id=com.ezrakna.app');
@@ -595,8 +657,8 @@ class _AccountScreenState extends State<AccountScreen> {
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.chat_outlined,
-                label: 'Send Feedback',
-                subtitle: 'Tell us what you think',
+                label: l10n.sendFeedback,
+                subtitle: l10n.sendFeedbackSubtitle,
                 onTap: () {
                   Navigator.pop(context);
                   _launchUrl('mailto:feedback@ezrakna.com');
@@ -611,6 +673,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   // Bottom sheet for Privacy Policy — opens the full policy page or privacy email.
   void _showPrivacyPolicySheet(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -640,17 +703,17 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Privacy Policy',
+              Text(l10n.privacyPolicy,
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 6),
-              Text('Learn how we collect, use, and protect your data.',
+              Text(l10n.privacyPolicySheetSubtitle,
                   style: TextStyle(fontSize: 14, color: subColor)),
               const SizedBox(height: 20),
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.privacy_tip_outlined,
-                label: 'Read Full Privacy Policy',
+                label: l10n.readFullPrivacyPolicy,
                 subtitle: 'ezrakna.com/privacy',
                 onTap: () {
                   Navigator.pop(context);
@@ -661,7 +724,7 @@ class _AccountScreenState extends State<AccountScreen> {
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.email_outlined,
-                label: 'Privacy Inquiries',
+                label: l10n.privacyInquiries,
                 subtitle: 'privacy@ezrakna.com',
                 onTap: () {
                   Navigator.pop(context);
@@ -677,6 +740,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   // Bottom sheet for Terms of Service — opens the full terms page or legal email.
   void _showTermsSheet(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
@@ -706,17 +770,17 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Terms of Service',
+              Text(l10n.termsOfService,
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 6),
-              Text('Review the terms that govern your use of EzRakna.',
+              Text(l10n.termsSheetSubtitle,
                   style: TextStyle(fontSize: 14, color: subColor)),
               const SizedBox(height: 20),
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.description_outlined,
-                label: 'Read Full Terms',
+                label: l10n.readFullTerms,
                 subtitle: 'ezrakna.com/terms',
                 onTap: () {
                   Navigator.pop(context);
@@ -727,7 +791,7 @@ class _AccountScreenState extends State<AccountScreen> {
               _ContactOption(
                 isDark: isDark,
                 icon: Icons.email_outlined,
-                label: 'Legal Inquiries',
+                label: l10n.legalInquiries,
                 subtitle: 'legal@ezrakna.com',
                 onTap: () {
                   Navigator.pop(context);
@@ -744,6 +808,7 @@ class _AccountScreenState extends State<AccountScreen> {
   // Bottom sheet for account settings: edit profile, password, payments, delete account.
   void _showSettingsSheet(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
+    final l10n = AppLocalizations.of(context)!;
     final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
@@ -772,14 +837,14 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Settings',
+              Text(l10n.settings,
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 20),
               _SettingsOption(
                 isDark: isDark,
                 icon: Icons.person_outline,
-                label: 'Edit Profile',
+                label: l10n.editProfile,
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.of(context).push(
@@ -791,7 +856,7 @@ class _AccountScreenState extends State<AccountScreen> {
               _SettingsOption(
                 isDark: isDark,
                 icon: Icons.lock_outline,
-                label: 'Change Password',
+                label: l10n.changePassword,
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.of(context).push(
@@ -803,7 +868,7 @@ class _AccountScreenState extends State<AccountScreen> {
               _SettingsOption(
                 isDark: isDark,
                 icon: Icons.payment_outlined,
-                label: 'Payment Methods',
+                label: l10n.paymentMethods,
                 onTap: () {
                   Navigator.pop(context);
 
@@ -813,7 +878,7 @@ class _AccountScreenState extends State<AccountScreen> {
               _SettingsOption(
                 isDark: isDark,
                 icon: Icons.delete_outline,
-                label: 'Delete Account',
+                label: l10n.deleteAccount,
                 labelColor: Colors.redAccent,
                 onTap: () {
                   Navigator.pop(context);
@@ -830,6 +895,7 @@ class _AccountScreenState extends State<AccountScreen> {
   // Confirmation dialog before logging out — navigates to login and clears the stack.
   void _confirmLogout(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -837,7 +903,7 @@ class _AccountScreenState extends State<AccountScreen> {
         isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Log Out',
+          l10n.logOutConfirmTitle,
           style: TextStyle(
               fontWeight: FontWeight.w700,
               color: isDark
@@ -845,7 +911,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   : AppColors.textPrimaryLight),
         ),
         content: Text(
-          'Are you sure you want to log out?',
+          l10n.logOutConfirmMessage,
           style: TextStyle(
               color: isDark
                   ? AppColors.textSecondaryDark
@@ -854,7 +920,7 @@ class _AccountScreenState extends State<AccountScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
+            child: Text(l10n.cancel,
                 style: TextStyle(
                     color: isDark
                         ? AppColors.textSecondaryDark
@@ -870,8 +936,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 (route) => false,
               );
             },
-            child: const Text('Log Out',
-                style: TextStyle(
+            child: Text(l10n.logOut,
+                style: const TextStyle(
                     color: Colors.redAccent, fontWeight: FontWeight.w700)),
           ),
         ],
@@ -882,17 +948,18 @@ class _AccountScreenState extends State<AccountScreen> {
   // Confirmation dialog for permanent account deletion — action is irreversible.
   void _confirmDeleteAccount(BuildContext context) {
     final isDark = context.read<ThemeProvider>().isDark;
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor:
         isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Account',
-            style: TextStyle(
+        title: Text(l10n.deleteAccountTitle,
+            style: const TextStyle(
                 color: Colors.redAccent, fontWeight: FontWeight.w700)),
         content: Text(
-          'This action is permanent and cannot be undone. All your data will be lost.',
+          l10n.deleteAccountMessage,
           style: TextStyle(
               color: isDark
                   ? AppColors.textSecondaryDark
@@ -901,7 +968,7 @@ class _AccountScreenState extends State<AccountScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
+            child: Text(l10n.cancel,
                 style: TextStyle(
                     color: isDark
                         ? AppColors.textSecondaryDark
@@ -912,8 +979,8 @@ class _AccountScreenState extends State<AccountScreen> {
               Navigator.pop(ctx);
 
             },
-            child: const Text('Delete',
-                style: TextStyle(
+            child: Text(l10n.delete,
+                style: const TextStyle(
                     color: Colors.redAccent, fontWeight: FontWeight.w700)),
           ),
         ],
@@ -1065,6 +1132,7 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final topPadding = MediaQuery.of(context).padding.top;
     final auth = context.watch<AuthProvider>();
     final userProfile = context.watch<UserProvider>().profile;
@@ -1098,9 +1166,9 @@ class _ProfileHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: const Text(
-                        'Profile',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.profile,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -1180,14 +1248,14 @@ class _ProfileHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white.withOpacity(0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.accessible, color: Colors.white, size: 14),
-                      SizedBox(width: 5),
+                      const Icon(Icons.accessible, color: Colors.white, size: 14),
+                      const SizedBox(width: 5),
                       Text(
-                        'Accessible Parking',
-                        style: TextStyle(
+                        l10n.accessibleParking,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -1223,11 +1291,11 @@ class _ProfileHeader extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    _StatItem(value: '42', label: 'Bookings', isDark: isDark),
+                    _StatItem(value: '42', label: l10n.bookings, isDark: isDark),
                     _StatDivider(isDark: isDark),
-                    _StatItem(value: 'EGP 350', label: 'Spent', isDark: isDark),
+                    _StatItem(value: 'EGP 350', label: l10n.spent, isDark: isDark),
                     _StatDivider(isDark: isDark),
-                    _StatItem(value: '128h', label: 'Parked', isDark: isDark),
+                    _StatItem(value: '128h', label: l10n.parked, isDark: isDark),
                   ],
                 ),
               ),
@@ -1302,7 +1370,7 @@ class _LanguageRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
+    final l10n = AppLocalizations.of(context)!;
     final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
     final textPrimary =
@@ -1320,13 +1388,13 @@ class _LanguageRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Language',
+                Text(l10n.language,
                     style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: textPrimary)),
                 const SizedBox(height: 2),
-                Text(isArabic ? 'العربية' : 'English',
+                Text(isArabic ? l10n.languageCurrentAr : l10n.languageCurrent,
                     style: TextStyle(fontSize: 12, color: textSecondary)),
               ],
             ),
@@ -1396,51 +1464,85 @@ class _LangOption extends StatelessWidget {
 // Displays a single saved vehicle with icon, name, plate and a chevron.
 class _VehicleRow extends StatelessWidget {
   final bool isDark;
-  const _VehicleRow({required this.isDark});
+  final VehicleModel vehicle;
+  final VoidCallback onTap;
+  const _VehicleRow({
+    required this.isDark,
+    required this.vehicle,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.purple.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
+    final l10n = AppLocalizations.of(context)!;
+    final typeLabel = vehicle.vehicleType[0] +
+        vehicle.vehicleType.substring(1).toLowerCase();
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.purple.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.directions_car_outlined,
+                  color: AppColors.purple, size: 22),
             ),
-            child: const Icon(Icons.directions_car_outlined,
-                color: AppColors.purple, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Toyota Corolla',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: isDark
-                            ? AppColors.textPrimaryDark
-                            : AppColors.textPrimaryLight)),
-                const SizedBox(height: 2),
-                Text('BG 4567',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight)),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(vehicle.displayName,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: isDark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimaryLight)),
+                      if (vehicle.isDefault) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.purple.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(l10n.defaultLabel,
+                              style: const TextStyle(
+                                  color: AppColors.purple,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text('${vehicle.plateNumber}  ·  $typeLabel',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight)),
+                ],
+              ),
             ),
-          ),
-          Icon(Icons.chevron_right,
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight),
-        ],
+            Icon(Icons.chevron_right,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight),
+          ],
+        ),
       ),
     );
   }

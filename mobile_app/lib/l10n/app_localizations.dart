@@ -362,6 +362,18 @@ abstract class AppLocalizations {
   /// **'or continue with'**
   String get orContinueWith;
 
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @continueWithApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get continueWithApple;
+
   /// No description provided for @noAccount.
   ///
   /// In en, this message translates to:
@@ -1219,6 +1231,540 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chat with support'**
   String get whatsappSubtitle;
+
+  /// No description provided for @accessibleParking.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessible Parking'**
+  String get accessibleParking;
+
+  /// No description provided for @accessibleParkingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Require accessible parking spots'**
+  String get accessibleParkingHint;
+
+  /// No description provided for @accessibleParkingDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Accessible Parking?'**
+  String get accessibleParkingDialogTitle;
+
+  /// No description provided for @accessibleParkingDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'By enabling this, you confirm that you hold a valid disability or accessibility permit. Misuse of this feature may result in account suspension.\n\nThis preference will be recorded on your account.'**
+  String get accessibleParkingDialogBody;
+
+  /// No description provided for @accessibleParkingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'I Confirm'**
+  String get accessibleParkingConfirm;
+
+  /// No description provided for @contactUsSubheading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach us through any of these channels:'**
+  String get contactUsSubheading;
+
+  /// No description provided for @helpCenterSubheading.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse help articles and FAQs'**
+  String get helpCenterSubheading;
+
+  /// No description provided for @visitHelpCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit Help Center'**
+  String get visitHelpCenter;
+
+  /// No description provided for @liveChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Chat'**
+  String get liveChat;
+
+  /// No description provided for @liveChatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with a support agent'**
+  String get liveChatSubtitle;
+
+  /// No description provided for @enjoyingEzRakna.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoying EzRakna?'**
+  String get enjoyingEzRakna;
+
+  /// No description provided for @feedbackHelpsUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Your feedback helps us improve.'**
+  String get feedbackHelpsUs;
+
+  /// No description provided for @rateOnGooglePlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate on Google Play'**
+  String get rateOnGooglePlay;
+
+  /// No description provided for @rateOnPlayStoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a review on the Play Store'**
+  String get rateOnPlayStoreSubtitle;
+
+  /// No description provided for @sendFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Feedback'**
+  String get sendFeedback;
+
+  /// No description provided for @sendFeedbackSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your thoughts with us'**
+  String get sendFeedbackSubtitle;
+
+  /// No description provided for @privacyPolicySheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: January 2025'**
+  String get privacyPolicySheetSubtitle;
+
+  /// No description provided for @readFullPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Read Full Privacy Policy'**
+  String get readFullPrivacyPolicy;
+
+  /// No description provided for @privacyInquiries.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Inquiries'**
+  String get privacyInquiries;
+
+  /// No description provided for @termsSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: January 2025'**
+  String get termsSheetSubtitle;
+
+  /// No description provided for @readFullTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Read Full Terms'**
+  String get readFullTerms;
+
+  /// No description provided for @legalInquiries.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal Inquiries'**
+  String get legalInquiries;
+
+  /// No description provided for @deleteVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Vehicle'**
+  String get deleteVehicle;
+
+  /// No description provided for @removeVehicleConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove {name}?'**
+  String removeVehicleConfirm(String name);
+
+  /// No description provided for @failedToDeleteVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete vehicle'**
+  String get failedToDeleteVehicle;
+
+  /// No description provided for @myVehiclesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Vehicles'**
+  String get myVehiclesTitle;
+
+  /// No description provided for @vehicleDefaultHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This vehicle will be used for Auto-Pay and entry recognition by default.'**
+  String get vehicleDefaultHint;
+
+  /// No description provided for @takeAPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a Photo'**
+  String get takeAPhoto;
+
+  /// No description provided for @chooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get chooseFromGallery;
+
+  /// No description provided for @couldNotReadPlate.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read plate. Please enter manually.'**
+  String get couldNotReadPlate;
+
+  /// No description provided for @plateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'License plate number is required.'**
+  String get plateRequired;
+
+  /// No description provided for @failedToSaveVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save vehicle'**
+  String get failedToSaveVehicle;
+
+  /// No description provided for @editVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Vehicle'**
+  String get editVehicle;
+
+  /// No description provided for @makeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Toyota'**
+  String get makeHint;
+
+  /// No description provided for @electricVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Electric Vehicle'**
+  String get electricVehicle;
+
+  /// No description provided for @evAutoDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'EV — auto-detected'**
+  String get evAutoDetected;
+
+  /// No description provided for @evNotDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not detected as EV'**
+  String get evNotDetected;
+
+  /// No description provided for @updateVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Vehicle'**
+  String get updateVehicle;
+
+  /// No description provided for @vehicleTypeMotorcycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Motorcycle'**
+  String get vehicleTypeMotorcycle;
+
+  /// No description provided for @passwordChangedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed successfully'**
+  String get passwordChangedSuccess;
+
+  /// No description provided for @failedToChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to change password'**
+  String get failedToChangePassword;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Password'**
+  String get currentPassword;
+
+  /// No description provided for @currentPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password'**
+  String get currentPasswordHint;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get newPassword;
+
+  /// No description provided for @newPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your new password'**
+  String get newPasswordHint;
+
+  /// No description provided for @confirmNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm New Password'**
+  String get confirmNewPassword;
+
+  /// No description provided for @confirmNewPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter your new password'**
+  String get confirmNewPasswordHint;
+
+  /// No description provided for @selectDateOfBirth.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date of birth'**
+  String get selectDateOfBirth;
+
+  /// No description provided for @dobRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth is required'**
+  String get dobRequired;
+
+  /// No description provided for @profileUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully'**
+  String get profileUpdatedSuccess;
+
+  /// No description provided for @failedToUpdateProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update profile'**
+  String get failedToUpdateProfile;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// No description provided for @firstAndLastNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'First and last name'**
+  String get firstAndLastNameHint;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChanges;
+
+  /// No description provided for @allTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'All Transactions'**
+  String get allTransactions;
+
+  /// No description provided for @elapsedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed Time'**
+  String get elapsedTime;
+
+  /// No description provided for @startedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Started At'**
+  String get startedAt;
+
+  /// No description provided for @slot.
+  ///
+  /// In en, this message translates to:
+  /// **'Slot'**
+  String get slot;
+
+  /// No description provided for @levelAndGate.
+  ///
+  /// In en, this message translates to:
+  /// **'Level & Gate'**
+  String get levelAndGate;
+
+  /// No description provided for @vehicleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get vehicleLabel;
+
+  /// No description provided for @endSession.
+  ///
+  /// In en, this message translates to:
+  /// **'End Session'**
+  String get endSession;
+
+  /// No description provided for @parkingReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Parking Receipt'**
+  String get parkingReceipt;
+
+  /// No description provided for @receiptLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get receiptLocation;
+
+  /// No description provided for @receiptAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get receiptAddress;
+
+  /// No description provided for @receiptDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & Time'**
+  String get receiptDateTime;
+
+  /// No description provided for @receiptDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get receiptDuration;
+
+  /// No description provided for @receiptSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Slot'**
+  String get receiptSlot;
+
+  /// No description provided for @receiptTotalPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Paid'**
+  String get receiptTotalPaid;
+
+  /// No description provided for @downloadPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF'**
+  String get downloadPdf;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This Month'**
+  String get filterThisMonth;
+
+  /// No description provided for @filterLast3Months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 3 Months'**
+  String get filterLast3Months;
+
+  /// No description provided for @filterThisYear.
+  ///
+  /// In en, this message translates to:
+  /// **'This Year'**
+  String get filterThisYear;
+
+  /// No description provided for @parkingHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Parking History'**
+  String get parkingHistory;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @viewReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'View Receipt'**
+  String get viewReceipt;
+
+  /// No description provided for @noReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'No receipt available'**
+  String get noReceipt;
+
+  /// No description provided for @savedPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved Places'**
+  String get savedPlaces;
+
+  /// No description provided for @savedPlacesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved places yet'**
+  String get savedPlacesSubtitle;
+
+  /// No description provided for @monthlySnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Snapshot'**
+  String get monthlySnapshot;
+
+  /// No description provided for @recentSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Sessions'**
+  String get recentSessions;
+
+  /// No description provided for @searchDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Search destination...'**
+  String get searchDestination;
+
+  /// No description provided for @activeParkingSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Parking Session'**
+  String get activeParkingSession;
+
+  /// No description provided for @nearbyParking.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby Parking'**
+  String get nearbyParking;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View All'**
+  String get viewAll;
+
+  /// No description provided for @available.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get available;
+
+  /// No description provided for @limitedSpots.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited Spots'**
+  String get limitedSpots;
+
+  /// No description provided for @free.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get free;
 }
 
 class _AppLocalizationsDelegate

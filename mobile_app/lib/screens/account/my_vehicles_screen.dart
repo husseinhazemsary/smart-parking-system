@@ -2,19 +2,61 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/vehicle_provider.dart';
+import '../../models/vehicle_model.dart';
+import '../../l10n/app_localizations.dart';
 import 'add_vehicle_screen.dart';
 
 class MyVehiclesScreen extends StatelessWidget {
   const MyVehiclesScreen({super.key});
 
+  Future<void> _confirmDelete(
+      BuildContext context, VehicleModel vehicle) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteVehicle),
+        content: Text(l10n.removeVehicleConfirm(vehicle.displayName)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.delete,
+                  style: const TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      final provider = context.read<VehicleProvider>();
+      final ok = await provider.deleteVehicle(vehicle.id);
+      if (!ok && context.mounted) {
+        final l10n2 = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.error ?? l10n2.failedToDeleteVehicle)),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
-    final bgColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
-    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final l10n = AppLocalizations.of(context)!;
+    final bgColor =
+        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final borderColor =
+        isDark ? AppColors.borderDark : AppColors.borderLight;
+    final surfaceColor =
+        isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+
+    final vehicleProvider = context.watch<VehicleProvider>();
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -22,7 +64,8 @@ class MyVehiclesScreen extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
                 children: [
                   GestureDetector(
@@ -35,12 +78,13 @@ class MyVehiclesScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: borderColor),
                       ),
-                      child: Icon(Icons.arrow_back, size: 20, color: textPrimary),
+                      child:
+                          Icon(Icons.arrow_back, size: 20, color: textPrimary),
                     ),
                   ),
                   const SizedBox(width: 14),
                   Text(
-                    'My Vehicles',
+                    l10n.myVehiclesTitle,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 20,
@@ -51,86 +95,124 @@ class MyVehiclesScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: surfaceColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Column(
-                        children: [
-                          _VehicleRow(
-                            isDark: isDark,
-                            name: 'Toyota Corolla',
-                            plate: 'BG 4567',
-                            type: 'Sedan',
-                            isDefault: true,
-                            onTap: () {},
-                          ),
-                          Divider(height: 1, color: borderColor, indent: 64),
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const AddVehicleScreen()),
-                            ),
-                            behavior: HitTestBehavior.opaque,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 14),
-                              child: Row(
+              child: vehicleProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: vehicleProvider.fetchVehicles,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (vehicleProvider.error != null)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  vehicleProvider.error!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: surfaceColor,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: Column(
                                 children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: isDark
-                                              ? AppColors.accentGreen
-                                              : const Color(0xFF16A34A),
-                                          width: 1.5),
-                                      borderRadius: BorderRadius.circular(10),
+                                  ...vehicleProvider.vehicles
+                                      .map((vehicle) => Column(
+                                            children: [
+                                              _VehicleRow(
+                                                isDark: isDark,
+                                                vehicle: vehicle,
+                                                onTap: () =>
+                                                    Navigator.of(context)
+                                                        .push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        AddVehicleScreen(
+                                                            existing: vehicle),
+                                                  ),
+                                                ),
+                                                onDelete: () =>
+                                                    _confirmDelete(
+                                                        context, vehicle),
+                                              ),
+                                              Divider(
+                                                  height: 1,
+                                                  color: borderColor,
+                                                  indent: 64),
+                                            ],
+                                          )),
+                                  GestureDetector(
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const AddVehicleScreen()),
                                     ),
-                                    child: Icon(
-                                      Icons.add,
-                                      color: isDark
-                                          ? AppColors.accentGreen
-                                          : const Color(0xFF16A34A),
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Add Vehicle',
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? AppColors.accentGreen
-                                          : const Color(0xFF16A34A),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 14),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                  color: isDark
+                                                      ? AppColors.accentGreen
+                                                      : const Color(
+                                                          0xFF16A34A),
+                                                  width: 1.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(
+                                              Icons.add,
+                                              color: isDark
+                                                  ? AppColors.accentGreen
+                                                  : const Color(0xFF16A34A),
+                                              size: 20,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            l10n.addVehicle,
+                                            style: TextStyle(
+                                              color: isDark
+                                                  ? AppColors.accentGreen
+                                                  : const Color(0xFF16A34A),
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            Text(
+                              l10n.vehicleDefaultHint,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: textSecondary,
+                                  height: 1.5),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'The vehicle marked as default is used automatically for bookings and Auto-Pay.',
-                      style: TextStyle(fontSize: 12, color: textSecondary, height: 1.5),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -141,31 +223,50 @@ class MyVehiclesScreen extends StatelessWidget {
 
 class _VehicleRow extends StatelessWidget {
   final bool isDark;
-  final String name;
-  final String plate;
-  final String type;
-  final bool isDefault;
+  final VehicleModel vehicle;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   const _VehicleRow({
     required this.isDark,
-    required this.name,
-    required this.plate,
-    required this.type,
-    required this.isDefault,
+    required this.vehicle,
     required this.onTap,
+    required this.onDelete,
   });
+
+  static IconData _typeIcon(String type) => switch (type) {
+        'SUV'        => Icons.directions_car_filled,
+        'TRUCK'      => Icons.local_shipping,
+        'MOTORCYCLE' => Icons.two_wheeler,
+        _            => Icons.directions_car_outlined,
+      };
 
   @override
   Widget build(BuildContext context) {
-    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final l10n = AppLocalizations.of(context)!;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    final typeLabel = vehicle.vehicleType[0] +
+        vehicle.vehicleType.substring(1).toLowerCase();
+
+    // Show make & model in subtitle only when it isn't already the display name
+    final showMakeInSubtitle = vehicle.makeAndModel?.isNotEmpty == true &&
+        vehicle.nickname?.isNotEmpty == true;
+    final subtitleParts = [
+      vehicle.plateNumber,
+      typeLabel,
+      if (showMakeInSubtitle) vehicle.makeAndModel!,
+    ];
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Container(
@@ -175,7 +276,7 @@ class _VehicleRow extends StatelessWidget {
                 color: AppColors.purple.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.directions_car_outlined,
+              child: Icon(_typeIcon(vehicle.vehicleType),
                   color: AppColors.purple, size: 22),
             ),
             const SizedBox(width: 12),
@@ -186,25 +287,26 @@ class _VehicleRow extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        name,
+                        vehicle.displayName,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
                           color: textPrimary,
                         ),
                       ),
-                      if (isDefault) ...[
+                      if (vehicle.isDefault) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.purple.withValues(alpha: 0.12),
+                            color:
+                                AppColors.purple.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            'Default',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.defaultLabel,
+                            style: const TextStyle(
                               color: AppColors.purple,
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -216,12 +318,21 @@ class _VehicleRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$plate  ·  $type',
-                    style: TextStyle(fontSize: 12, color: textSecondary),
+                    subtitleParts.join('  ·  '),
+                    style:
+                        TextStyle(fontSize: 12, color: textSecondary),
                   ),
                 ],
               ),
             ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline,
+                  size: 18, color: Colors.redAccent),
+              onPressed: onDelete,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 4),
             Icon(Icons.chevron_right, size: 18, color: textSecondary),
           ],
         ),

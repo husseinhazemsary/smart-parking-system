@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -51,8 +52,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _formKey.currentState?.reset();
   }
 
-  String get _dateDisplay {
-    if (_selectedDate == null) return 'Select date of birth';
+  String _dateDisplay(AppLocalizations l10n) {
+    if (_selectedDate == null) return l10n.selectDateOfBirth;
     return '${_selectedDate!.year}-'
         '${_selectedDate!.month.toString().padLeft(2, '0')}-'
         '${_selectedDate!.day.toString().padLeft(2, '0')}';
@@ -76,10 +77,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your date of birth.')),
+        SnackBar(content: Text(l10n.dobRequired)),
       );
       return;
     }
@@ -94,13 +96,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!mounted) return;
 
     if (success) {
+      final l10n2 = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully.')),
+        SnackBar(content: Text(l10n2.profileUpdatedSuccess)),
       );
       Navigator.of(context).pop();
     } else {
+      final l10n2 = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(userProvider.error ?? 'Failed to update profile.')),
+        SnackBar(content: Text(userProvider.error ?? l10n2.failedToUpdateProfile)),
       );
     }
   }
@@ -155,6 +159,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
+    final l10n = AppLocalizations.of(context)!;
     final isLoading = context.watch<UserProvider>().isLoading;
     final bgColor =
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
@@ -194,7 +199,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(width: 14),
                   Text(
-                    'Edit Profile',
+                    l10n.editProfile,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 20,
@@ -207,7 +212,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     icon: Icon(Icons.restart_alt,
                         size: 18, color: textSecondary),
                     label: Text(
-                      'Reset',
+                      l10n.reset,
                       style: TextStyle(
                         color: textSecondary,
                         fontSize: 13,
@@ -235,14 +240,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      _label('Full Name', textSecondary),
+                      _label(l10n.fullName, textSecondary),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _nameController,
                         style: TextStyle(color: textPrimary),
                         textCapitalization: TextCapitalization.words,
                         decoration: _inputDecoration(
-                          hint: 'First and last name',
+                          hint: l10n.firstAndLastNameHint,
                           fillColor: inputFill,
                           borderColor: borderColor,
                           textSecondary: textSecondary,
@@ -250,7 +255,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         validator: _validateName,
                       ),
                       const SizedBox(height: 20),
-                      _label('Phone Number', textSecondary),
+                      _label(l10n.phoneNumber, textSecondary),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _phoneController,
@@ -265,7 +270,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         validator: _validatePhone,
                       ),
                       const SizedBox(height: 20),
-                      _label('Date of Birth', textSecondary),
+                      _label(l10n.dateOfBirth, textSecondary),
                       const SizedBox(height: 8),
                       GestureDetector(
                         onTap: _pickDate,
@@ -287,7 +292,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       : textPrimary),
                               const SizedBox(width: 10),
                               Text(
-                                _dateDisplay,
+                                _dateDisplay(l10n),
                                 style: TextStyle(
                                   color: _selectedDate == null
                                       ? textSecondary
@@ -320,9 +325,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   child: CircularProgressIndicator(
                                       color: Colors.white, strokeWidth: 2.5),
                                 )
-                              : const Text(
-                                  'Save Changes',
-                                  style: TextStyle(
+                              : Text(
+                                  l10n.saveChanges,
+                                  style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600),
                                 ),

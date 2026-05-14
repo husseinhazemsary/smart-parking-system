@@ -81,24 +81,25 @@ class _BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     final items = [
       _NavItem(
           icon: Icons.home_outlined,
           activeIcon: Icons.home,
-          label: 'Home'),
+          label: l10n.navHome),
       _NavItem(
           icon: Icons.history_outlined,
           activeIcon: Icons.history,
-          label: 'History'),
+          label: l10n.navHistory),
       _NavItem(
           icon: Icons.account_balance_wallet_outlined,
           activeIcon: Icons.account_balance_wallet,
-          label: 'Wallet'),
+          label: l10n.navWallet),
       _NavItem(
           icon: Icons.person_outline,
           activeIcon: Icons.person,
-          label: 'Account'),
+          label: l10n.navAccount),
     ];
 
     // Solid background so content below the nav bar doesn't bleed through.
