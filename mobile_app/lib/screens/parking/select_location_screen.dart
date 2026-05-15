@@ -1,74 +1,9 @@
-// Select Location screen — full list of parking locations with search,
-// category filters and a View Details button per card.
-// Navigated to from HomeScreen when "View all" is tapped.
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../models/parking_lot_model.dart';
+import '../../providers/parking_provider.dart';
 import '../../theme/app_colors.dart';
 import 'parking_details_screen.dart';
-
-// Sample data — reuse the same ParkingLocation model from parking_details_screen.
-final List<ParkingLocation> allParkingLocations = [
-  ParkingLocation(
-    name: 'Arkan Mall Parking',
-    address: 'Sheikh Zayed, Giza',
-    imageAsset: 'assets/images/arkan.jpg',
-    availableSpots: 28,
-    totalSpots: 80,
-    ratePerHour: 15,
-    opensAt: '7AM',
-    closesAt: '12AM',
-    isOpenNow: true,
-    distanceKm: 0.5,
-    levels: [
-      ParkingLevel(name: 'Level 1 (Ground)', available: 0, total: 40),
-      ParkingLevel(name: 'Level 2', available: 12, total: 40),
-    ],
-  ),
-  ParkingLocation(
-    name: 'NGU Parking Lot',
-    address: 'New Giza, Cairo-Alexandria Desert Road, Giza',
-    imageAsset: 'assets/images/ngu.jpg',
-    availableSpots: 12,
-    totalSpots: 60,
-    ratePerHour: 0,
-    opensAt: '7AM',
-    closesAt: '10PM',
-    isOpenNow: true,
-    distanceKm: 0.5,
-    levels: [
-      ParkingLevel(name: 'Level 1 (Ground)', available: 12, total: 60),
-    ],
-  ),
-  ParkingLocation(
-    name: 'Cairo Airport Terminal 2',
-    address: 'Cairo International Airport, Cairo',
-    imageAsset: 'assets/images/airport.jpg',
-    availableSpots: 3,
-    totalSpots: 200,
-    ratePerHour: 25,
-    opensAt: '24h',
-    closesAt: '24h',
-    isOpenNow: true,
-    distanceKm: 0.5,
-    levels: [
-      ParkingLevel(name: 'Level 1', available: 3, total: 200),
-    ],
-  ),
-  ParkingLocation(
-    name: 'Tahrir Street Parking',
-    address: 'Tahrir Square, Downtown, Cairo',
-    imageAsset: 'assets/images/tahrir.jpg',
-    availableSpots: 45,
-    totalSpots: 100,
-    ratePerHour: 10,
-    opensAt: '6AM',
-    closesAt: '11PM',
-    isOpenNow: true,
-    distanceKm: 0.5,
-    levels: [
-      ParkingLevel(name: 'Street Level', available: 45, total: 100),
-    ],
-  ),
-];
 
 class SelectLocationScreen extends StatefulWidget {
   const SelectLocationScreen({super.key});
@@ -79,8 +14,22 @@ class SelectLocationScreen extends StatefulWidget {
 
 class _SelectLocationScreenState extends State<SelectLocationScreen> {
   int _categoryIndex = 0;
-  final List<String> _categories = ['All', 'Malls', 'Universities', 'Airports', 'Streets'];
+  final List<String> _categories = [
+    'All',
+    'Malls',
+    'Universities',
+    'Airports',
+    'Streets'
+  ];
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ParkingProvider>().fetchLots();
+    });
+  }
 
   @override
   void dispose() {
@@ -88,9 +37,19 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
     super.dispose();
   }
 
-  // Returns a short availability label and its color based on spot count.
-  (String, Color) _availability(ParkingLocation loc) {
-    final ratio = loc.availableSpots / loc.totalSpots;
+  Widget _lotPlaceholder() => Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: AppColors.purple.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.local_parking, color: AppColors.purple, size: 32),
+      );
+
+  (String, Color) _availability(ParkingLotSummary lot) {
+    if (lot.total == 0) return ('No Data', Colors.grey);
+    final ratio = lot.available / lot.total;
     if (ratio == 0) return ('Full', Colors.redAccent);
     if (ratio < 0.1) return ('Almost Full', Colors.redAccent);
     if (ratio < 0.4) return ('Filling Fast', const Color(0xFFF59E0B));
@@ -100,17 +59,20 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
-            // Header: back button + left-aligned title + filter icon.
+            // Header.
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(
@@ -162,9 +124,11 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                       child: TextField(
                         controller: _searchController,
                         style: TextStyle(color: textPrimary, fontSize: 14),
+                        onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           hintText: 'Search address, place....',
-                          hintStyle: TextStyle(color: textSecondary, fontSize: 14),
+                          hintStyle:
+                              TextStyle(color: textSecondary, fontSize: 14),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -180,7 +144,7 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
 
             const SizedBox(height: 12),
 
-            // Category filter chips.
+            // Category chips.
             SizedBox(
               height: 36,
               child: ListView.separated(
@@ -198,7 +162,8 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                       decoration: BoxDecoration(
                         color: active ? AppColors.purple : Colors.transparent,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: active ? AppColors.purple : border),
+                        border: Border.all(
+                            color: active ? AppColors.purple : border),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -206,7 +171,9 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                         style: TextStyle(
                           color: active ? Colors.white : textSecondary,
                           fontSize: 13,
-                          fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: active
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
                       ),
                     ),
@@ -217,192 +184,277 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
 
             const SizedBox(height: 14),
 
-            // Location cards list.
+            // Location list.
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: allParkingLocations.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 20),
-                itemBuilder: (_, i) {
-                  final loc = allParkingLocations[i];
-                  final (availLabel, availColor) = _availability(loc);
-                  final spotsLeft = loc.availableSpots;
+              child: Consumer<ParkingProvider>(
+                builder: (context, provider, _) {
+                  if (provider.isLoadingLots && provider.lots.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                  return CustomPaint(
-                    painter: _GradientBorderPainter(
-                      gradient: isDark
-                          ? const LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [Color(0xFF7D39EB), Color(0xFF0A0320)],
-                      )
-                          : const LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [Color(0xFFE9E2FA), Color(0xFF7D39EB)],
+                  if (provider.lotsError != null && provider.lots.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.error_outline,
+                                color: textSecondary, size: 48),
+                            const SizedBox(height: 12),
+                            Text(provider.lotsError!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: textSecondary, fontSize: 14)),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => provider.fetchLots(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.purple,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
                       ),
-                      borderWidth: 1.5,
-                      radius: 16,
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0x4D000011) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Thumbnail with distance badge.
-                                Stack(
+                    );
+                  }
+
+                  final query = _searchController.text.toLowerCase();
+                  final filtered = provider.lots.where((lot) {
+                    if (query.isNotEmpty &&
+                        !lot.name.toLowerCase().contains(query) &&
+                        !lot.address.toLowerCase().contains(query)) {
+                      return false;
+                    }
+                    return true;
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Text('No parking lots found',
+                          style: TextStyle(color: textSecondary, fontSize: 14)),
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 20),
+                    itemBuilder: (_, i) {
+                      final lot = filtered[i];
+                      final (availLabel, availColor) = _availability(lot);
+
+                      return CustomPaint(
+                        painter: _GradientBorderPainter(
+                          gradient: isDark
+                              ? const LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [
+                                    Color(0xFF7D39EB),
+                                    Color(0xFF0A0320)
+                                  ],
+                                )
+                              : const LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [
+                                    Color(0xFFE9E2FA),
+                                    Color(0xFF7D39EB)
+                                  ],
+                                ),
+                          borderWidth: 1.5,
+                          radius: 16,
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0x4D000011)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.asset(
-                                        loc.imageAsset,
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          width: 80,
-                                          height: 80,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.purple.withOpacity(0.15),
-                                            borderRadius: BorderRadius.circular(10),
+                                    // Thumbnail with distance badge.
+                                    Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          child: lot.imageUrl != null
+                                              ? Image.network(
+                                                  lot.imageUrl!,
+                                                  width: 80,
+                                                  height: 80,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _lotPlaceholder(),
+                                                )
+                                              : _lotPlaceholder(),
+                                        ),
+                                        if (lot.distanceKm != null)
+                                          Positioned(
+                                            bottom: 6,
+                                            left: 6,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 5,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black
+                                                    .withOpacity(0.65),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                '${lot.distanceKm!.toStringAsFixed(1)} km',
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight:
+                                                        FontWeight.w600),
+                                              ),
+                                            ),
                                           ),
-                                          child: const Icon(Icons.local_parking,
-                                              color: AppColors.purple, size: 32),
-                                        ),
-                                      ),
+                                      ],
                                     ),
-                                    Positioned(
-                                      bottom: 6,
-                                      left: 6,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.65),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text('${loc.distanceKm} km',
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600)),
+
+                                    const SizedBox(width: 12),
+
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(lot.name,
+                                                    style: TextStyle(
+                                                        color: textPrimary,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 16)),
+                                              ),
+                                              Text(
+                                                lot.hourlyRate == 0
+                                                    ? 'Free'
+                                                    : 'EGP ${lot.hourlyRate.toStringAsFixed(lot.hourlyRate.truncateToDouble() == lot.hourlyRate ? 0 : 2)} /hr',
+                                                style: TextStyle(
+                                                    color: isDark
+                                                        ? AppColors.accentGreen
+                                                        : const Color(
+                                                            0xFF16A34A),
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        FontWeight.w600),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(lot.address,
+                                              style: TextStyle(
+                                                  color: textSecondary,
+                                                  fontSize: 11),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis),
+                                          const SizedBox(height: 8),
+                                          Text(availLabel,
+                                              style: TextStyle(
+                                                  color: availColor,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500)),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                  child: LinearProgressIndicator(
+                                                    value: lot.total == 0
+                                                        ? 0
+                                                        : 1 - (lot.available / lot.total),
+                                                    backgroundColor:
+                                                        const Color(0xFF1E1E3A),
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<Color>(
+                                                            availColor),
+                                                    minHeight: 5,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text('${lot.available} spots',
+                                                  style: TextStyle(
+                                                      color: textSecondary,
+                                                      fontSize: 11)),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
+                              ),
 
-                                const SizedBox(width: 12),
-
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                              // View Details button.
+                              GestureDetector(
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => ParkingDetailsScreen(
+                                      lotId: lot.id,
+                                      distanceKm: lot.distanceKm,
+                                    ),
+                                  ),
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    border: Border(
+                                      top: BorderSide(
+                                        color: const Color(0xFF7D39EB)
+                                            .withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    borderRadius: const BorderRadius.vertical(
+                                        bottom: Radius.circular(16)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(loc.name,
-                                                style: TextStyle(
-                                                    color: textPrimary,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 16)),
-                                          ),
-                                          Text(
-                                            loc.ratePerHour == 0
-                                                ? 'EGP 0 /hr'
-                                                : 'EGP ${loc.ratePerHour} /hr',
-                                            style: TextStyle(
-                                                color: isDark ? AppColors.accentGreen : const Color(0xFF16A34A),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(loc.address,
-                                          style: TextStyle(color: textSecondary, fontSize: 11),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis),
-                                      const SizedBox(height: 8),
-                                      // Availability label.
-                                      Text(availLabel,
+                                      Text('View Details',
                                           style: TextStyle(
-                                              color: availColor,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500)),
-                                      const SizedBox(height: 4),
-                                      // Availability progress bar.
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(4),
-                                              child: LinearProgressIndicator(
-                                                value: 1 - (loc.availableSpots / loc.totalSpots),
-                                                backgroundColor: const Color(0xFF1E1E3A),
-                                                valueColor: AlwaysStoppedAnimation<Color>(availColor),
-                                                minHeight: 5,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text('$spotsLeft spots',
-                                              style: TextStyle(
-                                                  color: textSecondary, fontSize: 11)),
-                                        ],
-                                      ),
+                                              color: Color(0xFF7D39EB),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600)),
+                                      SizedBox(width: 6),
+                                      Icon(Icons.arrow_forward,
+                                          color: Color(0xFF7D39EB), size: 14),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-
-                          // View Details button — transparent with top divider line.
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ParkingDetailsScreen(location: loc),
-                              ),
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 9),
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                border: Border(
-                                  top: BorderSide(
-                                    color: const Color(0xFF7D39EB).withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                borderRadius: const BorderRadius.vertical(
-                                    bottom: Radius.circular(16)),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('View Details',
-                                      style: TextStyle(
-                                          color: Color(0xFF7D39EB),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600)),
-                                  SizedBox(width: 6),
-                                  Icon(Icons.arrow_forward, color: Color(0xFF7D39EB), size: 14),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ), // Container
-                  ); // CustomPaint
+                        ),
+                      );
+                    },
+                  );
                 },
               ),
             ),
@@ -413,7 +465,6 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
   }
 }
 
-// Strokes a rounded-rect border with a LinearGradient shader.
 class _GradientBorderPainter extends CustomPainter {
   final LinearGradient gradient;
   final double borderWidth;
@@ -439,6 +490,6 @@ class _GradientBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(_GradientBorderPainter old) =>
       old.gradient != gradient ||
-          old.borderWidth != borderWidth ||
-          old.radius != radius;
+      old.borderWidth != borderWidth ||
+      old.radius != radius;
 }

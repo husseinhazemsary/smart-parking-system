@@ -830,7 +830,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get savedPlaces => 'Saved Places';
 
   @override
-  String get savedPlacesSubtitle => 'No saved places yet';
+  String get savedPlacesSubtitle => 'Your favourite parking spots';
+
+  @override
+  String get savedPlacesEmpty =>
+      'No saved places yet. Save a spot to see it here.';
 
   @override
   String get monthlySnapshot => 'Monthly Snapshot';

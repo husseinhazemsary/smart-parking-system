@@ -7,8 +7,12 @@
 // Example:  SelectLocationScreen({super.key, this.initialQuery});
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/parking_lot_model.dart';
+import '../../providers/saved_place_provider.dart';
+import '../../providers/parking_provider.dart';
 import '../parking/select_location_screen.dart';
 import '../parking/parking_details_screen.dart';
 
@@ -30,6 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // Start ticking the elapsed session timer.
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsed += const Duration(seconds: 1));
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ParkingProvider>().fetchLots();
     });
   }
 
@@ -208,12 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final subColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final divColor = isDark ? AppColors.borderDark : AppColors.borderLight;
 
-    // Saved locations mapped to full ParkingLocation objects from _nearby.
-    final saved = [
-      (loc: _nearby.firstWhere((l) => l.name == 'Arkan Mall'), distance: '0.5 km'),
-      (loc: _nearby.firstWhere((l) => l.name == 'Cairo Airport T2'), distance: '1.2 km'),
-      (loc: _nearby.firstWhere((l) => l.name == 'New Giza University'), distance: '0.5 km'),
-    ];
+    context.read<SavedPlaceProvider>().fetchSavedPlaces();
 
     showModalBottomSheet(
       context: context,
@@ -224,74 +226,83 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       builder: (ctx) {
         final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
-        return Padding(
-          padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(color: divColor, borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(l10n.savedPlaces,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
-              const SizedBox(height: 4),
-              Text(l10n.savedPlacesSubtitle,
-                  style: TextStyle(fontSize: 13, color: subColor)),
-              const SizedBox(height: 20),
-              ...saved.map((s) => Column(
+        return Consumer<SavedPlaceProvider>(
+          builder: (ctx, provider, _) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ParkingDetailsScreen(location: s.loc),
-                        ),
-                      );
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40, height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEC4899).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.favorite, color: Color(0xFFEC4899), size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(s.loc.name,
-                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
-                              Text(s.loc.address,
-                                  style: TextStyle(fontSize: 12, color: subColor)),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Text(s.distance, style: TextStyle(fontSize: 12, color: subColor)),
-                            const SizedBox(width: 6),
-                            Icon(Icons.chevron_right, color: subColor, size: 18),
-                          ],
-                        ),
-                      ],
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(color: divColor, borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
-                  if (s != saved.last) Divider(height: 20, color: divColor),
+                  const SizedBox(height: 20),
+                  Text(l10n.savedPlaces,
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+                  const SizedBox(height: 4),
+                  Text(l10n.savedPlacesSubtitle,
+                      style: TextStyle(fontSize: 13, color: subColor)),
+                  const SizedBox(height: 20),
+                  if (provider.isLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (provider.places.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(l10n.savedPlacesEmpty,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, color: subColor)),
+                      ),
+                    )
+                  else
+                    ...provider.places.map((place) => Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40, height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEC4899).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.favorite, color: Color(0xFFEC4899), size: 18),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(place.parkingLotName,
+                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+                                  Text(place.address,
+                                      style: TextStyle(fontSize: 12, color: subColor)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete_outline, color: subColor, size: 20),
+                              onPressed: () => provider.removePlace(place.id),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        if (place != provider.places.last) Divider(height: 20, color: divColor),
+                      ],
+                    )),
                 ],
-              )),
-            ],
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -519,70 +530,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Nearby parking data — images come from assets/images/.
-  final List<ParkingLocation> _nearby = const [
-    ParkingLocation(
-      name: 'Arkan Mall',
-      address: 'Sheikh Zayed, Giza',
-      imageAsset: 'assets/images/arkan.jpg',
-      availableSpots: 28,
-      totalSpots: 80,
-      ratePerHour: 15,
-      opensAt: '7AM',
-      closesAt: '12AM',
-      isOpenNow: true,
-      distanceKm: 0.5,
-      levels: [
-        ParkingLevel(name: 'Level 1 (Ground)', available: 0, total: 40),
-        ParkingLevel(name: 'Level 2', available: 12, total: 40),
-      ],
-    ),
-    ParkingLocation(
-      name: 'New Giza University',
-      address: 'Giza, New Giza',
-      imageAsset: 'assets/images/ngu.jpg',
-      availableSpots: 12,
-      totalSpots: 60,
-      ratePerHour: 0,
-      opensAt: '7AM',
-      closesAt: '10PM',
-      isOpenNow: true,
-      distanceKm: 0.5,
-      levels: [
-        ParkingLevel(name: 'Level 1', available: 12, total: 60),
-      ],
-    ),
-    ParkingLocation(
-      name: 'Cairo Airport T2',
-      address: 'Cairo International Airport',
-      imageAsset: 'assets/images/airport.jpg',
-      availableSpots: 3,
-      totalSpots: 200,
-      ratePerHour: 25,
-      opensAt: '24h',
-      closesAt: '24h',
-      isOpenNow: true,
-      distanceKm: 1.2,
-      levels: [
-        ParkingLevel(name: 'Level 1', available: 3, total: 200),
-      ],
-    ),
-    ParkingLocation(
-      name: 'Tahrir Street',
-      address: 'Tahrir Square, Downtown',
-      imageAsset: 'assets/images/tahrir.jpg',
-      availableSpots: 45,
-      totalSpots: 100,
-      ratePerHour: 10,
-      opensAt: '6AM',
-      closesAt: '11PM',
-      isOpenNow: true,
-      distanceKm: 2.1,
-      levels: [
-        ParkingLevel(name: 'Street Level', available: 45, total: 100),
-      ],
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -925,24 +872,48 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
 
               // Horizontal scrollable nearby parking cards.
-              SizedBox(
-                height: 160,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _nearby.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, i) {
-                    final loc = _nearby[i];
-                    return _NearbyCard(
-                      location: loc,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ParkingDetailsScreen(location: loc),
+              Consumer<ParkingProvider>(
+                builder: (context, provider, _) {
+                  if (provider.isLoadingLots && provider.lots.isEmpty) {
+                    return const SizedBox(
+                      height: 160,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  if (provider.lots.isEmpty) {
+                    return SizedBox(
+                      height: 80,
+                      child: Center(
+                        child: Text(
+                          provider.lotsError ?? 'No parking lots available',
+                          style: TextStyle(color: textSecondary, fontSize: 13),
                         ),
                       ),
                     );
-                  },
-                ),
+                  }
+                  return SizedBox(
+                    height: 160,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: provider.lots.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (_, i) {
+                        final lot = provider.lots[i];
+                        return _NearbyCard(
+                          lot: lot,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ParkingDetailsScreen(
+                                lotId: lot.id,
+                                distanceKm: lot.distanceKm,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 28),
@@ -1124,15 +1095,15 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-// Nearby parking card — image background with name, rating and availability overlay.
+// Nearby parking card — icon background with name and availability overlay.
 class _NearbyCard extends StatelessWidget {
-  final ParkingLocation location;
+  final ParkingLotSummary lot;
   final VoidCallback onTap;
-  const _NearbyCard({required this.location, required this.onTap});
+  const _NearbyCard({required this.lot, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final isAvailable = location.availableSpots > 0;
+    final isAvailable = lot.available > 0;
 
     return GestureDetector(
       onTap: onTap,
@@ -1143,18 +1114,19 @@ class _NearbyCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Background image.
-              Image.asset(
-                location.imageAsset,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.purple.withOpacity(0.2),
-                  child: const Icon(Icons.local_parking,
-                      color: AppColors.purple, size: 40),
-                ),
-              ),
+              // Background image (falls back to purple placeholder).
+              lot.imageUrl != null
+                  ? Image.network(
+                      lot.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, err, __) {
+                        debugPrint('Image load error for ${lot.name}: $err');
+                        return _ParkingPlaceholder();
+                      },
+                    )
+                  : _ParkingPlaceholder(),
 
-              // Dark gradient so text is readable over any photo.
+              // Dark gradient so text is readable.
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -1169,22 +1141,26 @@ class _NearbyCard extends StatelessWidget {
               ),
 
               // Distance badge top-right.
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text('${location.distanceKm} km',
+              if (lot.distanceKm != null)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${lot.distanceKm!.toStringAsFixed(1)} km',
                       style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
-                          fontWeight: FontWeight.w600)),
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ),
-              ),
 
               // Bottom overlay: name, address, availability dot + rate.
               Positioned(
@@ -1194,20 +1170,20 @@ class _NearbyCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(location.name,
+                    Text(lot.name,
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700)),
-                    Text(location.address,
-                        style: const TextStyle(color: Colors.white70, fontSize: 10),
+                    Text(lot.address,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 10),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Availability status dot + label.
                         Row(
                           children: [
                             Container(
@@ -1236,13 +1212,12 @@ class _NearbyCard extends StatelessWidget {
                             }),
                           ],
                         ),
-                        // Rate label.
                         Builder(builder: (ctx) {
                           final l = AppLocalizations.of(ctx)!;
                           return Text(
-                            location.ratePerHour == 0
+                            lot.hourlyRate == 0
                                 ? l.free
-                                : 'EGP ${location.ratePerHour} /hr',
+                                : 'EGP ${lot.hourlyRate.toStringAsFixed(lot.hourlyRate.truncateToDouble() == lot.hourlyRate ? 0 : 2)} /hr',
                             style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 11,
@@ -1260,6 +1235,14 @@ class _NearbyCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ParkingPlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+        color: AppColors.purple.withOpacity(0.2),
+        child: const Icon(Icons.local_parking, color: AppColors.purple, size: 40),
+      );
 }
 
 // Single stat column used in the Monthly Snapshot card.

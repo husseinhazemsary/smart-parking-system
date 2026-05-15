@@ -17,5 +17,6 @@ public record ParkingLotDetailResponse(
         List<String> amenities,
         int numberOfGates,
         int availableSlots,
-        int totalSlots
+        int totalSlots,
+        String imageUrl
 ) {}

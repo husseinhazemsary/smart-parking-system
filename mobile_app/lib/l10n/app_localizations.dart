@@ -1709,8 +1709,14 @@ abstract class AppLocalizations {
   /// No description provided for @savedPlacesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'No saved places yet'**
+  /// **'Your favourite parking spots'**
   String get savedPlacesSubtitle;
+
+  /// No description provided for @savedPlacesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved places yet. Save a spot to see it here.'**
+  String get savedPlacesEmpty;
 
   /// No description provided for @monthlySnapshot.
   ///

@@ -48,7 +48,8 @@ public class ParkingLotService {
                 lot.getAmenities(),
                 lot.getNumberOfGates(),
                 available,
-                total
+                total,
+                lot.getImageUrl()
         );
     }
 
@@ -93,7 +94,8 @@ public class ParkingLotService {
                 total,
                 lot.getHourlyRate(),
                 lot.getOpeningTime(),
-                lot.getClosingTime()
+                lot.getClosingTime(),
+                lot.getImageUrl()
         );
     }
 

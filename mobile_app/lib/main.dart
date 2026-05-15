@@ -8,7 +8,9 @@ import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/user_prefs_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/saved_place_provider.dart';
 import 'providers/vehicle_provider.dart';
+import 'providers/parking_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash/splash_screen.dart';
 
@@ -35,6 +37,12 @@ void main() async {
           update: (_, auth, vehicles) =>
               vehicles!..onAuthChanged(auth.isAuthenticated),
         ),
+        ChangeNotifierProxyProvider<AuthProvider, SavedPlaceProvider>(
+          create: (_) => SavedPlaceProvider(),
+          update: (_, auth, saved) =>
+              saved!..onAuthChanged(auth.isAuthenticated),
+        ),
+        ChangeNotifierProvider(create: (_) => ParkingProvider()),
       ],
       child: const EzRaknaApp(),
     ),

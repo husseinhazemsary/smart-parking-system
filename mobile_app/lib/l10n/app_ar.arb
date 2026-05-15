@@ -303,7 +303,8 @@
   "noReceipt": "لا يوجد إيصال",
 
   "savedPlaces": "الأماكن المحفوظة",
-  "savedPlacesSubtitle": "لا توجد أماكن محفوظة بعد",
+  "savedPlacesSubtitle": "أماكن الوقوف المفضلة لديك",
+  "savedPlacesEmpty": "لا توجد أماكن محفوظة بعد. احفظ موقفاً لرؤيته هنا.",
   "monthlySnapshot": "ملخص الشهر",
   "recentSessions": "الجلسات الأخيرة",
   "searchDestination": "ابحث عن وجهتك...",

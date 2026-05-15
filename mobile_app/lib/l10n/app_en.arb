@@ -303,7 +303,8 @@
   "noReceipt": "No receipt available",
 
   "savedPlaces": "Saved Places",
-  "savedPlacesSubtitle": "No saved places yet",
+  "savedPlacesSubtitle": "Your favourite parking spots",
+  "savedPlacesEmpty": "No saved places yet. Save a spot to see it here.",
   "monthlySnapshot": "Monthly Snapshot",
   "recentSessions": "Recent Sessions",
   "searchDestination": "Search destination...",

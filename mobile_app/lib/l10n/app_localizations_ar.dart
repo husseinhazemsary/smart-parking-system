@@ -830,7 +830,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get savedPlaces => 'الأماكن المحفوظة';
 
   @override
-  String get savedPlacesSubtitle => 'لا توجد أماكن محفوظة بعد';
+  String get savedPlacesSubtitle => 'أماكن الوقوف المفضلة لديك';
+
+  @override
+  String get savedPlacesEmpty =>
+      'لا توجد أماكن محفوظة بعد. احفظ موقفاً لرؤيته هنا.';
 
   @override
   String get monthlySnapshot => 'ملخص الشهر';

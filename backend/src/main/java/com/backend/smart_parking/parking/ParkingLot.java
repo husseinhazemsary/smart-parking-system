@@ -40,6 +40,9 @@ public class ParkingLot {
     @Column(nullable = false)
     private int numberOfGates = 1;
 
+    @Column
+    private String imageUrl;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "parking_lot_amenities", joinColumns = @JoinColumn(name = "parking_lot_id"))
     @Column(name = "amenity")
@@ -54,6 +57,7 @@ public class ParkingLot {
     public LocalTime getOpeningTime() { return openingTime; }
     public LocalTime getClosingTime() { return closingTime; }
     public int getNumberOfGates() { return numberOfGates; }
+    public String getImageUrl() { return imageUrl; }
     public List<String> getAmenities() { return amenities; }
 
     public void setName(String name) { this.name = name; }
@@ -64,5 +68,6 @@ public class ParkingLot {
     public void setOpeningTime(LocalTime openingTime) { this.openingTime = openingTime; }
     public void setClosingTime(LocalTime closingTime) { this.closingTime = closingTime; }
     public void setNumberOfGates(int numberOfGates) { this.numberOfGates = numberOfGates; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setAmenities(List<String> amenities) { this.amenities = amenities; }
 }

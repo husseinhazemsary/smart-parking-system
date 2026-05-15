@@ -13,5 +13,6 @@ public record ParkingLotSummaryResponse(
         int totalSlots,
         BigDecimal hourlyRate,
         LocalTime openingTime,
-        LocalTime closingTime
+        LocalTime closingTime,
+        String imageUrl
 ) {}
