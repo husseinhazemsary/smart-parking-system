@@ -1,10 +1,12 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import numpy as np
 import cv2
+from PIL import Image, ExifTags
+import io
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from PlateReader import PlateReader
@@ -51,8 +53,23 @@ async def scan_plate(image: UploadFile = File(...)):
             status_code=400,
         )
 
-    arr = np.frombuffer(data, dtype=np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    # Apply EXIF rotation before decoding — cv2.imdecode ignores EXIF orientation,
+    # so camera shots arrive sideways/upside-down while gallery images are pre-rotated.
+    try:
+        pil_img = Image.open(io.BytesIO(data))
+        exif = pil_img._getexif()
+        if exif:
+            orientation_key = next(
+                (k for k, v in ExifTags.TAGS.items() if v == 'Orientation'), None
+            )
+            orientation = exif.get(orientation_key) if orientation_key else None
+            rotation_map = {3: 180, 6: 270, 8: 90}
+            if orientation in rotation_map:
+                pil_img = pil_img.rotate(rotation_map[orientation], expand=True)
+        img = cv2.cvtColor(np.array(pil_img.convert('RGB')), cv2.COLOR_RGB2BGR)
+    except Exception:
+        arr = np.frombuffer(data, dtype=np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
     if img is None:
         print(f"[SCAN #{req_id}] ERROR: cv2.imdecode returned None — not a valid image")

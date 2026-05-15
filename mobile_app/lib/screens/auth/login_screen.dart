@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _devSignIn() async {
-    _emailController.text = 'nour@mail.com';
+    _emailController.text = 'nour.mohamedhelmy@gmail.com';
     _passwordController.text = 'Nour1234';
     await _login();
   }

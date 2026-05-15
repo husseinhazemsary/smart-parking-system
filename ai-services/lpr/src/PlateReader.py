@@ -98,7 +98,10 @@ class PlateReader:
 
                 raw_texts.append(text)
 
-                if vertical_center >= header_cutoff:
+                # Keep only regions below the header band that contain Arabic script.
+                # Drops Latin-only noise ("Rs", "31") printed on plate frames/stickers.
+                has_arabic = bool(re.search(r'[؀-ۿ٠-٩]', text))
+                if vertical_center >= header_cutoff and has_arabic:
                     filtered_texts.append(text)
                     filtered_confidences.append(confidence)
 
