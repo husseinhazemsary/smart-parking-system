@@ -7,6 +7,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.concurrent.CompletableFuture;
+
 @RestController
 @RequestMapping("/api/plates")
 public class PlateController {
@@ -18,7 +20,7 @@ public class PlateController {
     }
 
     @PostMapping(value = "/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public PlateScanResponse scanPlate(
+    public CompletableFuture<PlateScanResponse> scanPlate(
             @AuthenticationPrincipal UserDetails currentUser,
             @RequestParam("image") MultipartFile image) {
         return plateService.scanPlate(image);

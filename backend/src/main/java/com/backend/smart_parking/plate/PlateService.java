@@ -4,6 +4,7 @@ import com.backend.smart_parking.plate.dto.PlateScanResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -12,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class PlateService {
@@ -25,7 +27,8 @@ public class PlateService {
         this.restTemplate = restTemplate;
     }
 
-    public PlateScanResponse scanPlate(MultipartFile image) {
+    @Async("lprExecutor")
+    public CompletableFuture<PlateScanResponse> scanPlate(MultipartFile image) {
         try {
             byte[] bytes = image.getBytes();
             String filename = image.getOriginalFilename() != null ? image.getOriginalFilename() : "plate.jpg";
@@ -51,10 +54,12 @@ public class PlateService {
                     PlateScanResponse.class
             );
 
-            return response != null ? response : new PlateScanResponse(null, 0.0, false);
+            return CompletableFuture.completedFuture(
+                    response != null ? response : new PlateScanResponse(null, 0.0, false)
+            );
 
         } catch (IOException | RestClientException e) {
-            return new PlateScanResponse(null, 0.0, false);
+            return CompletableFuture.completedFuture(new PlateScanResponse(null, 0.0, false));
         }
     }
 }
