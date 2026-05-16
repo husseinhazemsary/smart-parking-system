@@ -42,6 +42,11 @@ public class ParkingLotController {
         return parkingLotService.getAvailability(id);
     }
 
+    @GetMapping("/{id}/gates")
+    public List<GateResponse> getGates(@PathVariable UUID id) {
+        return parkingLotService.getGates(id);
+    }
+
     @GetMapping("/{id}/share")
     public ShareResponse getShareLink(@PathVariable UUID id) {
         return parkingLotService.getShareLink(id);

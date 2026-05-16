@@ -25,6 +25,7 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(name = "phone_number")
     private String phoneNumber;
 
     private LocalDate dateOfBirth;
@@ -33,8 +34,12 @@ public class User implements UserDetails {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "auth_provider", nullable = false)
     private AuthProvider provider;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'ROLE_USER'")
+    private Role role = Role.ROLE_USER;
 
     private String providerId;
 
@@ -57,7 +62,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     @Override
@@ -83,4 +88,6 @@ public class User implements UserDetails {
     public void setPassword(String password) { this.password = password; }
     public void setProvider(AuthProvider provider) { this.provider = provider; }
     public void setProviderId(String providerId) { this.providerId = providerId; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 }

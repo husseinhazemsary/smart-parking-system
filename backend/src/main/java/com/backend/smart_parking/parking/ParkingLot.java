@@ -56,6 +56,9 @@ public class ParkingLot {
     @Column(nullable = false)
     private boolean hasSubscriptions = false;
 
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "parking_lot_amenities", joinColumns = @JoinColumn(name = "parking_lot_id"))
     @Column(name = "amenity")
@@ -83,6 +86,7 @@ public class ParkingLot {
     public List<String> getAmenities() { return amenities; }
     public List<DayOfWeek> getOperatingDays() { return operatingDays; }
     public boolean isHasSubscriptions() { return hasSubscriptions; }
+    public boolean isActive() { return isActive; }
 
     public void setName(String name) { this.name = name; }
     public void setNameAr(String nameAr) { this.nameAr = nameAr; }
@@ -99,4 +103,5 @@ public class ParkingLot {
     public void setAmenities(List<String> amenities) { this.amenities = amenities; }
     public void setOperatingDays(List<DayOfWeek> operatingDays) { this.operatingDays = operatingDays; }
     public void setHasSubscriptions(boolean hasSubscriptions) { this.hasSubscriptions = hasSubscriptions; }
+    public void setActive(boolean active) { isActive = active; }
 }

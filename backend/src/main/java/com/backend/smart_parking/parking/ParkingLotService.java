@@ -2,6 +2,7 @@ package com.backend.smart_parking.parking;
 
 import com.backend.smart_parking.parking.dto.*;
 import com.backend.smart_parking.user.User;
+import com.backend.smart_parking.parking.GateRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class ParkingLotService {
     private final ParkingSubscriptionPlanRepository subscriptionPlanRepository;
     private final ParkingReportRepository reportRepository;
     private final ParkingAlertRepository alertRepository;
+    private final GateRepository gateRepository;
 
     @Value("${app.share.base-url:https://ezrakna.app/lots}")
     private String shareBaseUrl;
@@ -28,12 +30,14 @@ public class ParkingLotService {
                               ParkingSlotRepository parkingSlotRepository,
                               ParkingSubscriptionPlanRepository subscriptionPlanRepository,
                               ParkingReportRepository reportRepository,
-                              ParkingAlertRepository alertRepository) {
+                              ParkingAlertRepository alertRepository,
+                              GateRepository gateRepository) {
         this.parkingLotRepository = parkingLotRepository;
         this.parkingSlotRepository = parkingSlotRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.reportRepository = reportRepository;
         this.alertRepository = alertRepository;
+        this.gateRepository = gateRepository;
     }
 
     public List<ParkingLotSummaryResponse> getAllLots(Double lat, Double lng) {
@@ -86,6 +90,13 @@ public class ParkingLotService {
         int total = parkingSlotRepository.countByParkingLotId(id);
         int available = parkingSlotRepository.countByParkingLotIdAndStatus(id, SlotStatus.AVAILABLE);
         return new AvailabilityResponse(available, total);
+    }
+
+    public List<GateResponse> getGates(UUID id) {
+        findLotOrThrow(id);
+        return gateRepository.findAllByParkingLotIdAndIsActiveTrue(id).stream()
+                .map(g -> new GateResponse(g.getId(), g.getName()))
+                .toList();
     }
 
     public ShareResponse getShareLink(UUID id) {

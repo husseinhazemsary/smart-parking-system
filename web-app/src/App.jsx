@@ -14,10 +14,24 @@ export default function Ezrakna(){
   const [initialSpotId,setInitialSpotId]=useState(null);
 
   const go = (v) => { setView(v); };
-  // Scroll to top AFTER the new view has mounted in the DOM
+
+  // Restore session from localStorage on first load
+  React.useEffect(() => {
+    const token = localStorage.getItem("token");
+    const name  = localStorage.getItem("userName");
+    const email = localStorage.getItem("userEmail");
+    const id    = localStorage.getItem("userId");
+    if (token && email) setUser({ id, name, email, token });
+  }, []);
+
   React.useEffect(() => { window.scrollTo({top:0,left:0,behavior:"instant"}); }, [view]);
+
   const handleAuth = (u) => { setUser(u); setAuthOpen(false); go("app"); };
-  const handleLogout = () => { setUser(null); go("landing"); };
+  const handleLogout = () => {
+    setUser(null);
+    go("landing");
+    ["token","refreshToken","userId","userName","userEmail"].forEach(k => localStorage.removeItem(k));
+  };
   const handleEnter = () => { go("app"); };
   const handleEnterWithSpot = (spot) => { setInitialSpotId(spot.id); go("app"); };
   const handleBusiness = () => { go("business"); };
