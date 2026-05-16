@@ -313,5 +313,20 @@
   "viewAll": "عرض الكل",
   "available": "متاح",
   "limitedSpots": "أماكن محدودة",
-  "free": "مجاني"
+  "free": "مجاني",
+
+  "selectLocationTitle": "اختر الموقع",
+  "searchAddressHint": "ابحث عن عنوان أو مكان...",
+  "noLotsFound": "لا توجد مواقف",
+  "categoryAll": "الكل",
+  "categoryMalls": "المولات",
+  "categoryUniversities": "الجامعات",
+  "categoryAirports": "المطارات",
+  "categoryStreets": "الشوارع",
+  "sortBy": "ترتيب حسب",
+  "sortNearest": "الأقرب",
+  "sortMostAvailable": "الأكثر توفراً",
+  "sortLowestRate": "الأقل سعراً",
+  "sortHighestRate": "الأعلى سعراً",
+  "apply": "تطبيق"
 }

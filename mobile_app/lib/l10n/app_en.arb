@@ -313,5 +313,20 @@
   "viewAll": "View All",
   "available": "Available",
   "limitedSpots": "Limited Spots",
-  "free": "Free"
+  "free": "Free",
+
+  "selectLocationTitle": "Select Location",
+  "searchAddressHint": "Search address, place...",
+  "noLotsFound": "No parking lots found",
+  "categoryAll": "All",
+  "categoryMalls": "Malls",
+  "categoryUniversities": "Universities",
+  "categoryAirports": "Airports",
+  "categoryStreets": "Streets",
+  "sortBy": "Sort By",
+  "sortNearest": "Nearest",
+  "sortMostAvailable": "Most Available",
+  "sortLowestRate": "Lowest Rate",
+  "sortHighestRate": "Highest Rate",
+  "apply": "Apply"
 }

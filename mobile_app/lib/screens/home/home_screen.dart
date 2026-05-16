@@ -1,10 +1,6 @@
 // Home screen — main dashboard shown after login.
 // Displays: user greeting, search bar, active parking session timer,
 // nearby parking cards, and a monthly snapshot summary.
-//
-// NOTE: SelectLocationScreen must accept an optional `initialQuery` named
-// parameter (String?) so the search bar can pre-fill the query on navigation.
-// Example:  SelectLocationScreen({super.key, this.initialQuery});
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -716,21 +712,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 16),
 
-              // Search bar — real text input; navigates to SelectLocationScreen on submit.
+              // Search bar — tapping opens SelectLocationScreen where real search happens.
               TextField(
-                onSubmitted: (query) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SelectLocationScreen(),
-                    ),
-                  );
-                },
+                readOnly: true,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SelectLocationScreen(initialQuery: ''),
+                  ),
+                ),
                 style: TextStyle(color: textPrimary, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: l10n.searchDestination,
                   hintStyle: TextStyle(color: textSecondary, fontSize: 14),
                   prefixIcon: Icon(Icons.search, color: textSecondary, size: 20),
-                  suffixIcon: Icon(Icons.tune, color: textSecondary, size: 20),
+                  suffixIcon: null,
                   filled: true,
                   fillColor: surface,
                   contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),

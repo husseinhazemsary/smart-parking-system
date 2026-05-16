@@ -862,4 +862,46 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get free => 'مجاني';
+
+  @override
+  String get selectLocationTitle => 'اختر الموقع';
+
+  @override
+  String get searchAddressHint => 'ابحث عن عنوان أو مكان...';
+
+  @override
+  String get noLotsFound => 'لا توجد مواقف';
+
+  @override
+  String get categoryAll => 'الكل';
+
+  @override
+  String get categoryMalls => 'المولات';
+
+  @override
+  String get categoryUniversities => 'الجامعات';
+
+  @override
+  String get categoryAirports => 'المطارات';
+
+  @override
+  String get categoryStreets => 'الشوارع';
+
+  @override
+  String get sortBy => 'ترتيب حسب';
+
+  @override
+  String get sortNearest => 'الأقرب';
+
+  @override
+  String get sortMostAvailable => 'الأكثر توفراً';
+
+  @override
+  String get sortLowestRate => 'الأقل سعراً';
+
+  @override
+  String get sortHighestRate => 'الأعلى سعراً';
+
+  @override
+  String get apply => 'تطبيق';
 }

@@ -1771,6 +1771,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Free'**
   String get free;
+
+  /// No description provided for @selectLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Location'**
+  String get selectLocationTitle;
+
+  /// No description provided for @searchAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search address, place...'**
+  String get searchAddressHint;
+
+  /// No description provided for @noLotsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No parking lots found'**
+  String get noLotsFound;
+
+  /// No description provided for @categoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get categoryAll;
+
+  /// No description provided for @categoryMalls.
+  ///
+  /// In en, this message translates to:
+  /// **'Malls'**
+  String get categoryMalls;
+
+  /// No description provided for @categoryUniversities.
+  ///
+  /// In en, this message translates to:
+  /// **'Universities'**
+  String get categoryUniversities;
+
+  /// No description provided for @categoryAirports.
+  ///
+  /// In en, this message translates to:
+  /// **'Airports'**
+  String get categoryAirports;
+
+  /// No description provided for @categoryStreets.
+  ///
+  /// In en, this message translates to:
+  /// **'Streets'**
+  String get categoryStreets;
+
+  /// No description provided for @sortBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort By'**
+  String get sortBy;
+
+  /// No description provided for @sortNearest.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest'**
+  String get sortNearest;
+
+  /// No description provided for @sortMostAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Most Available'**
+  String get sortMostAvailable;
+
+  /// No description provided for @sortLowestRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowest Rate'**
+  String get sortLowestRate;
+
+  /// No description provided for @sortHighestRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest Rate'**
+  String get sortHighestRate;
+
+  /// No description provided for @apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
 }
 
 class _AppLocalizationsDelegate

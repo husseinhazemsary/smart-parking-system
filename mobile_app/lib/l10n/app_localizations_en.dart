@@ -862,4 +862,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get free => 'Free';
+
+  @override
+  String get selectLocationTitle => 'Select Location';
+
+  @override
+  String get searchAddressHint => 'Search address, place...';
+
+  @override
+  String get noLotsFound => 'No parking lots found';
+
+  @override
+  String get categoryAll => 'All';
+
+  @override
+  String get categoryMalls => 'Malls';
+
+  @override
+  String get categoryUniversities => 'Universities';
+
+  @override
+  String get categoryAirports => 'Airports';
+
+  @override
+  String get categoryStreets => 'Streets';
+
+  @override
+  String get sortBy => 'Sort By';
+
+  @override
+  String get sortNearest => 'Nearest';
+
+  @override
+  String get sortMostAvailable => 'Most Available';
+
+  @override
+  String get sortLowestRate => 'Lowest Rate';
+
+  @override
+  String get sortHighestRate => 'Highest Rate';
+
+  @override
+  String get apply => 'Apply';
 }
