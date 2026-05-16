@@ -37,7 +37,15 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ParkingProvider>().fetchDetail(widget.lotId);
+      _loadActiveAlert();
     });
+  }
+
+  Future<void> _loadActiveAlert() async {
+    final data = await ParkingService.getActiveAlert(widget.lotId);
+    if (data != null && mounted) {
+      setState(() => _alertConfig = AlertConfig.fromJson(data));
+    }
   }
 
   Future<void> _openInMaps(double lat, double lng, String name) async {

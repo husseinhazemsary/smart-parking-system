@@ -15,6 +15,7 @@ class PlateScanService {
       final response = await ApiClient.instance.post(
         '/plates/scan',
         data: formData,
+        options: Options(receiveTimeout: const Duration(seconds: 60)),
       );
 
       final data = response.data;

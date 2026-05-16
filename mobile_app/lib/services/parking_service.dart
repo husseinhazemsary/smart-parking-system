@@ -52,4 +52,14 @@ class ParkingService {
   static Future<void> saveAlert(String lotId, Map<String, dynamic> alert) async {
     await _dio.post('/parking-lots/$lotId/alerts', data: alert);
   }
+
+  static Future<Map<String, dynamic>?> getActiveAlert(String lotId) async {
+    try {
+      final response = await _dio.get('/parking-lots/$lotId/alerts/active');
+      if (response.statusCode == 204) return null;
+      return response.data as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
+    }
+  }
 }

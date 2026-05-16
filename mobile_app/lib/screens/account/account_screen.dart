@@ -27,9 +27,15 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   bool _notificationsEnabled = true;
-  // Whether the user requires accessible parking spots.
-  // When enabled, the system prioritizes accessible slots during reservation.
   bool _isAccessible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VehicleProvider>().fetchVehicles();
+    });
+  }
 
   Future<void> _onAccessibleToggle(bool newValue) async {
     if (!newValue) {

@@ -116,6 +116,13 @@ public class ParkingLotService {
                 .toList();
     }
 
+    public AlertResponse getActiveAlert(UUID lotId, User user) {
+        findLotOrThrow(lotId);
+        return alertRepository.findByUserIdAndParkingLotIdAndActiveTrue(user.getId(), lotId)
+                .map(ParkingLotService::toAlertResponse)
+                .orElse(null);
+    }
+
     @Transactional
     public void submitReport(UUID lotId, ReportRequest request, User user) {
         ParkingLot lot = findLotOrThrow(lotId);
@@ -130,9 +137,8 @@ public class ParkingLotService {
     @Transactional
     public AlertResponse saveAlert(UUID lotId, AlertRequest request, User user) {
         ParkingLot lot = findLotOrThrow(lotId);
-        // Deactivate any existing alert for this user + lot before creating a new one.
-        alertRepository.findByUserIdAndParkingLotIdAndActiveTrue(user.getId(), lotId)
-                .ifPresent(existing -> {
+        alertRepository.findAllByUserIdAndParkingLotIdAndActiveTrue(user.getId(), lotId)
+                .forEach(existing -> {
                     existing.setActive(false);
                     alertRepository.save(existing);
                 });

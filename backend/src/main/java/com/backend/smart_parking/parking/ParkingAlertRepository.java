@@ -11,4 +11,6 @@ public interface ParkingAlertRepository extends JpaRepository<ParkingAlert, UUID
     List<ParkingAlert> findAllByUserIdAndActiveTrue(UUID userId);
 
     Optional<ParkingAlert> findByUserIdAndParkingLotIdAndActiveTrue(UUID userId, UUID parkingLotId);
+
+    List<ParkingAlert> findAllByUserIdAndParkingLotIdAndActiveTrue(UUID userId, UUID parkingLotId);
 }

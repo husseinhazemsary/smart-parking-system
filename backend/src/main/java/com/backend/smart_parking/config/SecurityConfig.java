@@ -43,7 +43,10 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/plates/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/parking-lots/*/alerts").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/parking-lots/*/alerts/active").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/parking-lots/*/reports").authenticated()
                         .requestMatchers("/api/parking-lots/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()

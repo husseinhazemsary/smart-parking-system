@@ -4,6 +4,7 @@ import com.backend.smart_parking.parking.dto.*;
 import com.backend.smart_parking.user.User;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,6 +56,13 @@ public class ParkingLotController {
     @GetMapping("/{id}/subscriptions")
     public List<SubscriptionPlanResponse> getSubscriptionPlans(@PathVariable UUID id) {
         return parkingLotService.getSubscriptionPlans(id);
+    }
+
+    @GetMapping("/{id}/alerts/active")
+    public ResponseEntity<AlertResponse> getActiveAlert(@PathVariable UUID id,
+                                                        @AuthenticationPrincipal User user) {
+        AlertResponse alert = parkingLotService.getActiveAlert(id, user);
+        return alert != null ? ResponseEntity.ok(alert) : ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/reports")

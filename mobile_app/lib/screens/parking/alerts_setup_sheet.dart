@@ -26,6 +26,34 @@ class AlertConfig {
     this.sound = false,
     this.vibrate = false,
   });
+
+  factory AlertConfig.fromJson(Map<String, dynamic> json) {
+    const triggerKeys = ['ANY_AVAILABLE', 'THRESHOLD', 'EV_ACCESSIBLE'];
+    final triggerCondition = json['triggerCondition'] as String? ?? 'THRESHOLD';
+    final triggerIndex = triggerKeys.indexOf(triggerCondition).clamp(0, 2);
+
+    const durationMinutes = [30, 60, 120, 240, 480];
+    final checkDuration = json['checkDurationMinutes'] as int? ?? 120;
+    final durationIdx = durationMinutes.indexOf(checkDuration);
+    final durationSlider = durationIdx < 0 ? 2.0 : durationIdx.toDouble();
+
+    const expiryMinutes = [30, 60, 120, 240, 1440];
+    const expiryOptions = ['30 Min', '1 Hour', '2 Hours', '4 Hours', '24 Hours'];
+    final expiresInMinutes = json['expiresInMinutes'] as int? ?? 60;
+    final expiryIdx = expiryMinutes.indexOf(expiresInMinutes);
+    final expiresIn = expiryIdx >= 0 ? expiryOptions[expiryIdx] : '1 Hour';
+
+    return AlertConfig(
+      triggerIndex: triggerIndex,
+      minSpots: json['minSpots'] as int? ?? 5,
+      durationSlider: durationSlider,
+      expiresIn: expiresIn,
+      quietHours: json['quietHours'] as bool? ?? false,
+      pushNotification: json['pushNotification'] as bool? ?? true,
+      sound: json['sound'] as bool? ?? false,
+      vibrate: json['vibrate'] as bool? ?? false,
+    );
+  }
 }
 
 void showAlertsSetupSheet(
