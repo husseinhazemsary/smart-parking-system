@@ -7,6 +7,7 @@
 // Example:  SelectLocationScreen({super.key, this.initialQuery});
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -27,17 +28,118 @@ class _HomeScreenState extends State<HomeScreen> {
   // Active session elapsed time — ticks every second.
   Duration _elapsed = const Duration(hours: 1, minutes: 23, seconds: 45);
   Timer? _timer;
+  String _locationLabel = 'Cairo, Egypt';
 
   @override
   void initState() {
     super.initState();
-    // Start ticking the elapsed session timer.
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsed += const Duration(seconds: 1));
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ParkingProvider>().fetchLots();
-    });
+    // Delay so the route push animation from login finishes before the
+    // permission dialog appears — Android suppresses dialogs during transitions.
+    Future.delayed(const Duration(milliseconds: 600), _initLocation);
+  }
+
+  Future<void> _initLocation() async {
+    final provider = context.read<ParkingProvider>();
+
+    // 1. Location services (device GPS toggle).
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    debugPrint('[LOC] serviceEnabled=$serviceEnabled');
+    if (!serviceEnabled) {
+      if (!mounted) return;
+      final open = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Location services off'),
+          content: const Text(
+              'Enable location services so we can show parking lots near you.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Skip'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Enable'),
+            ),
+          ],
+        ),
+      );
+      if (open == true) await Geolocator.openLocationSettings();
+      provider.fetchLots();
+      return;
+    }
+
+    // 2. App permission.
+    LocationPermission permission = await Geolocator.checkPermission();
+    debugPrint('[LOC] permission before request=$permission');
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      debugPrint('[LOC] permission after request=$permission');
+    }
+    if (permission == LocationPermission.deniedForever) {
+      if (!mounted) return;
+      final open = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Location permission required'),
+          content: const Text(
+              'Location permission was permanently denied. Open app settings to allow it.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Skip'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+      if (open == true) await Geolocator.openAppSettings();
+      provider.fetchLots();
+      return;
+    }
+    if (permission == LocationPermission.denied) {
+      debugPrint('[LOC] permission denied — loading unsorted');
+      provider.fetchLots();
+      return;
+    }
+
+    // 3. Try last known position first — instant, no timeout risk.
+    debugPrint('[LOC] trying getLastKnownPosition...');
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      debugPrint('[LOC] lastKnown=$last');
+      if (last != null && mounted) {
+        setState(() => _locationLabel = 'Your Location');
+        provider.refreshLotsWithLocation(last.latitude, last.longitude);
+        return;
+      }
+    } catch (e) {
+      debugPrint('[LOC] getLastKnownPosition error: $e');
+    }
+
+    // 4. No cached position — request a fresh fix.
+    debugPrint('[LOC] trying getCurrentPosition...');
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 12),
+        ),
+      );
+      debugPrint('[LOC] got pos: ${pos.latitude}, ${pos.longitude}');
+      if (!mounted) return;
+      setState(() => _locationLabel = 'Your Location');
+      provider.refreshLotsWithLocation(pos.latitude, pos.longitude);
+    } catch (e) {
+      debugPrint('[LOC] getCurrentPosition error: $e — loading unsorted');
+      if (mounted) provider.fetchLots();
+    }
   }
 
   @override
@@ -591,7 +693,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icon(Icons.location_on_outlined,
                                 color: AppColors.purple, size: 14),
                             const SizedBox(width: 2),
-                            Text('Cairo, Egypt',
+                            Text(_locationLabel,
                                 style: TextStyle(color: textSecondary, fontSize: 12)),
                           ],
                         ),

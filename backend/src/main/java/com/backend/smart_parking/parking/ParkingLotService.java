@@ -32,6 +32,12 @@ public class ParkingLotService {
     public List<ParkingLotSummaryResponse> getAllLots(Double lat, Double lng) {
         return parkingLotRepository.findAll().stream()
                 .map(lot -> toSummary(lot, lat, lng))
+                .sorted((a, b) -> {
+                    if (a.distanceKm() == null && b.distanceKm() == null) return 0;
+                    if (a.distanceKm() == null) return 1;
+                    if (b.distanceKm() == null) return -1;
+                    return Double.compare(a.distanceKm(), b.distanceKm());
+                })
                 .toList();
     }
 

@@ -38,6 +38,21 @@ class ParkingProvider extends ChangeNotifier {
     }
   }
 
+  // Re-fetches even if a previous fetch already completed, used when
+  // location becomes available after the initial load.
+  Future<void> refreshLotsWithLocation(double lat, double lng) async {
+    _isLoadingLots = true;
+    notifyListeners();
+    try {
+      _lots = await ParkingService.getAllLots(lat: lat, lng: lng);
+    } catch (e) {
+      _lotsError = _msg(e);
+    } finally {
+      _isLoadingLots = false;
+      notifyListeners();
+    }
+  }
+
   // ── Detail ────────────────────────────────────────────────────────────────
 
   ParkingLotDetail? detailFor(String id) => _details[id];
