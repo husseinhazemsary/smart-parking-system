@@ -42,4 +42,9 @@ public class ParkingLotController {
     public ShareResponse getShareLink(@PathVariable UUID id) {
         return parkingLotService.getShareLink(id);
     }
+
+    @GetMapping("/{id}/subscriptions")
+    public List<SubscriptionPlanResponse> getSubscriptionPlans(@PathVariable UUID id) {
+        return parkingLotService.getSubscriptionPlans(id);
+    }
 }

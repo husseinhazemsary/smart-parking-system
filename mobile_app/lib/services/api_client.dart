@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 class ApiClient {
   // Android emulator → host machine loopback. Change to your IP for a physical device.
-  static const String baseUrl = 'http://172.20.10.6:8081/api';
+  static const String baseUrl = 'http://192.168.100.41:8081/api';
 
   static final Dio _dio = Dio(
     BaseOptions(

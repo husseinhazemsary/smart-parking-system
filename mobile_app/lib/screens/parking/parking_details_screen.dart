@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/parking_lot_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/parking_provider.dart';
+import '../../providers/saved_place_provider.dart';
 import '../../theme/app_colors.dart';
 import 'alerts_setup_sheet.dart';
 import 'view_slots_screen.dart';
 import 'reservation_sheet.dart';
+import 'subscription_plans_screen.dart';
 
 class ParkingDetailsScreen extends StatefulWidget {
   final String lotId;
@@ -21,7 +27,6 @@ class ParkingDetailsScreen extends StatefulWidget {
 }
 
 class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
-  bool _isFavourited = false;
 
   @override
   void initState() {
@@ -29,6 +34,28 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ParkingProvider>().fetchDetail(widget.lotId);
     });
+  }
+
+  Future<void> _openInMaps(double lat, double lng, String name) async {
+    final encodedName = Uri.encodeComponent(name);
+    final geoUri = Uri.parse('geo:$lat,$lng?q=$lat,$lng($encodedName)');
+    final webUri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$encodedName&center=$lat,$lng');
+    if (await canLaunchUrl(geoUri)) {
+      await launchUrl(geoUri);
+    } else {
+      await launchUrl(webUri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _showWeeklySchedule(BuildContext context, ParkingLotDetail detail) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _WeeklyScheduleSheet(detail: detail),
+    );
   }
 
   @override
@@ -42,8 +69,8 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
-        child: Consumer<ParkingProvider>(
-          builder: (context, provider, _) {
+        child: Consumer2<ParkingProvider, SavedPlaceProvider>(
+          builder: (context, provider, savedProvider, _) {
             final isLoading = provider.isLoadingDetail(widget.lotId);
             final error = provider.detailError(widget.lotId);
             final detail = provider.detailFor(widget.lotId);
@@ -81,6 +108,18 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
 
             if (detail == null) return const SizedBox();
 
+            const dayKeys = [
+              'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'
+            ];
+            final todayIsOperating = detail.operatingDays.isEmpty ||
+                detail.operatingDays.contains(dayKeys[DateTime.now().weekday - 1]);
+
+            final savedMatches = savedProvider.places
+                .where((p) => p.parkingLotId == widget.lotId);
+            final savedPlace =
+                savedMatches.isEmpty ? null : savedMatches.first;
+            final isFavourited = savedPlace != null;
+
             return Column(
               children: [
                 Expanded(
@@ -108,10 +147,36 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                               ),
                               const Spacer(),
                               GestureDetector(
-                                onTap: () => setState(() => _isFavourited = !_isFavourited),
+                                onTap: () async {
+                                  if (!context.read<AuthProvider>().isAuthenticated) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Please log in to save parking lots'),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  final sp = context.read<SavedPlaceProvider>();
+                                  final success = isFavourited
+                                      ? await sp.removePlace(savedPlace!.id)
+                                      : await sp.savePlace(widget.lotId);
+                                  if (!success && context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(sp.error ?? 'Something went wrong'),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                },
                                 child: Icon(
-                                  _isFavourited ? Icons.favorite : Icons.favorite_border,
-                                  color: _isFavourited ? Colors.redAccent : textPrimary,
+                                  isFavourited
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFavourited
+                                      ? Colors.redAccent
+                                      : textPrimary,
                                   size: 24,
                                 ),
                               ),
@@ -244,7 +309,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Map preview placeholder.
+                        // Map preview.
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: ClipRRect(
@@ -255,26 +320,44 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
-                                  Container(color: const Color(0xFF0D1B2A)),
-                                  CustomPaint(painter: _MapGridPainter()),
-                                  const Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.location_on,
-                                            color: AppColors.purple, size: 36),
-                                        SizedBox(height: 4),
-                                        Text('Map preview',
-                                            style: TextStyle(
-                                                color: Colors.white54, fontSize: 11)),
-                                      ],
+                                  FlutterMap(
+                                    options: MapOptions(
+                                      initialCenter: LatLng(
+                                          detail.latitude, detail.longitude),
+                                      initialZoom: 16,
+                                      interactionOptions:
+                                          const InteractionOptions(
+                                        flags: InteractiveFlag.none,
+                                      ),
                                     ),
+                                    children: [
+                                      TileLayer(
+                                        urlTemplate: isDark
+                                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                                            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                                        subdomains: const ['a', 'b', 'c', 'd'],
+                                        userAgentPackageName: 'com.ezrakna.app',
+                                        retinaMode: RetinaMode.isHighDensity(context),
+                                      ),
+                                      MarkerLayer(
+                                        markers: [
+                                          Marker(
+                                            point: LatLng(detail.latitude,
+                                                detail.longitude),
+                                            child: const Icon(Icons.location_on,
+                                                color: AppColors.purple,
+                                                size: 36),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                   Positioned(
                                     bottom: 10,
                                     right: 10,
                                     child: GestureDetector(
-                                      onTap: () {},
+                                      onTap: () => _openInMaps(
+                                          detail.latitude, detail.longitude, detail.name),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 10, vertical: 6),
@@ -378,18 +461,25 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                                             ),
                                           ),
                                         ),
-                                        Center(
-                                          child: GestureDetector(
-                                            onTap: () {},
-                                            child: const Text(
-                                                'View Parking Subscriptions',
-                                                style: TextStyle(
-                                                    color: AppColors.accentGreen,
-                                                    fontSize: 11,
-                                                    fontWeight:
-                                                        FontWeight.w500)),
+                                        if (detail.hasSubscriptions)
+                                          Center(
+                                            child: GestureDetector(
+                                              onTap: () => Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                  builder: (_) => SubscriptionPlansScreen(
+                                                    lotId: widget.lotId,
+                                                    lotName: detail.name,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                  'View Parking Subscriptions',
+                                                  style: TextStyle(
+                                                      color: AppColors.accentGreen,
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w500)),
+                                            ),
                                           ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -403,80 +493,106 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       children: [
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.all(6),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFFF59E0B)
-                                                      .withOpacity(0.15),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                    Icons.access_time,
-                                                    color: Color(0xFFF59E0B),
-                                                    size: 14),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text('Hours',
-                                                  style: TextStyle(
-                                                      color: textSecondary,
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w600)),
-                                            ],
-                                          ),
-                                        ),
-                                        Column(
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Text('Opens  ',
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.all(6),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                            0xFFF59E0B)
+                                                        .withOpacity(0.15),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                      Icons.access_time,
+                                                      color: Color(0xFFF59E0B),
+                                                      size: 14),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text('Hours',
                                                     style: TextStyle(
                                                         color: textSecondary,
-                                                        fontSize: 13)),
-                                                Text(detail.displayOpeningTime,
-                                                    style: TextStyle(
-                                                        color: textPrimary,
-                                                        fontSize: 16,
+                                                        fontSize: 15,
                                                         fontWeight:
-                                                            FontWeight.w700)),
+                                                            FontWeight.w600)),
                                               ],
                                             ),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Text('Closes  ',
-                                                    style: TextStyle(
-                                                        color: textSecondary,
-                                                        fontSize: 13)),
-                                                Text(detail.displayClosingTime,
-                                                    style: TextStyle(
-                                                        color: textPrimary,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w700)),
-                                              ],
+                                            GestureDetector(
+                                              onTap: () => _showWeeklySchedule(
+                                                  context, detail),
+                                              child: Text('View Schedule',
+                                                  style: TextStyle(
+                                                      color: AppColors.purple,
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w600)),
                                             ),
                                           ],
                                         ),
-                                        Text(
-                                          detail.isOpenNow ? 'Open Now' : 'Closed',
-                                          style: TextStyle(
-                                            color: detail.isOpenNow
-                                                ? const Color(0xFF22C55E)
-                                                : Colors.redAccent,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
+                                        if (todayIsOperating)
+                                          Column(
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text('Opens  ',
+                                                      style: TextStyle(
+                                                          color: textSecondary,
+                                                          fontSize: 13)),
+                                                  Text(
+                                                      detail.displayOpeningTime,
+                                                      style: TextStyle(
+                                                          color: textPrimary,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w700)),
+                                                ],
+                                              ),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text('Closes  ',
+                                                      style: TextStyle(
+                                                          color: textSecondary,
+                                                          fontSize: 13)),
+                                                  Text(
+                                                      detail.displayClosingTime,
+                                                      style: TextStyle(
+                                                          color: textPrimary,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w700)),
+                                                ],
+                                              ),
+                                            ],
+                                          )
+                                        else
+                                          Text('Closed today',
+                                              style: TextStyle(
+                                                  color: Colors.redAccent,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500)),
+                                        if (todayIsOperating)
+                                          Text(
+                                            detail.isOpenNow
+                                                ? 'Open Now'
+                                                : 'Closed',
+                                            style: TextStyle(
+                                              color: detail.isOpenNow
+                                                  ? const Color(0xFF22C55E)
+                                                  : Colors.redAccent,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -627,31 +743,6 @@ class _GradientInfoCard extends StatelessWidget {
   }
 }
 
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF1A2E40)
-      ..strokeWidth = 1;
-    for (double y = 0; y < size.height; y += 24) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    for (double x = 0; x < size.width; x += 24) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    final roadPaint = Paint()
-      ..color = const Color(0xFF243B55)
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(0, size.height * 0.4),
-        Offset(size.width, size.height * 0.4), roadPaint);
-    canvas.drawLine(Offset(size.width * 0.35, 0),
-        Offset(size.width * 0.35, size.height), roadPaint);
-  }
-
-  @override
-  bool shouldRepaint(_MapGridPainter oldDelegate) => false;
-}
 
 class _QuickAction extends StatelessWidget {
   final IconData icon;
@@ -670,6 +761,121 @@ class _QuickAction extends StatelessWidget {
         const SizedBox(height: 2),
         Text(label, style: TextStyle(color: textSecondary, fontSize: 11)),
       ],
+    );
+  }
+}
+
+class _WeeklyScheduleSheet extends StatelessWidget {
+  final ParkingLotDetail detail;
+  const _WeeklyScheduleSheet({required this.detail});
+
+  static const _dayKeys = [
+    'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'
+  ];
+  static const _dayLabels = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final todayKey = _dayKeys[DateTime.now().weekday - 1];
+
+    final navBarPadding = MediaQuery.of(context).viewPadding.bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 24 + navBarPadding),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Weekly Schedule',
+              style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(detail.name,
+              style: TextStyle(color: textSecondary, fontSize: 12)),
+          const SizedBox(height: 16),
+          ...List.generate(7, (i) {
+            final key = _dayKeys[i];
+            final label = _dayLabels[i];
+            final isOperating = detail.operatingDays.isEmpty ||
+                detail.operatingDays.contains(key);
+            final isToday = key == todayKey;
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: isToday
+                  ? BoxDecoration(
+                      border: Border.all(
+                          color: AppColors.accentGreen, width: 1.5),
+                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.accentGreen.withOpacity(0.07),
+                    )
+                  : null,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 92,
+                    child: Text(label,
+                        style: TextStyle(
+                            color: isToday
+                                ? AppColors.accentGreen
+                                : textPrimary,
+                            fontSize: 14,
+                            fontWeight: isToday
+                                ? FontWeight.w700
+                                : FontWeight.w500)),
+                  ),
+                  if (isOperating) ...[
+                    Text(detail.displayOpeningTime,
+                        style: TextStyle(
+                            color: isToday
+                                ? AppColors.accentGreen
+                                : textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600)),
+                    Text(' – ',
+                        style: TextStyle(
+                            color: isToday
+                                ? AppColors.accentGreen
+                                : textSecondary,
+                            fontSize: 14)),
+                    Text(detail.displayClosingTime,
+                        style: TextStyle(
+                            color: isToday
+                                ? AppColors.accentGreen
+                                : textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600)),
+                  ] else
+                    Text('Closed',
+                        style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500)),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }

@@ -18,13 +18,21 @@ String displayTime(String hhmm) {
   return m == 0 ? '$dh$period' : '$dh:${m.toString().padLeft(2, '0')}$period';
 }
 
-bool isCurrentlyOpen(String open, String close) {
+const _dayNames = [
+  'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'
+];
+
+bool isCurrentlyOpen(String open, String close, List<String> operatingDays) {
+  final now = DateTime.now();
+  if (operatingDays.isNotEmpty) {
+    final today = _dayNames[now.weekday - 1];
+    if (!operatingDays.contains(today)) return false;
+  }
   if (open.isEmpty || close.isEmpty) return true;
   int toMins(String t) {
     final p = t.split(':');
     return (int.tryParse(p[0]) ?? 0) * 60 + (int.tryParse(p.length > 1 ? p[1] : '0') ?? 0);
   }
-  final now = DateTime.now();
   final cur = now.hour * 60 + now.minute;
   final o = toMins(open), c = toMins(close);
   return c > o ? cur >= o && cur < c : cur >= o || cur < c;
@@ -72,7 +80,7 @@ class ParkingLotSummary {
 
   String get displayOpeningTime => displayTime(openingTime);
   String get displayClosingTime => displayTime(closingTime);
-  bool get isOpenNow => isCurrentlyOpen(openingTime, closingTime);
+  bool get isOpenNow => isCurrentlyOpen(openingTime, closingTime, const []);
 }
 
 class ParkingLotDetail {
@@ -85,10 +93,12 @@ class ParkingLotDetail {
   final String openingTime;
   final String closingTime;
   final List<String> amenities;
+  final List<String> operatingDays;
   final int numberOfGates;
   final int available;
   final int total;
   final String? imageUrl;
+  final bool hasSubscriptions;
 
   const ParkingLotDetail({
     required this.id,
@@ -100,10 +110,12 @@ class ParkingLotDetail {
     required this.openingTime,
     required this.closingTime,
     required this.amenities,
+    required this.operatingDays,
     required this.numberOfGates,
     required this.available,
     required this.total,
     this.imageUrl,
+    this.hasSubscriptions = false,
   });
 
   factory ParkingLotDetail.fromJson(Map<String, dynamic> j) {
@@ -117,14 +129,54 @@ class ParkingLotDetail {
       openingTime: _parseTime(j['openingTime']),
       closingTime: _parseTime(j['closingTime']),
       amenities: (j['amenities'] as List? ?? []).cast<String>(),
+      operatingDays: (j['operatingDays'] as List? ?? []).cast<String>(),
       numberOfGates: j['numberOfGates'] as int? ?? 1,
       available: j['availableSlots'] as int,
       total: j['totalSlots'] as int,
       imageUrl: j['imageUrl'] as String?,
+      hasSubscriptions: j['hasSubscriptions'] as bool? ?? false,
     );
   }
 
   String get displayOpeningTime => displayTime(openingTime);
   String get displayClosingTime => displayTime(closingTime);
-  bool get isOpenNow => isCurrentlyOpen(openingTime, closingTime);
+  bool get isOpenNow => isCurrentlyOpen(openingTime, closingTime, operatingDays);
+}
+
+class SubscriptionPlan {
+  final String id;
+  final String name;
+  final int durationDays;
+  final double price;
+  final String? description;
+
+  const SubscriptionPlan({
+    required this.id,
+    required this.name,
+    required this.durationDays,
+    required this.price,
+    this.description,
+  });
+
+  factory SubscriptionPlan.fromJson(Map<String, dynamic> j) {
+    return SubscriptionPlan(
+      id: j['id'] as String,
+      name: j['name'] as String,
+      durationDays: j['durationDays'] as int,
+      price: (j['price'] as num).toDouble(),
+      description: j['description'] as String?,
+    );
+  }
+
+  String get durationLabel {
+    if (durationDays == 1) return '1 Day';
+    if (durationDays == 7) return '1 Week';
+    if (durationDays == 30) return '1 Month';
+    if (durationDays == 90) return '3 Months';
+    if (durationDays == 180) return '6 Months';
+    if (durationDays == 365) return '1 Year';
+    if (durationDays % 30 == 0) return '${durationDays ~/ 30} Months';
+    if (durationDays % 7 == 0) return '${durationDays ~/ 7} Weeks';
+    return '$durationDays Days';
+  }
 }

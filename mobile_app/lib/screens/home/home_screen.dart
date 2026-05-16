@@ -268,24 +268,41 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Row(
                           children: [
-                            Container(
-                              width: 40, height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEC4899).withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.favorite, color: Color(0xFFEC4899), size: 18),
-                            ),
-                            const SizedBox(width: 12),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(place.parkingLotName,
-                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
-                                  Text(place.address,
-                                      style: TextStyle(fontSize: 12, color: subColor)),
-                                ],
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ParkingDetailsScreen(lotId: place.parkingLotId),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40, height: 40,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEC4899).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.favorite, color: Color(0xFFEC4899), size: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(place.parkingLotName,
+                                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+                                          Text(place.address,
+                                              style: TextStyle(fontSize: 12, color: subColor)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                             IconButton(

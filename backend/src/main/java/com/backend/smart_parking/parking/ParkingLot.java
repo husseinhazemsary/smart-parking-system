@@ -3,6 +3,7 @@ package com.backend.smart_parking.parking;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,10 +44,19 @@ public class ParkingLot {
     @Column
     private String imageUrl;
 
+    @Column(nullable = false)
+    private boolean hasSubscriptions = false;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "parking_lot_amenities", joinColumns = @JoinColumn(name = "parking_lot_id"))
     @Column(name = "amenity")
     private List<String> amenities = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "parking_lot_operating_days", joinColumns = @JoinColumn(name = "parking_lot_id"))
+    @Column(name = "day")
+    @Enumerated(EnumType.STRING)
+    private List<DayOfWeek> operatingDays = new ArrayList<>(List.of(DayOfWeek.values()));
 
     public UUID getId() { return id; }
     public String getName() { return name; }
@@ -59,6 +69,8 @@ public class ParkingLot {
     public int getNumberOfGates() { return numberOfGates; }
     public String getImageUrl() { return imageUrl; }
     public List<String> getAmenities() { return amenities; }
+    public List<DayOfWeek> getOperatingDays() { return operatingDays; }
+    public boolean isHasSubscriptions() { return hasSubscriptions; }
 
     public void setName(String name) { this.name = name; }
     public void setAddress(String address) { this.address = address; }
@@ -70,4 +82,6 @@ public class ParkingLot {
     public void setNumberOfGates(int numberOfGates) { this.numberOfGates = numberOfGates; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setAmenities(List<String> amenities) { this.amenities = amenities; }
+    public void setOperatingDays(List<DayOfWeek> operatingDays) { this.operatingDays = operatingDays; }
+    public void setHasSubscriptions(boolean hasSubscriptions) { this.hasSubscriptions = hasSubscriptions; }
 }

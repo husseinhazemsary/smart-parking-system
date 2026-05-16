@@ -65,6 +65,9 @@ class SavedPlaceProvider extends ChangeNotifier {
 
   String _parseError(dynamic e) {
     if (e is DioException) {
+      final status = e.response?.statusCode;
+      if (status == 401 || status == 403) return 'Please log in to save parking lots.';
+      if (status == 409) return 'This parking lot is already saved.';
       final data = e.response?.data;
       if (data is Map && data['message'] != null) return data['message'] as String;
       if (e.type == DioExceptionType.connectionTimeout ||

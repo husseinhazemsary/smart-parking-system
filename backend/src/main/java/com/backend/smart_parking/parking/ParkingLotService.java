@@ -16,14 +16,17 @@ public class ParkingLotService {
 
     private final ParkingLotRepository parkingLotRepository;
     private final ParkingSlotRepository parkingSlotRepository;
+    private final ParkingSubscriptionPlanRepository subscriptionPlanRepository;
 
     @Value("${app.share.base-url:https://ezrakna.app/lots}")
     private String shareBaseUrl;
 
     public ParkingLotService(ParkingLotRepository parkingLotRepository,
-                              ParkingSlotRepository parkingSlotRepository) {
+                              ParkingSlotRepository parkingSlotRepository,
+                              ParkingSubscriptionPlanRepository subscriptionPlanRepository) {
         this.parkingLotRepository = parkingLotRepository;
         this.parkingSlotRepository = parkingSlotRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
     }
 
     public List<ParkingLotSummaryResponse> getAllLots(Double lat, Double lng) {
@@ -46,10 +49,12 @@ public class ParkingLotService {
                 lot.getOpeningTime(),
                 lot.getClosingTime(),
                 lot.getAmenities(),
+                lot.getOperatingDays(),
                 lot.getNumberOfGates(),
                 available,
                 total,
-                lot.getImageUrl()
+                lot.getImageUrl(),
+                lot.isHasSubscriptions()
         );
     }
 
@@ -70,6 +75,18 @@ public class ParkingLotService {
     public ShareResponse getShareLink(UUID id) {
         findLotOrThrow(id);
         return new ShareResponse(shareBaseUrl + "/" + id);
+    }
+
+    public List<SubscriptionPlanResponse> getSubscriptionPlans(UUID id) {
+        findLotOrThrow(id);
+        return subscriptionPlanRepository.findAllByParkingLotIdOrderByDurationDaysAsc(id).stream()
+                .map(p -> new SubscriptionPlanResponse(
+                        p.getId(),
+                        p.getName(),
+                        p.getDurationDays(),
+                        p.getPrice(),
+                        p.getDescription()))
+                .toList();
     }
 
     // ---- helpers ----

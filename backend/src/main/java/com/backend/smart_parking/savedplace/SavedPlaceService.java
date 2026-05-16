@@ -38,8 +38,10 @@ public class SavedPlaceService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Parking lot already saved");
         }
 
-        ParkingLot lot = parkingLotRepository.findById(request.parkingLotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking lot not found"));
+        if (!parkingLotRepository.existsById(request.parkingLotId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking lot not found");
+        }
+        ParkingLot lot = parkingLotRepository.getReferenceById(request.parkingLotId());
 
         SavedPlace savedPlace = new SavedPlace();
         savedPlace.setUser(user);
@@ -61,7 +63,7 @@ public class SavedPlaceService {
                 sp.getParkingLot().getId(),
                 sp.getParkingLot().getName(),
                 sp.getParkingLot().getAddress(),
-                sp.getSavedAt()
+                sp.getSavedAt().toString()
         );
     }
 }

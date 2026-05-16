@@ -33,4 +33,11 @@ class ParkingService {
         .map((e) => ParkingSlotModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  static Future<List<SubscriptionPlan>> getSubscriptionPlans(String id) async {
+    final response = await _dio.get('/parking-lots/$id/subscriptions');
+    return (response.data as List)
+        .map((e) => SubscriptionPlan.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
