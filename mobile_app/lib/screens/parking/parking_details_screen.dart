@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/parking_lot_model.dart';
+import '../../services/parking_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/parking_provider.dart';
@@ -28,6 +30,7 @@ class ParkingDetailsScreen extends StatefulWidget {
 }
 
 class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
+  AlertConfig? _alertConfig;
 
   @override
   void initState() {
@@ -56,6 +59,65 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _WeeklyScheduleSheet(detail: detail),
+    );
+  }
+
+  Future<void> _callNumber(String? phone) async {
+    if (phone == null || phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No phone number available for this parking lot')),
+      );
+      return;
+    }
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  void _share(String lotName) {
+    final url = 'https://ezrakna.app/lots/${widget.lotId}';
+    Share.share('$lotName\n$url', subject: lotName);
+  }
+
+  void _showReportSheet(BuildContext context, ParkingLotDetail detail) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    const reasons = [
+      'Incorrect information',
+      'Parking lot is closed',
+      'Safety concern',
+      'Wrong location on map',
+      'Other',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ReportSheet(
+        lotId: widget.lotId,
+        lotName: detail.localizedName(context.read<LocaleProvider>().isArabic),
+        reasons: reasons,
+        isDark: isDark,
+        surface: surface,
+        textPrimary: textPrimary,
+        textSecondary: textSecondary,
+        border: border,
+        onSubmit: () {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Report submitted — thank you for your feedback'),
+              backgroundColor: AppColors.purple,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -184,7 +246,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                               ),
                               const SizedBox(width: 16),
                               GestureDetector(
-                                onTap: () {},
+                                onTap: () => _share(detail.localizedName(isArabic)),
                                 child: Icon(Icons.ios_share_outlined, color: textPrimary, size: 22),
                               ),
                             ],
@@ -240,12 +302,14 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                                   _QuickAction(
                                       icon: Icons.phone_outlined,
                                       label: 'Call',
-                                      isDark: isDark),
+                                      isDark: isDark,
+                                      onTap: () => _callNumber(detail.phoneNumber)),
                                   const SizedBox(width: 12),
                                   _QuickAction(
                                       icon: Icons.warning_amber_outlined,
                                       label: 'Report',
-                                      isDark: isDark),
+                                      isDark: isDark,
+                                      onTap: () => _showReportSheet(context, detail)),
                                 ],
                               ),
                             ],
@@ -287,11 +351,26 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () =>
-                                      showAlertsSetupSheet(context, detail.localizedName(isArabic)),
+                                  onPressed: () => showAlertsSetupSheet(
+                                    context,
+                                    widget.lotId,
+                                    detail.localizedName(isArabic),
+                                    initialConfig: _alertConfig,
+                                    onConfigured: (config) {
+                                      if (!mounted) return;
+                                      setState(() => _alertConfig = config);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Alerts enabled successfully'),
+                                          backgroundColor: AppColors.purple,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                   icon: Icon(Icons.notifications_outlined,
                                       size: 18, color: textPrimary),
-                                  label: Text('Set Alerts',
+                                  label: Text(
+                                      _alertConfig != null ? 'Update Alerts' : 'Set Alerts',
                                       style: TextStyle(color: textPrimary)),
                                   style: OutlinedButton.styleFrom(
                                     side: BorderSide(color: border),
@@ -750,19 +829,23 @@ class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isDark;
+  final VoidCallback? onTap;
   const _QuickAction(
-      {required this.icon, required this.label, required this.isDark});
+      {required this.icon, required this.label, required this.isDark, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final textSecondary =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-    return Column(
-      children: [
-        Icon(icon, color: textSecondary, size: 22),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(color: textSecondary, fontSize: 11)),
-      ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Icon(icon, color: textSecondary, size: 22),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(color: textSecondary, fontSize: 11)),
+        ],
+      ),
     );
   }
 }
@@ -878,6 +961,197 @@ class _WeeklyScheduleSheet extends StatelessWidget {
             );
           }),
         ],
+      ),
+    );
+  }
+}
+
+class _ReportSheet extends StatefulWidget {
+  final String lotId;
+  final String lotName;
+  final List<String> reasons;
+  final bool isDark;
+  final Color surface;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color border;
+  final VoidCallback onSubmit;
+
+  const _ReportSheet({
+    required this.lotId,
+    required this.lotName,
+    required this.reasons,
+    required this.isDark,
+    required this.surface,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.border,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_ReportSheet> createState() => _ReportSheetState();
+}
+
+class _ReportSheetState extends State<_ReportSheet> {
+  int? _selectedIndex;
+  bool _isSubmitting = false;
+  final _noteController = TextEditingController();
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_selectedIndex == null) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await ParkingService.submitReport(
+        widget.lotId,
+        widget.reasons[_selectedIndex!],
+        _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+      );
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSubmit();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit report: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, 20, 20,
+          MediaQuery.of(context).viewInsets.bottom +
+              MediaQuery.of(context).viewPadding.bottom +
+              24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                  color: widget.border,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+            Text('Report an Issue',
+                style: TextStyle(
+                    color: widget.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(widget.lotName,
+                style: TextStyle(color: widget.textSecondary, fontSize: 13)),
+            const SizedBox(height: 16),
+            ...List.generate(widget.reasons.length, (i) {
+              final selected = _selectedIndex == i;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedIndex = i),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: widget.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: selected ? AppColors.purple : widget.border,
+                        width: selected ? 1.5 : 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: selected ? AppColors.purple : widget.border,
+                              width: 2),
+                          color: selected ? AppColors.purple : Colors.transparent,
+                        ),
+                        child: selected
+                            ? const Icon(Icons.check, color: Colors.white, size: 11)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(widget.reasons[i],
+                          style: TextStyle(
+                              color: selected ? AppColors.purple : widget.textPrimary,
+                              fontSize: 14,
+                              fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 4),
+            TextField(
+              controller: _noteController,
+              maxLines: 3,
+              style: TextStyle(color: widget.textPrimary, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Additional details (optional)',
+                hintStyle: TextStyle(color: widget.textSecondary, fontSize: 14),
+                filled: true,
+                fillColor: widget.surface,
+                contentPadding: const EdgeInsets.all(12),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: widget.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.purple, width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: (_selectedIndex == null || _isSubmitting) ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.purple,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: AppColors.purple.withOpacity(0.4),
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                textStyle: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2.5))
+                  : const Text('Submit Report'),
+            ),
+          ],
+        ),
       ),
     );
   }

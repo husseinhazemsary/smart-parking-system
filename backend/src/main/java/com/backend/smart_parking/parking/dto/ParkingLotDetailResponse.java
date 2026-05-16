@@ -12,6 +12,7 @@ public record ParkingLotDetailResponse(
         String nameAr,
         String address,
         String addressAr,
+        String phoneNumber,
         double latitude,
         double longitude,
         BigDecimal hourlyRate,

@@ -1,6 +1,7 @@
 package com.backend.smart_parking.parking;
 
 import com.backend.smart_parking.parking.dto.*;
+import com.backend.smart_parking.user.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,16 +18,22 @@ public class ParkingLotService {
     private final ParkingLotRepository parkingLotRepository;
     private final ParkingSlotRepository parkingSlotRepository;
     private final ParkingSubscriptionPlanRepository subscriptionPlanRepository;
+    private final ParkingReportRepository reportRepository;
+    private final ParkingAlertRepository alertRepository;
 
     @Value("${app.share.base-url:https://ezrakna.app/lots}")
     private String shareBaseUrl;
 
     public ParkingLotService(ParkingLotRepository parkingLotRepository,
                               ParkingSlotRepository parkingSlotRepository,
-                              ParkingSubscriptionPlanRepository subscriptionPlanRepository) {
+                              ParkingSubscriptionPlanRepository subscriptionPlanRepository,
+                              ParkingReportRepository reportRepository,
+                              ParkingAlertRepository alertRepository) {
         this.parkingLotRepository = parkingLotRepository;
         this.parkingSlotRepository = parkingSlotRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.reportRepository = reportRepository;
+        this.alertRepository = alertRepository;
     }
 
     public List<ParkingLotSummaryResponse> getAllLots(Double lat, Double lng) {
@@ -51,6 +58,7 @@ public class ParkingLotService {
                 lot.getNameAr(),
                 lot.getAddress(),
                 lot.getAddressAr(),
+                lot.getPhoneNumber(),
                 lot.getLatitude(),
                 lot.getLongitude(),
                 lot.getHourlyRate(),
@@ -97,6 +105,41 @@ public class ParkingLotService {
                 .toList();
     }
 
+    @Transactional
+    public void submitReport(UUID lotId, ReportRequest request, User user) {
+        ParkingLot lot = findLotOrThrow(lotId);
+        ParkingReport report = new ParkingReport();
+        report.setParkingLot(lot);
+        report.setUser(user);
+        report.setReason(request.reason());
+        report.setNote(request.note());
+        reportRepository.save(report);
+    }
+
+    @Transactional
+    public AlertResponse saveAlert(UUID lotId, AlertRequest request, User user) {
+        ParkingLot lot = findLotOrThrow(lotId);
+        // Deactivate any existing alert for this user + lot before creating a new one.
+        alertRepository.findByUserIdAndParkingLotIdAndActiveTrue(user.getId(), lotId)
+                .ifPresent(existing -> {
+                    existing.setActive(false);
+                    alertRepository.save(existing);
+                });
+        ParkingAlert alert = new ParkingAlert();
+        alert.setUser(user);
+        alert.setParkingLot(lot);
+        alert.setTriggerCondition(request.triggerCondition());
+        alert.setMinSpots(request.minSpots());
+        alert.setCheckDurationMinutes(request.checkDurationMinutes());
+        alert.setExpiresInMinutes(request.expiresInMinutes());
+        alert.setQuietHours(request.quietHours());
+        alert.setPushNotification(request.pushNotification());
+        alert.setSound(request.sound());
+        alert.setVibrate(request.vibrate());
+        ParkingAlert saved = alertRepository.save(alert);
+        return toAlertResponse(saved);
+    }
+
     // ---- helpers ----
 
     private ParkingLot findLotOrThrow(UUID id) {
@@ -124,6 +167,14 @@ public class ParkingLotService {
                 lot.getClosingTime(),
                 lot.getImageUrl()
         );
+    }
+
+    private static AlertResponse toAlertResponse(ParkingAlert a) {
+        return new AlertResponse(
+                a.getId(), a.getTriggerCondition(), a.getMinSpots(),
+                a.getCheckDurationMinutes(), a.getExpiresInMinutes(),
+                a.isQuietHours(), a.isPushNotification(), a.isSound(),
+                a.isVibrate(), a.isActive(), a.getCreatedAt());
     }
 
     private static double haversineKm(double lat1, double lon1, double lat2, double lon2) {

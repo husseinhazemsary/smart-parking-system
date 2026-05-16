@@ -29,6 +29,9 @@ public class ParkingLot {
     @Column
     private String addressAr;
 
+    @Column
+    private String phoneNumber;
+
     @Column(nullable = false)
     private double latitude;
 
@@ -69,6 +72,7 @@ public class ParkingLot {
     public String getNameAr() { return nameAr; }
     public String getAddress() { return address; }
     public String getAddressAr() { return addressAr; }
+    public String getPhoneNumber() { return phoneNumber; }
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
     public BigDecimal getHourlyRate() { return hourlyRate; }
@@ -84,6 +88,7 @@ public class ParkingLot {
     public void setNameAr(String nameAr) { this.nameAr = nameAr; }
     public void setAddress(String address) { this.address = address; }
     public void setAddressAr(String addressAr) { this.addressAr = addressAr; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setLatitude(double latitude) { this.latitude = latitude; }
     public void setLongitude(double longitude) { this.longitude = longitude; }
     public void setHourlyRate(BigDecimal hourlyRate) { this.hourlyRate = hourlyRate; }

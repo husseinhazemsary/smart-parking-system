@@ -1,6 +1,10 @@
 package com.backend.smart_parking.parking;
 
 import com.backend.smart_parking.parking.dto.*;
+import com.backend.smart_parking.user.User;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -46,5 +50,21 @@ public class ParkingLotController {
     @GetMapping("/{id}/subscriptions")
     public List<SubscriptionPlanResponse> getSubscriptionPlans(@PathVariable UUID id) {
         return parkingLotService.getSubscriptionPlans(id);
+    }
+
+    @PostMapping("/{id}/reports")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void submitReport(@PathVariable UUID id,
+                             @Valid @RequestBody ReportRequest request,
+                             @AuthenticationPrincipal User user) {
+        parkingLotService.submitReport(id, request, user);
+    }
+
+    @PostMapping("/{id}/alerts")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AlertResponse saveAlert(@PathVariable UUID id,
+                                   @Valid @RequestBody AlertRequest request,
+                                   @AuthenticationPrincipal User user) {
+        return parkingLotService.saveAlert(id, request, user);
     }
 }

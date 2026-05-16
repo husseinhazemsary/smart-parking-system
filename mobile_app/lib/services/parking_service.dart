@@ -40,4 +40,16 @@ class ParkingService {
         .map((e) => SubscriptionPlan.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  static Future<void> submitReport(
+      String lotId, String reason, String? note) async {
+    await _dio.post('/parking-lots/$lotId/reports', data: {
+      'reason': reason,
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+  }
+
+  static Future<void> saveAlert(String lotId, Map<String, dynamic> alert) async {
+    await _dio.post('/parking-lots/$lotId/alerts', data: alert);
+  }
 }

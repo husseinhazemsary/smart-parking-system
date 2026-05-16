@@ -27,6 +27,7 @@ dependencies:
   step_circle_progressbar: ^0.0.3
   image_picker: ^1.1.2
   geolocator: ^13.0.2
+  share_plus: ^10.0.0
 
 dev_dependencies:
   flutter_test:

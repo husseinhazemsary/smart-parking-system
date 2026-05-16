@@ -101,6 +101,7 @@ class ParkingLotDetail {
   final String? nameAr;
   final String address;
   final String? addressAr;
+  final String? phoneNumber;
   final double latitude;
   final double longitude;
   final double hourlyRate;
@@ -120,6 +121,7 @@ class ParkingLotDetail {
     required this.address,
     this.nameAr,
     this.addressAr,
+    this.phoneNumber,
     required this.latitude,
     required this.longitude,
     required this.hourlyRate,
@@ -141,6 +143,7 @@ class ParkingLotDetail {
       nameAr: j['nameAr'] as String?,
       address: j['address'] as String,
       addressAr: j['addressAr'] as String?,
+      phoneNumber: j['phoneNumber'] as String?,
       latitude: (j['latitude'] as num).toDouble(),
       longitude: (j['longitude'] as num).toDouble(),
       hourlyRate: (j['hourlyRate'] as num).toDouble(),
