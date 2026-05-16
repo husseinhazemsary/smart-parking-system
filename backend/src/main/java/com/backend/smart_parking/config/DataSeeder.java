@@ -20,6 +20,11 @@ import com.backend.smart_parking.parking.ParkingSlot;
 import com.backend.smart_parking.parking.ParkingSlotRepository;
 import com.backend.smart_parking.parking.SlotStatus;
 import com.backend.smart_parking.parking.SlotType;
+import com.backend.smart_parking.user.AuthProvider;
+import com.backend.smart_parking.user.Role;
+import com.backend.smart_parking.user.User;
+import com.backend.smart_parking.user.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Component
 public class DataSeeder {
@@ -29,13 +34,19 @@ public class DataSeeder {
     private final ParkingLotRepository lotRepo;
     private final GateRepository       gateRepo;
     private final ParkingSlotRepository slotRepo;
+    private final UserRepository        userRepo;
+    private final PasswordEncoder       passwordEncoder;
 
     public DataSeeder(ParkingLotRepository lotRepo,
                       GateRepository gateRepo,
-                      ParkingSlotRepository slotRepo) {
-        this.lotRepo  = lotRepo;
-        this.gateRepo = gateRepo;
-        this.slotRepo = slotRepo;
+                      ParkingSlotRepository slotRepo,
+                      UserRepository userRepo,
+                      PasswordEncoder passwordEncoder) {
+        this.lotRepo         = lotRepo;
+        this.gateRepo        = gateRepo;
+        this.slotRepo        = slotRepo;
+        this.userRepo        = userRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     record LotDef(String name, String address, double lat, double lng, int rate) {}
@@ -54,6 +65,8 @@ public class DataSeeder {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void seed() {
+        seedAdminUser();
+
         List<ParkingLot> existing = lotRepo.findAll();
 
         if (existing.isEmpty()) {
@@ -148,6 +161,19 @@ public class DataSeeder {
                            :          SlotType.REGULAR);
             slot.setStatus(i <= 12 ? SlotStatus.AVAILABLE : SlotStatus.OCCUPIED);
             slotRepo.save(slot);
+        }
+    }
+
+    private void seedAdminUser() {
+        if (!userRepo.existsByEmail("admin@parking.com")) {
+            User admin = new User();
+            admin.setFullName("Admin");
+            admin.setEmail("admin@parking.com");
+            admin.setPassword(passwordEncoder.encode("Admin@1234"));
+            admin.setProvider(AuthProvider.LOCAL);
+            admin.setRole(Role.ROLE_ADMIN);
+            userRepo.save(admin);
+            log.info("Admin user created: admin@parking.com");
         }
     }
 }
