@@ -48,7 +48,9 @@ public class ParkingLotService {
         return new ParkingLotDetailResponse(
                 lot.getId(),
                 lot.getName(),
+                lot.getNameAr(),
                 lot.getAddress(),
+                lot.getAddressAr(),
                 lot.getLatitude(),
                 lot.getLongitude(),
                 lot.getHourlyRate(),
@@ -111,7 +113,9 @@ public class ParkingLotService {
         return new ParkingLotSummaryResponse(
                 lot.getId(),
                 lot.getName(),
+                lot.getNameAr(),
                 lot.getAddress(),
+                lot.getAddressAr(),
                 distance,
                 available,
                 total,

@@ -9,7 +9,9 @@ import java.util.UUID;
 public record ParkingLotDetailResponse(
         UUID id,
         String name,
+        String nameAr,
         String address,
+        String addressAr,
         double latitude,
         double longitude,
         BigDecimal hourlyRate,

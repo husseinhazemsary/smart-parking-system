@@ -78,7 +78,7 @@ class _AccountScreenState extends State<AccountScreen> {
     ));
 
     return Directionality(
-      textDirection: TextDirection.ltr,
+      textDirection: localeProvider.isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor:
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight,

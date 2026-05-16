@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/parking_lot_model.dart';
 import '../../providers/parking_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../theme/app_colors.dart';
 import 'parking_details_screen.dart';
 
@@ -221,11 +222,14 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                     );
                   }
 
+                  final isArabic = context.read<LocaleProvider>().isArabic;
                   final query = _searchController.text.toLowerCase();
                   final filtered = provider.lots.where((lot) {
                     if (query.isNotEmpty &&
                         !lot.name.toLowerCase().contains(query) &&
-                        !lot.address.toLowerCase().contains(query)) {
+                        !(lot.nameAr ?? '').toLowerCase().contains(query) &&
+                        !lot.address.toLowerCase().contains(query) &&
+                        !(lot.addressAr ?? '').toLowerCase().contains(query)) {
                       return false;
                     }
                     return true;
@@ -339,7 +343,7 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               Expanded(
-                                                child: Text(lot.name,
+                                                child: Text(lot.localizedName(isArabic),
                                                     style: TextStyle(
                                                         color: textPrimary,
                                                         fontWeight:
@@ -362,7 +366,7 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
                                             ],
                                           ),
                                           const SizedBox(height: 4),
-                                          Text(lot.address,
+                                          Text(lot.localizedAddress(isArabic),
                                               style: TextStyle(
                                                   color: textSecondary,
                                                   fontSize: 11),

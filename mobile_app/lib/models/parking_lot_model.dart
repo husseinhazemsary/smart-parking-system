@@ -41,7 +41,9 @@ bool isCurrentlyOpen(String open, String close, List<String> operatingDays) {
 class ParkingLotSummary {
   final String id;
   final String name;
+  final String? nameAr;
   final String address;
+  final String? addressAr;
   final double? distanceKm;
   final int available;
   final int total;
@@ -59,6 +61,8 @@ class ParkingLotSummary {
     required this.hourlyRate,
     required this.openingTime,
     required this.closingTime,
+    this.nameAr,
+    this.addressAr,
     this.distanceKm,
     this.imageUrl,
   });
@@ -67,7 +71,9 @@ class ParkingLotSummary {
     return ParkingLotSummary(
       id: j['id'] as String,
       name: j['name'] as String,
+      nameAr: j['nameAr'] as String?,
       address: j['address'] as String,
+      addressAr: j['addressAr'] as String?,
       distanceKm: (j['distanceKm'] as num?)?.toDouble(),
       available: j['availableSlots'] as int,
       total: j['totalSlots'] as int,
@@ -78,6 +84,12 @@ class ParkingLotSummary {
     );
   }
 
+  String localizedName(bool isArabic) =>
+      (isArabic && nameAr != null && nameAr!.isNotEmpty) ? nameAr! : name;
+
+  String localizedAddress(bool isArabic) =>
+      (isArabic && addressAr != null && addressAr!.isNotEmpty) ? addressAr! : address;
+
   String get displayOpeningTime => displayTime(openingTime);
   String get displayClosingTime => displayTime(closingTime);
   bool get isOpenNow => isCurrentlyOpen(openingTime, closingTime, const []);
@@ -86,7 +98,9 @@ class ParkingLotSummary {
 class ParkingLotDetail {
   final String id;
   final String name;
+  final String? nameAr;
   final String address;
+  final String? addressAr;
   final double latitude;
   final double longitude;
   final double hourlyRate;
@@ -104,6 +118,8 @@ class ParkingLotDetail {
     required this.id,
     required this.name,
     required this.address,
+    this.nameAr,
+    this.addressAr,
     required this.latitude,
     required this.longitude,
     required this.hourlyRate,
@@ -122,7 +138,9 @@ class ParkingLotDetail {
     return ParkingLotDetail(
       id: j['id'] as String,
       name: j['name'] as String,
+      nameAr: j['nameAr'] as String?,
       address: j['address'] as String,
+      addressAr: j['addressAr'] as String?,
       latitude: (j['latitude'] as num).toDouble(),
       longitude: (j['longitude'] as num).toDouble(),
       hourlyRate: (j['hourlyRate'] as num).toDouble(),
@@ -141,6 +159,12 @@ class ParkingLotDetail {
   String get displayOpeningTime => displayTime(openingTime);
   String get displayClosingTime => displayTime(closingTime);
   bool get isOpenNow => isCurrentlyOpen(openingTime, closingTime, operatingDays);
+
+  String localizedName(bool isArabic) =>
+      (isArabic && nameAr != null && nameAr!.isNotEmpty) ? nameAr! : name;
+
+  String localizedAddress(bool isArabic) =>
+      (isArabic && addressAr != null && addressAr!.isNotEmpty) ? addressAr! : address;
 }
 
 class SubscriptionPlan {

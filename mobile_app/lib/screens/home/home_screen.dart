@@ -14,6 +14,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/parking_lot_model.dart';
 import '../../providers/saved_place_provider.dart';
 import '../../providers/parking_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../parking/select_location_screen.dart';
 import '../parking/parking_details_screen.dart';
 
@@ -1289,12 +1290,14 @@ class _NearbyCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(lot.name,
+                    Text(lot.localizedName(
+                            Provider.of<LocaleProvider>(context, listen: false).isArabic),
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700)),
-                    Text(lot.address,
+                    Text(lot.localizedAddress(
+                            Provider.of<LocaleProvider>(context, listen: false).isArabic),
                         style: const TextStyle(
                             color: Colors.white70, fontSize: 10),
                         maxLines: 1,

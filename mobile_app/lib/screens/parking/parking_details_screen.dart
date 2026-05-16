@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/parking_lot_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../providers/parking_provider.dart';
 import '../../providers/saved_place_provider.dart';
 import '../../theme/app_colors.dart';
@@ -61,6 +62,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isArabic = context.read<LocaleProvider>().isArabic;
     final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
@@ -197,13 +199,13 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(detail.name,
+                              Text(detail.localizedName(isArabic),
                                   style: TextStyle(
                                       color: textPrimary,
                                       fontSize: 22,
                                       fontWeight: FontWeight.w700)),
                               const SizedBox(height: 4),
-                              Text(detail.address,
+                              Text(detail.localizedAddress(isArabic),
                                   style: TextStyle(color: textSecondary, fontSize: 13)),
                               const SizedBox(height: 12),
                               Row(
@@ -262,7 +264,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                                   onPressed: () => Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (_) => ViewSlotsScreen(
-                                        locationName: detail.name,
+                                        locationName: detail.localizedName(isArabic),
                                         lotId: widget.lotId,
                                       ),
                                     ),
@@ -286,7 +288,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () =>
-                                      showAlertsSetupSheet(context, detail.name),
+                                      showAlertsSetupSheet(context, detail.localizedName(isArabic)),
                                   icon: Icon(Icons.notifications_outlined,
                                       size: 18, color: textPrimary),
                                   label: Text('Set Alerts',
@@ -357,7 +359,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                                     right: 10,
                                     child: GestureDetector(
                                       onTap: () => _openInMaps(
-                                          detail.latitude, detail.longitude, detail.name),
+                                          detail.latitude, detail.longitude, detail.localizedName(isArabic)),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 10, vertical: 6),
@@ -468,7 +470,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
                                                 MaterialPageRoute(
                                                   builder: (_) => SubscriptionPlansScreen(
                                                     lotId: widget.lotId,
-                                                    lotName: detail.name,
+                                                    lotName: detail.localizedName(isArabic),
                                                   ),
                                                 ),
                                               ),
@@ -808,7 +810,8 @@ class _WeeklyScheduleSheet extends StatelessWidget {
                   fontSize: 17,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text(detail.name,
+          Text(detail.localizedName(
+                  Provider.of<LocaleProvider>(context, listen: false).isArabic),
               style: TextStyle(color: textSecondary, fontSize: 12)),
           const SizedBox(height: 16),
           ...List.generate(7, (i) {
