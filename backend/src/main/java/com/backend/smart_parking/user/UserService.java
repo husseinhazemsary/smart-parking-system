@@ -2,6 +2,7 @@ package com.backend.smart_parking.user;
 
 import com.backend.smart_parking.exception.AuthException;
 import com.backend.smart_parking.user.dto.ChangePasswordRequest;
+import com.backend.smart_parking.user.dto.EmailChangeRequest;
 import com.backend.smart_parking.user.dto.UpdateProfileRequest;
 import com.backend.smart_parking.user.dto.UserProfileResponse;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,13 @@ public class UserService {
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    public void requestEmailChange(User user, EmailChangeRequest request) {
+        if (userRepository.existsByEmail(request.newEmail())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "That email address is already in use.");
+        }
+        // TODO: send verification email to request.newEmail() with a signed token
     }
 
     private UserProfileResponse toResponse(User user) {

@@ -4,6 +4,8 @@ import com.backend.smart_parking.auth.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.backend.smart_parking.user.User;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -45,5 +47,12 @@ public class AuthController {
     @PostMapping("/oauth/apple")
     public AuthResponse loginWithApple(@Valid @RequestBody OAuthRequest request) {
         return authService.loginWithApple(request);
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        // TODO: send reset email via email service
+        // Returns 204 regardless of whether the email exists to avoid user enumeration
     }
 }

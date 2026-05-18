@@ -4,22 +4,62 @@ import Modal from "../components/ui/Modal";
 import GlowBtn from "../components/ui/GlowBtn";
 import apiFetch from "../api/client";
 
-export default function AuthModal({ open, onClose, onAuth }){
+const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRx = /^01[0-9]{9}$/;
+
+function validateField(field, value) {
+  switch (field) {
+    case "email":    return emailRx.test(value.trim()) ? "" : "Enter a valid email address.";
+    case "password": return value.length >= 8 ? "" : "Password must be at least 8 characters.";
+    case "name":     return value.trim() ? "" : "Full name is required.";
+    case "phone":    return phoneRx.test(value.replace(/\s/g, "")) ? "" : "Enter a valid Egyptian phone number (e.g. 01012345678).";
+    case "dob":      return value ? "" : "Date of birth is required.";
+    default:         return "";
+  }
+}
+
+export default function AuthModal({ open, onClose, onAuth }) {
   const [mode, setMode]   = useState("login");
   const [form, setForm]   = useState({ name:"", email:"", password:"", phone:"", dob:"" });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  // Forgot-password sub-mode
+  const [forgot,      setForgot]      = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent,  setForgotSent]  = useState(false);
 
-  const switchMode = (m) => { setMode(m); setError(""); };
+  const set = k => e => {
+    const v = e.target.value;
+    setForm(p => ({ ...p, [k]: v }));
+    // Re-validate live once the field has been touched (has any entry in fieldErrors)
+    if (k in fieldErrors) {
+      setFieldErrors(p => ({ ...p, [k]: validateField(k, v) }));
+    }
+  };
+
+  const blur = k => e => {
+    const err = validateField(k, e.target.value);
+    setFieldErrors(p => ({ ...p, [k]: err }));
+  };
+
+  const switchMode = m => { setMode(m); setError(""); setFieldErrors({}); };
+
+  const openForgot = () => { setForgot(true); setForgotEmail(form.email); setError(""); };
+  const closeForgot = () => { setForgot(false); setForgotEmail(""); setForgotSent(false); setError(""); };
 
   const submit = async () => {
     setError("");
-    if (!form.email || !form.password) { setError("Email and password are required."); return; }
-    if (mode === "signup" && (!form.name || !form.phone || !form.dob)) {
-      setError("All fields are required for registration."); return;
+    const fields = mode === "login"
+      ? ["email", "password"]
+      : ["name", "email", "phone", "dob", "password"];
+    const errors = {};
+    for (const f of fields) {
+      const err = validateField(f, form[f]);
+      if (err) errors[f] = err;
     }
+    if (Object.keys(errors).length) { setFieldErrors(errors); return; }
 
     setLoading(true);
     try {
@@ -45,9 +85,83 @@ export default function AuthModal({ open, onClose, onAuth }){
     }
   };
 
-  const handleKey = e => { if (e.key === "Enter") submit(); };
+  const submitForgot = async () => {
+    setError("");
+    if (!emailRx.test(forgotEmail.trim())) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiFetch("/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: forgotEmail.trim() }),
+      });
+    } catch {
+      // Always show success — don't reveal whether the email exists
+    } finally {
+      setForgotSent(true);
+      setLoading(false);
+    }
+  };
 
-  return(
+  const handleKey = e => {
+    if (e.key === "Enter") forgot ? submitForgot() : submit();
+  };
+
+  // ── Forgot-password view ─────────────────────────────────────────────────────
+  if (forgot) {
+    return (
+      <Modal open={open} onClose={() => { closeForgot(); onClose(); }} maxWidth={440}>
+        <div style={{ padding:"36px 32px" }}>
+          <div style={{ textAlign:"center", marginBottom:28 }}>
+            <div style={{ fontSize:28, fontWeight:800, letterSpacing:-1 }}>
+              <span style={{ color:T.purple }}>ez</span>rakna
+            </div>
+            <div style={{ color:T.sub, fontSize:14, marginTop:6 }}>Reset your password</div>
+          </div>
+
+          {forgotSent ? (
+            <div style={{
+              padding:"18px 16px", borderRadius:12,
+              background:"rgba(34,197,94,.08)", border:"1px solid rgba(34,197,94,.25)",
+              color:"#86EFAC", fontSize:14, textAlign:"center", lineHeight:1.6,
+            }}>
+              ✓ Check your inbox — if that email is registered you'll receive a reset link shortly.
+            </div>
+          ) : (
+            <>
+              <div style={{ color:T.sub, fontSize:13, marginBottom:16, lineHeight:1.6 }}>
+                Enter your registered email and we'll send you a link to reset your password.
+              </div>
+              <input
+                value={forgotEmail}
+                onChange={e => { setForgotEmail(e.target.value); setError(""); }}
+                onKeyDown={handleKey}
+                placeholder="Email address"
+                type="email"
+                style={inputStyle}
+              />
+              {error && <div style={fieldErrStyle}>{error}</div>}
+              <GlowBtn full noArrow onClick={submitForgot} style={{ marginTop:16 }} disabled={loading}>
+                {loading ? "Sending…" : "Send Reset Link"}
+              </GlowBtn>
+            </>
+          )}
+
+          <div style={{ textAlign:"center", marginTop:16 }}>
+            <button onClick={closeForgot}
+              style={{ background:"none", border:"none", color:T.purple, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+              ← Back to Log In
+            </button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  // ── Login / Sign-up view ─────────────────────────────────────────────────────
+  return (
     <Modal open={open} onClose={onClose} maxWidth={440}>
       <div style={{ padding:"36px 32px" }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
@@ -70,28 +184,49 @@ export default function AuthModal({ open, onClose, onAuth }){
           ))}
         </div>
 
-        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {mode === "signup" && (
-            <input value={form.name} onChange={set("name")} onKeyDown={handleKey}
-              placeholder="Full name" style={inputStyle} />
+            <div>
+              <input value={form.name} onChange={set("name")} onBlur={blur("name")} onKeyDown={handleKey}
+                placeholder="Full name"
+                style={{ ...inputStyle, borderColor: fieldErrors.name ? T.red : undefined }} />
+              {fieldErrors.name && <div style={fieldErrStyle}>{fieldErrors.name}</div>}
+            </div>
           )}
-          <input value={form.email} onChange={set("email")} onKeyDown={handleKey}
-            placeholder="Email address" type="email" style={inputStyle} />
+          <div>
+            <input value={form.email} onChange={set("email")} onBlur={blur("email")} onKeyDown={handleKey}
+              placeholder="Email address" type="email"
+              style={{ ...inputStyle, borderColor: fieldErrors.email ? T.red : undefined }} />
+            {fieldErrors.email && <div style={fieldErrStyle}>{fieldErrors.email}</div>}
+          </div>
           {mode === "signup" && (
-            <input value={form.phone} onChange={set("phone")} onKeyDown={handleKey}
-              placeholder="Phone number (e.g. 01012345678)" style={inputStyle} />
+            <div>
+              <input value={form.phone} onChange={set("phone")} onBlur={blur("phone")} onKeyDown={handleKey}
+                placeholder="Phone number (e.g. 01012345678)"
+                style={{ ...inputStyle, borderColor: fieldErrors.phone ? T.red : undefined }} />
+              {fieldErrors.phone && <div style={fieldErrStyle}>{fieldErrors.phone}</div>}
+            </div>
           )}
           {mode === "signup" && (
-            <input value={form.dob} onChange={set("dob")} onKeyDown={handleKey}
-              type="date" placeholder="Date of birth" style={inputStyle} />
+            <div>
+              <input value={form.dob} onChange={set("dob")} onBlur={blur("dob")} onKeyDown={handleKey}
+                type="date"
+                style={{ ...inputStyle, borderColor: fieldErrors.dob ? T.red : undefined }} />
+              {fieldErrors.dob && <div style={fieldErrStyle}>{fieldErrors.dob}</div>}
+            </div>
           )}
-          <input value={form.password} onChange={set("password")} onKeyDown={handleKey}
-            placeholder="Password (min 8 characters)" type="password" style={inputStyle} />
+          <div>
+            <input value={form.password} onChange={set("password")} onBlur={blur("password")} onKeyDown={handleKey}
+              placeholder="Password (min 8 characters)" type="password"
+              style={{ ...inputStyle, borderColor: fieldErrors.password ? T.red : undefined }} />
+            {fieldErrors.password && <div style={fieldErrStyle}>{fieldErrors.password}</div>}
+          </div>
         </div>
 
         {mode === "login" && (
           <div style={{ textAlign:"right", marginTop:8 }}>
-            <button style={{ background:"none", border:"none", color:T.purple, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={openForgot}
+              style={{ background:"none", border:"none", color:T.purple, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
               Forgot password?
             </button>
           </div>
@@ -121,8 +256,12 @@ export default function AuthModal({ open, onClose, onAuth }){
   );
 }
 
-export const inputStyle = {
+const inputStyle = {
   width:"100%", height:48, borderRadius:12, border:`1px solid ${T.border}`,
   background:"rgba(255,255,255,.04)", color:T.text, fontFamily:"inherit",
   fontSize:14, padding:"0 16px", outline:"none", boxSizing:"border-box",
+};
+
+const fieldErrStyle = {
+  fontSize:12, color:T.red, marginTop:4, paddingLeft:2,
 };

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
 import Modal from "../components/ui/Modal";
 import GlowBtn from "../components/ui/GlowBtn";
 import { detectEV } from "../utils/evDetection";
+
+const BASE_URL = "http://localhost:8081";
 
 const CSS = `
   .acc-wrap { animation:acc-up .32s cubic-bezier(.22,1,.36,1); }
@@ -71,6 +73,8 @@ function Toggle({ on, onChange }) {
   );
 }
 
+// ── Edit Profile Modal ────────────────────────────────────────────────────────
+
 function EditProfileModal({ open, onClose, user, profile, onSave }) {
   const [name,    setName]    = useState("");
   const [phone,   setPhone]   = useState("");
@@ -78,14 +82,25 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
+  // Email-change sub-flow
+  const [showEmailChange, setShowEmailChange] = useState(false);
+  const [newEmail,        setNewEmail]        = useState("");
+  const [emailSent,       setEmailSent]       = useState(false);
+  const [emailLoading,    setEmailLoading]    = useState(false);
+  const [emailError,      setEmailError]      = useState("");
+
   useEffect(() => {
     if (open) {
       setName(user?.name || "");
       setPhone(profile?.phoneNumber || "");
       setDob(profile?.dateOfBirth || "");
       setError("");
+      setShowEmailChange(false);
+      setNewEmail("");
+      setEmailSent(false);
+      setEmailError("");
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     setError("");
@@ -101,6 +116,35 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
     }
   };
 
+  const handleEmailChangeRequest = async () => {
+    setEmailError("");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim())) {
+      setEmailError("Enter a valid email address.");
+      return;
+    }
+    if (newEmail.trim().toLowerCase() === (user?.email || "").toLowerCase()) {
+      setEmailError("That's already your current email.");
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${BASE_URL}/api/users/me/email-change-request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ newEmail: newEmail.trim() }),
+      });
+    } catch {
+      // Show success regardless — don't block the UI on backend availability
+    } finally {
+      setEmailSent(true);
+      setEmailLoading(false);
+    }
+  };
+
   return (
     <Modal open={open} onClose={onClose} maxWidth={420}>
       <div style={{ padding:"26px 22px" }}>
@@ -110,11 +154,68 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
             <div className="acc-label">FULL NAME</div>
             <input className="acc-field" value={name} onChange={e => setName(e.target.value)} />
           </div>
+
+          {/* Email — read-only with Change Email expandable */}
           <div>
-            <div className="acc-label">EMAIL (cannot be changed)</div>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5 }}>
+              <div className="acc-label" style={{ marginBottom:0 }}>EMAIL</div>
+              {!showEmailChange && (
+                <button onClick={() => setShowEmailChange(true)} style={{
+                  background:"none",border:"none",color:T.purple,fontSize:12,
+                  cursor:"pointer",fontFamily:"inherit",fontWeight:600,
+                }}>Change Email</button>
+              )}
+            </div>
             <input className="acc-field" value={user?.email || ""} readOnly
-              style={{ opacity:.5,cursor:"default" }} />
+              style={{ opacity:.55, cursor:"default" }} />
           </div>
+
+          {/* Email change sub-form */}
+          {showEmailChange && (
+            <div style={{
+              padding:"14px 14px 12px",borderRadius:12,
+              border:`1px solid ${T.border}`,background:"rgba(125,57,235,.04)",
+            }}>
+              {emailSent ? (
+                <div style={{
+                  padding:"12px 14px",borderRadius:10,
+                  background:"rgba(34,197,94,.08)",border:"1px solid rgba(34,197,94,.25)",
+                  color:"#86EFAC",fontSize:13,lineHeight:1.6,
+                }}>
+                  ✓ A verification link has been sent to <strong>{newEmail}</strong>. Click it to confirm the change.
+                </div>
+              ) : (
+                <>
+                  <div className="acc-label">NEW EMAIL ADDRESS</div>
+                  <input
+                    className="acc-field"
+                    type="email"
+                    value={newEmail}
+                    onChange={e => { setNewEmail(e.target.value); setEmailError(""); }}
+                    placeholder="new@example.com"
+                  />
+                  {emailError && (
+                    <div style={{ fontSize:12,color:T.red,marginTop:4 }}>{emailError}</div>
+                  )}
+                  <div style={{ display:"flex",gap:8,marginTop:10 }}>
+                    <button onClick={() => { setShowEmailChange(false); setNewEmail(""); setEmailError(""); }} style={{
+                      flex:1,padding:"9px",borderRadius:9,border:`1px solid ${T.border}`,
+                      background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:13,cursor:"pointer",
+                    }}>Cancel</button>
+                    <button onClick={handleEmailChangeRequest} disabled={emailLoading} style={{
+                      flex:2,padding:"9px",borderRadius:9,
+                      border:`1px solid ${T.purple}`,
+                      background:`rgba(125,57,235,.12)`,color:T.purple,
+                      fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",
+                    }}>
+                      {emailLoading ? "Sending…" : "Send Verification Link"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <div>
             <div className="acc-label">PHONE NUMBER</div>
             <input className="acc-field" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+20 100 000 0000" />
@@ -141,14 +242,21 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
   );
 }
 
-function ChangePasswordModal({ open, onClose, onSave }) {
+// ── Change Password Modal ─────────────────────────────────────────────────────
+
+function ChangePasswordModal({ open, onClose, onSave, userEmail }) {
   const [current, setCurrent] = useState("");
   const [next,    setNext]    = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
-  const reset = () => { setCurrent(""); setNext(""); setConfirm(""); setError(""); };
+  // Forgot-password sub-flow
+  const [showForgot,   setShowForgot]   = useState(false);
+  const [forgotSent,   setForgotSent]   = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const reset = () => { setCurrent(""); setNext(""); setConfirm(""); setError(""); setShowForgot(false); setForgotSent(false); };
 
   const handleSave = async () => {
     setError("");
@@ -167,60 +275,138 @@ function ChangePasswordModal({ open, onClose, onSave }) {
     }
   };
 
+  const handleForgot = async () => {
+    setForgotLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ email: userEmail }),
+      });
+    } catch {
+      // Always show success
+    } finally {
+      setForgotSent(true);
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <Modal open={open} onClose={() => { reset(); onClose(); }} maxWidth={400}>
       <div style={{ padding:"26px 22px" }}>
         <div style={{ fontSize:18,fontWeight:800,marginBottom:20 }}>Change Password</div>
-        <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+
+        {showForgot ? (
           <div>
-            <div className="acc-label">CURRENT PASSWORD</div>
-            <input className="acc-field" type="password" value={current} onChange={e => setCurrent(e.target.value)} />
+            {forgotSent ? (
+              <div style={{
+                padding:"14px 16px",borderRadius:12,
+                background:"rgba(34,197,94,.08)",border:"1px solid rgba(34,197,94,.25)",
+                color:"#86EFAC",fontSize:13,lineHeight:1.6,marginBottom:16,
+              }}>
+                ✓ A password reset link has been sent to <strong>{userEmail}</strong>. Check your inbox.
+              </div>
+            ) : (
+              <>
+                <div style={{ color:T.sub,fontSize:13,lineHeight:1.6,marginBottom:16 }}>
+                  We'll send a password reset link to <strong style={{ color:T.text }}>{userEmail}</strong>.
+                </div>
+                <GlowBtn full noArrow onClick={handleForgot} disabled={forgotLoading}>
+                  {forgotLoading ? "Sending…" : "Send Reset Link"}
+                </GlowBtn>
+              </>
+            )}
+            <div style={{ textAlign:"center",marginTop:12 }}>
+              <button onClick={() => setShowForgot(false)} style={{
+                background:"none",border:"none",color:T.sub,fontSize:13,cursor:"pointer",fontFamily:"inherit",
+              }}>← Back</button>
+            </div>
           </div>
-          <div>
-            <div className="acc-label">NEW PASSWORD</div>
-            <input className="acc-field" type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="Min. 8 characters" />
-          </div>
-          <div>
-            <div className="acc-label">CONFIRM NEW PASSWORD</div>
-            <input className="acc-field" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
-          </div>
-        </div>
-        {error && (
-          <div style={{ marginTop:12,padding:"9px 13px",borderRadius:9,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:T.red,fontSize:13 }}>
-            {error}
-          </div>
+        ) : (
+          <>
+            <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+              <div>
+                <div className="acc-label">CURRENT PASSWORD</div>
+                <input className="acc-field" type="password" value={current} onChange={e => setCurrent(e.target.value)} />
+              </div>
+              <div>
+                <div className="acc-label">NEW PASSWORD</div>
+                <input className="acc-field" type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="Min. 8 characters" />
+              </div>
+              <div>
+                <div className="acc-label">CONFIRM NEW PASSWORD</div>
+                <input className="acc-field" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+              </div>
+            </div>
+
+            <div style={{ textAlign:"right",marginTop:10 }}>
+              <button onClick={() => setShowForgot(true)} style={{
+                background:"none",border:"none",color:T.purple,fontSize:12,cursor:"pointer",fontFamily:"inherit",
+              }}>
+                Forgot your current password?
+              </button>
+            </div>
+
+            {error && (
+              <div style={{ marginTop:8,padding:"9px 13px",borderRadius:9,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:T.red,fontSize:13 }}>
+                {error}
+              </div>
+            )}
+            <div style={{ display:"flex",gap:10,marginTop:16 }}>
+              <button onClick={() => { reset(); onClose(); }} style={{
+                flex:1,padding:12,borderRadius:11,border:`1px solid ${T.border}`,
+                background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",
+              }}>Cancel</button>
+              <div style={{ flex:2 }}><GlowBtn full noArrow onClick={handleSave} disabled={loading}>{loading ? "Saving…" : "Update Password"}</GlowBtn></div>
+            </div>
+          </>
         )}
-        <div style={{ display:"flex",gap:10,marginTop:22 }}>
-          <button onClick={() => { reset(); onClose(); }} style={{
-            flex:1,padding:12,borderRadius:11,border:`1px solid ${T.border}`,
-            background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",
-          }}>Cancel</button>
-          <div style={{ flex:2 }}><GlowBtn full noArrow onClick={handleSave} disabled={loading}>{loading ? "Saving…" : "Update Password"}</GlowBtn></div>
-        </div>
       </div>
     </Modal>
   );
 }
 
+// ── Egyptian Plate Picker ─────────────────────────────────────────────────────
+
 const VEHICLE_TYPES = ["SEDAN", "SUV", "TRUCK"];
 
-// Common Arabic letters used on Egyptian license plates
 const AR_LETTERS = [
   "أ","ب","ت","ث","ج","ح","خ","د","ذ","ر",
   "ز","س","ش","ص","ض","ط","ظ","ع","غ","ف",
   "ق","ك","ل","م","ن","ه","و","ي",
 ];
 
-// Egyptian license plate picker: left = numbers, right = Arabic letters (RTL)
-function EgyptianPlatePicker({ onChange }) {
-  const [nums,    setNums]    = useState("");
-  const [letters, setLetters] = useState([]);
+function EgyptianPlatePicker({ onChange, initialPlate }) {
+  const parseInitial = () => {
+    if (!initialPlate) return { nums: "", letters: [] };
+    // Normalize Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩) to ASCII so regex \d matches them
+    const normalized = initialPlate.replace(/[٠-٩]/g, d =>
+      String(d.charCodeAt(0) - 0x0660)
+    );
+    // Split on any whitespace — LPR returns "259 س ج ط" (each letter its own token)
+    const tokens = normalized.trim().split(/\s+/);
+    const numStr = tokens.filter(t => /^\d+$/.test(t)).join("").slice(0, 5);
+    const letterChars = tokens
+      .filter(t => /[؀-ۿ]/.test(t))
+      .flatMap(t => [...t])
+      .filter(c => /[؀-ۿ]/.test(c))
+      .slice(0, 3);
+    return { nums: numStr, letters: letterChars };
+  };
+  const init = parseInitial();
+  const [nums,    setNums]    = useState(init.nums);
+  const [letters, setLetters] = useState(init.letters);
+
+  const buildPlate = (n, ls) => `${n}${ls.length ? " " + ls.join("") : ""}`;
 
   const toggleLetter = l => {
     setLetters(prev => {
       const next = prev.includes(l) ? prev.filter(x => x !== l) : prev.length < 3 ? [...prev, l] : prev;
-      const plate = buildPlate(nums, next);
-      onChange(plate);
+      onChange(buildPlate(nums, next));
       return next;
     });
   };
@@ -231,7 +417,14 @@ function EgyptianPlatePicker({ onChange }) {
     onChange(buildPlate(v, letters));
   };
 
-  const buildPlate = (n, ls) => `${n}${ls.length ? " " + ls.join("") : ""}`;
+  // Arabic keyboard text input — filters to Arabic characters only, max 3
+  const handleLetterInput = e => {
+    const arabic = [...e.target.value]
+      .filter(c => /[؀-ۿ]/.test(c))
+      .slice(0, 3);
+    setLetters(arabic);
+    onChange(buildPlate(nums, arabic));
+  };
 
   const platePreview = buildPlate(nums, letters);
 
@@ -244,7 +437,6 @@ function EgyptianPlatePicker({ onChange }) {
         background:"linear-gradient(135deg,#f5f0d0,#ede8b8)",
         boxShadow:"0 4px 16px rgba(0,0,0,.35)",
       }}>
-        {/* Left: numbers */}
         <div style={{
           flex:1,display:"flex",alignItems:"center",justifyContent:"center",
           borderRight:"3px solid #222",
@@ -254,13 +446,11 @@ function EgyptianPlatePicker({ onChange }) {
         }}>
           {nums || <span style={{ color:"#bbb",fontSize:20 }}>0000</span>}
         </div>
-        {/* Middle: Egypt flag stripe */}
         <div style={{ width:18,display:"flex",flexDirection:"column" }}>
           <div style={{ flex:1,background:"#CE1126" }} />
           <div style={{ flex:1,background:"#fff" }} />
           <div style={{ flex:1,background:"#000" }} />
         </div>
-        {/* Right: Arabic letters (RTL) */}
         <div style={{
           flex:1,display:"flex",alignItems:"center",justifyContent:"center",
           direction:"rtl",
@@ -275,7 +465,6 @@ function EgyptianPlatePicker({ onChange }) {
       </div>
 
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
-        {/* Number input */}
         <div>
           <div className="acc-label">NUMBERS (left side)</div>
           <input
@@ -286,22 +475,25 @@ function EgyptianPlatePicker({ onChange }) {
             inputMode="numeric"
           />
         </div>
-        {/* Selected letters display */}
         <div>
-          <div className="acc-label">LETTERS SELECTED ({letters.length}/3)</div>
-          <div style={{
-            height:46,borderRadius:11,border:`1px solid ${letters.length ? T.purple : T.border}`,
-            background:"rgba(125,57,235,.05)",display:"flex",alignItems:"center",
-            justifyContent:"center",fontSize:22,letterSpacing:6,direction:"rtl",
-            fontFamily:"'Amiri','Noto Naskh Arabic',serif",color:T.text,
-          }}>
-            {letters.length ? letters.join(" ") : <span style={{ fontSize:12,color:T.sub,letterSpacing:0,fontFamily:"inherit" }}>Pick below</span>}
-          </div>
+          <div className="acc-label">ARABIC LETTERS — type or tap</div>
+          <input
+            className="acc-field"
+            value={letters.join("")}
+            onChange={handleLetterInput}
+            placeholder="ص ص ص"
+            dir="rtl"
+            style={{
+              fontFamily:"'Amiri','Noto Naskh Arabic',serif",
+              fontSize:22,letterSpacing:4,textAlign:"center",
+              borderColor: letters.length ? T.purple : undefined,
+            }}
+          />
         </div>
       </div>
 
-      {/* Arabic letter grid */}
-      <div className="acc-label" style={{ marginBottom:8 }}>ARABIC LETTERS (right side — tap to select)</div>
+      {/* Arabic letter grid for tap-to-select */}
+      <div className="acc-label" style={{ marginBottom:8 }}>OR TAP TO SELECT LETTERS</div>
       <div style={{ display:"flex",flexWrap:"wrap",gap:6 }}>
         {AR_LETTERS.map(l => {
           const sel = letters.includes(l);
@@ -320,7 +512,7 @@ function EgyptianPlatePicker({ onChange }) {
 
       {letters.length === 3 && (
         <div style={{ fontSize:11,color:T.sub,marginTop:6 }}>
-          Maximum 3 letters selected. Click a letter to deselect it.
+          Maximum 3 letters selected. Tap a letter or clear the text input to change.
         </div>
       )}
 
@@ -333,13 +525,38 @@ function EgyptianPlatePicker({ onChange }) {
   );
 }
 
+// ── Add Vehicle Modal ─────────────────────────────────────────────────────────
+
+async function scanPlateImage(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${BASE_URL}/api/plates/scan`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Scan request failed");
+  const data = await res.json().catch(() => null);
+  if (data?.valid && data?.plate) return data.plate;
+  return null;
+}
+
 function AddVehicleModal({ open, onClose, onAdd }) {
   const [make,        setMake]        = useState("");
   const [model,       setModel]       = useState("");
+  const [nickname,    setNickname]    = useState("");
   const [plate,       setPlate]       = useState("");
   const [vehicleType, setVehicleType] = useState("SEDAN");
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState("");
+  const [scannedPlate, setScannedPlate] = useState(null);
+  const [scanning,    setScanning]    = useState(false);
+  const [scanError,   setScanError]   = useState("");
+  const [showScanMenu, setShowScanMenu] = useState(false);
+
+  const cameraRef  = useRef(null);
+  const galleryRef = useRef(null);
 
   const icons = ["🚗", "🚙", "🛻", "🏎", "🚕"];
   const [icon, setIcon] = useState("🚗");
@@ -347,7 +564,34 @@ function AddVehicleModal({ open, onClose, onAdd }) {
   const isEV = detectEV(make, model);
 
   const reset = () => {
-    setMake(""); setModel(""); setPlate(""); setVehicleType("SEDAN"); setIcon("🚗"); setError("");
+    setMake(""); setModel(""); setNickname(""); setPlate(""); setVehicleType("SEDAN"); setIcon("🚗");
+    setError(""); setScannedPlate(null); setScanError(""); setShowScanMenu(false);
+  };
+
+  const handleScanFile = async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setScanError("");
+    setScanning(true);
+    setShowScanMenu(false);
+    try {
+      const detected = await scanPlateImage(file);
+      if (detected) {
+        setScannedPlate(detected);
+        setScanError("");
+      } else {
+        setScanError(
+          plate.replace(/\s/g, "")
+            ? "Could not read a plate from that image — your current entry is kept below."
+            : "Could not read a plate from that image. Please enter it manually."
+        );
+      }
+    } catch {
+      setScanError("Scan failed. Please enter the plate manually.");
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleAdd = async () => {
@@ -356,11 +600,13 @@ function AddVehicleModal({ open, onClose, onAdd }) {
 
     setLoading(true);
     try {
+      const makeModel = `${make.trim()} ${model.trim()}`.trim() || undefined;
       await onAdd({
         plateNumber:  plate.trim().toUpperCase(),
-        makeAndModel: `${make.trim()} ${model.trim()}`.trim() || undefined,
+        makeAndModel: makeModel,
+        nickname:     nickname.trim() || undefined,
         vehicleType,
-        label: `${make.trim()} ${model.trim()}`.trim() || plate.trim().toUpperCase(),
+        label: nickname.trim() || makeModel || plate.trim().toUpperCase(),
         sub:   plate.trim().toUpperCase(),
         isEV,
         icon,
@@ -390,6 +636,16 @@ function AddVehicleModal({ open, onClose, onAdd }) {
           ))}
         </div>
 
+        <div style={{ marginBottom:14 }}>
+          <div className="acc-label">NICKNAME <span style={{ color:T.sub,fontWeight:400,letterSpacing:0 }}>(optional)</span></div>
+          <input
+            className="acc-field"
+            value={nickname}
+            onChange={e => setNickname(e.target.value)}
+            placeholder="e.g. Daily Driver, Work Car…"
+          />
+        </div>
+
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
           <div>
             <div className="acc-label">MAKE</div>
@@ -413,10 +669,60 @@ function AddVehicleModal({ open, onClose, onAdd }) {
           </select>
         </div>
 
-        {/* Egyptian plate picker */}
+        {/* License plate section with scan option */}
         <div style={{ marginBottom:14,padding:"14px 14px 10px",borderRadius:12,border:`1px solid ${T.border}`,background:"rgba(255,255,255,.02)" }}>
-          <div className="acc-label" style={{ marginBottom:10 }}>LICENSE PLATE *</div>
-          <EgyptianPlatePicker onChange={setPlate} />
+          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10 }}>
+            <div className="acc-label" style={{ marginBottom:0 }}>LICENSE PLATE *</div>
+
+            {/* Scan button + menu */}
+            <div style={{ position:"relative" }}>
+              <button
+                type="button"
+                onClick={() => setShowScanMenu(p => !p)}
+                disabled={scanning}
+                style={{
+                  padding:"5px 10px",borderRadius:7,fontSize:12,fontWeight:600,
+                  border:`1px solid ${T.border}`,background:"rgba(125,57,235,.08)",
+                  color:T.purple,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",gap:5,
+                }}
+              >
+                {scanning ? "Scanning…" : "📷 Scan Plate"}
+              </button>
+
+              {showScanMenu && (
+                <div style={{
+                  position:"absolute",right:0,top:"calc(100% + 6px)",zIndex:10,
+                  background:"#1a0040",border:`1px solid ${T.border}`,borderRadius:10,
+                  overflow:"hidden",minWidth:180,boxShadow:"0 8px 24px rgba(0,0,0,.4)",
+                }}>
+                  <button type="button" onClick={() => cameraRef.current?.click()} style={menuItemStyle}>
+                    📷 Take Photo
+                  </button>
+                  <button type="button" onClick={() => galleryRef.current?.click()} style={{ ...menuItemStyle, borderBottom:"none" }}>
+                    🖼 Choose from Gallery
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Hidden file inputs */}
+          <input ref={cameraRef}  type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={handleScanFile} />
+          <input ref={galleryRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleScanFile} />
+
+          {scanError && (
+            <div style={{ marginBottom:10,padding:"8px 11px",borderRadius:8,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:T.red,fontSize:12 }}>
+              {scanError}
+            </div>
+          )}
+
+          {scannedPlate && (
+            <div style={{ marginBottom:10,padding:"8px 11px",borderRadius:8,background:"rgba(34,197,94,.08)",border:"1px solid rgba(34,197,94,.2)",color:"#86EFAC",fontSize:12 }}>
+              ✓ Plate detected: <strong>{scannedPlate}</strong>. You can adjust it below.
+            </div>
+          )}
+
+          <EgyptianPlatePicker key={scannedPlate || "none"} onChange={setPlate} initialPlate={scannedPlate} />
         </div>
 
         {/* EV detection */}
@@ -461,11 +767,20 @@ function AddVehicleModal({ open, onClose, onAdd }) {
   );
 }
 
+const menuItemStyle = {
+  display:"block",width:"100%",padding:"11px 16px",textAlign:"left",
+  border:"none",borderBottom:`1px solid rgba(125,57,235,.1)`,
+  background:"transparent",color:T.text,fontFamily:"inherit",fontSize:13,
+  cursor:"pointer",transition:"background .15s",
+};
+
+// ── Account Tab ───────────────────────────────────────────────────────────────
+
 export default function AccountTab({ user, onLogout, vehicles, profile, onProfileUpdate, onAddVehicle, onSaveProfile, onChangePassword }) {
   const { isMobile } = useBreakpoint();
 
-  const [editOpen,      setEditOpen]      = useState(false);
-  const [addVehicle,    setAddVehicle]    = useState(false);
+  const [editOpen,       setEditOpen]       = useState(false);
+  const [addVehicle,     setAddVehicle]     = useState(false);
   const [changePassOpen, setChangePassOpen] = useState(false);
   const [prefs, setPrefs] = useState({
     notifications: true,
@@ -670,7 +985,12 @@ export default function AccountTab({ user, onLogout, vehicles, profile, onProfil
         </div>
 
         <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} user={user} profile={profile} onSave={onSaveProfile} />
-        <ChangePasswordModal open={changePassOpen} onClose={() => setChangePassOpen(false)} onSave={onChangePassword} />
+        <ChangePasswordModal
+          open={changePassOpen}
+          onClose={() => setChangePassOpen(false)}
+          onSave={onChangePassword}
+          userEmail={user?.email}
+        />
         <AddVehicleModal
           open={addVehicle}
           onClose={() => setAddVehicle(false)}

@@ -22,14 +22,21 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
   const [reserveLoading, setReserveLoading] = useState(false);
   const [reserveError, setReserveError] = useState("");
 
-  const mapVehicle = v => ({
-    id: v.id,
-    icon: "🚗",
-    label: v.makeAndModel || v.nickname || v.plateNumber || "My Vehicle",
-    sub: v.plateNumber || "",
-    isEV: false,
-    vehicleType: v.vehicleType,
-  });
+  const mapVehicle = v => {
+    const label = v.nickname || v.makeAndModel || v.plateNumber || "My Vehicle";
+    const subParts = [
+      v.makeAndModel && v.makeAndModel !== label ? v.makeAndModel : null,
+      v.plateNumber || null,
+    ].filter(Boolean);
+    return {
+      id: v.id,
+      icon: "🚗",
+      label,
+      sub: subParts.join(" · "),
+      isEV: false,
+      vehicleType: v.vehicleType,
+    };
+  };
 
   const tabs = [
     { id:"find",    label:"Find Parking", icon:"🔍" },

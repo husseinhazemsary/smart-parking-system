@@ -1,6 +1,7 @@
 package com.backend.smart_parking.user;
 
 import com.backend.smart_parking.user.dto.ChangePasswordRequest;
+import com.backend.smart_parking.user.dto.EmailChangeRequest;
 import com.backend.smart_parking.user.dto.UpdateProfileRequest;
 import com.backend.smart_parking.user.dto.UserProfileResponse;
 import jakarta.validation.Valid;
@@ -34,5 +35,12 @@ public class UserController {
     public void changePassword(@AuthenticationPrincipal User currentUser,
                                @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(currentUser, request);
+    }
+
+    @PostMapping("/me/email-change-request")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void requestEmailChange(@AuthenticationPrincipal User currentUser,
+                                   @Valid @RequestBody EmailChangeRequest request) {
+        userService.requestEmailChange(currentUser, request);
     }
 }
