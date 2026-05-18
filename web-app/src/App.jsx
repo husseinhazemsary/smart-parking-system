@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { T } from "./constants/theme";
+import apiFetch from "./api/client";
 
 import Landing from "./pages/Landing";
 import AppShell from "./components/layout/AppShell";
@@ -27,10 +28,18 @@ export default function Ezrakna(){
   React.useEffect(() => { window.scrollTo({top:0,left:0,behavior:"instant"}); }, [view]);
 
   const handleAuth = (u) => { setUser(u); setAuthOpen(false); go("app"); };
-  const handleLogout = () => {
+  const handleUserUpdate = (updates) => {
+    setUser(prev => ({ ...prev, ...updates }));
+    if (updates.name) localStorage.setItem("userName", updates.name);
+  };
+  const handleLogout = async () => {
+    try {
+      const rt = localStorage.getItem("refreshToken");
+      if (rt) await apiFetch("/api/auth/logout", { method: "POST", body: JSON.stringify({ refreshToken: rt }) });
+    } catch {}
+    ["token","refreshToken","userId","userName","userEmail"].forEach(k => localStorage.removeItem(k));
     setUser(null);
     go("landing");
-    ["token","refreshToken","userId","userName","userEmail"].forEach(k => localStorage.removeItem(k));
   };
   const handleEnter = () => { go("app"); };
   const handleEnterWithSpot = (spot) => { setInitialSpotId(spot.id); go("app"); };
@@ -64,7 +73,7 @@ export default function Ezrakna(){
       `}</style>
 
       {view==="landing"  && <Landing onEnter={handleEnter} onViewDetails={handleEnterWithSpot} onAuthOpen={()=>setAuthOpen(true)} onBusiness={handleBusiness} user={user} />}
-      {view==="app"      && <AppShell user={user} onLogout={handleLogout} onBack={()=>go("landing")} onAuthOpen={()=>setAuthOpen(true)} initialSpotId={initialSpotId} onSpotDetailOpened={()=>setInitialSpotId(null)} />}
+      {view==="app"      && <AppShell user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} onBack={()=>go("landing")} onAuthOpen={()=>setAuthOpen(true)} initialSpotId={initialSpotId} onSpotDetailOpened={()=>setInitialSpotId(null)} />}
       {view==="business" && <BusinessPage onBack={()=>go("landing")} />}
 
       <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuth={handleAuth} />

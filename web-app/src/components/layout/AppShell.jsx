@@ -12,7 +12,7 @@ import WalletTab from "../../pages/WalletTab";
 import HistoryTab from "../../pages/HistoryTab";
 import AccountTab from "../../pages/AccountTab";
 
-export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSpotId, onSpotDetailOpened }) {
+export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthOpen, initialSpotId, onSpotDetailOpened }) {
   const [tab, setTab] = useState("find");
   const { isMobile, isTablet } = useBreakpoint();
   const [profile, setProfile] = useState({ accessibility: false });
@@ -67,7 +67,33 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
     }
     loadVehicles();
     loadCurrentSession();
+    loadProfile();
   }, [user]);
+
+  const loadProfile = async () => {
+    try {
+      const data = await apiFetch("/api/users/me");
+      setProfile(prev => ({ ...prev, phoneNumber: data.phoneNumber, dateOfBirth: data.dateOfBirth }));
+    } catch (e) {
+      console.error("Failed to load profile", e);
+    }
+  };
+
+  const handleSaveProfile = async ({ fullName, phoneNumber, dateOfBirth }) => {
+    const data = await apiFetch("/api/users/me", {
+      method: "PUT",
+      body: JSON.stringify({ fullName, phoneNumber, dateOfBirth }),
+    });
+    setProfile(prev => ({ ...prev, phoneNumber: data.phoneNumber, dateOfBirth: data.dateOfBirth }));
+    if (data.fullName) onUserUpdate?.({ name: data.fullName });
+  };
+
+  const handleChangePassword = async ({ currentPassword, newPassword }) => {
+    await apiFetch("/api/users/me/password", {
+      method: "PUT",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  };
 
   const loadVehicles = async () => {
     try {
@@ -365,6 +391,8 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
             onProfileUpdate={setProfile}
             onAddVehicle={handleAddVehicle}
             onVehiclesRefresh={loadVehicles}
+            onSaveProfile={handleSaveProfile}
+            onChangePassword={handleChangePassword}
           />
         )}
       </div>

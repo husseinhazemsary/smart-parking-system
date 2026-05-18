@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
 import Modal from "../components/ui/Modal";
@@ -71,10 +71,35 @@ function Toggle({ on, onChange }) {
   );
 }
 
-function EditProfileModal({ open, onClose, user }) {
-  const [name,  setName]  = useState(user?.name  || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState("+20 100 000 0000");
+function EditProfileModal({ open, onClose, user, profile, onSave }) {
+  const [name,    setName]    = useState("");
+  const [phone,   setPhone]   = useState("");
+  const [dob,     setDob]     = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setName(user?.name || "");
+      setPhone(profile?.phoneNumber || "");
+      setDob(profile?.dateOfBirth || "");
+      setError("");
+    }
+  }, [open]);
+
+  const handleSave = async () => {
+    setError("");
+    if (!name.trim()) { setError("Full name is required."); return; }
+    setLoading(true);
+    try {
+      await onSave({ fullName: name.trim(), phoneNumber: phone.trim() || undefined, dateOfBirth: dob || undefined });
+      onClose();
+    } catch (e) {
+      setError(e?.message || "Failed to save profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Modal open={open} onClose={onClose} maxWidth={420}>
@@ -86,20 +111,91 @@ function EditProfileModal({ open, onClose, user }) {
             <input className="acc-field" value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div>
-            <div className="acc-label">EMAIL</div>
-            <input className="acc-field" value={email} onChange={e => setEmail(e.target.value)} />
+            <div className="acc-label">EMAIL (cannot be changed)</div>
+            <input className="acc-field" value={user?.email || ""} readOnly
+              style={{ opacity:.5,cursor:"default" }} />
           </div>
           <div>
             <div className="acc-label">PHONE NUMBER</div>
-            <input className="acc-field" value={phone} onChange={e => setPhone(e.target.value)} />
+            <input className="acc-field" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+20 100 000 0000" />
+          </div>
+          <div>
+            <div className="acc-label">DATE OF BIRTH</div>
+            <input className="acc-field" type="date" value={dob} onChange={e => setDob(e.target.value)} />
           </div>
         </div>
+        {error && (
+          <div style={{ marginTop:12,padding:"9px 13px",borderRadius:9,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:T.red,fontSize:13 }}>
+            {error}
+          </div>
+        )}
         <div style={{ display:"flex",gap:10,marginTop:22 }}>
           <button onClick={onClose} style={{
             flex:1,padding:12,borderRadius:11,border:`1px solid ${T.border}`,
             background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",
           }}>Cancel</button>
-          <div style={{ flex:2 }}><GlowBtn full noArrow onClick={onClose}>Save Changes</GlowBtn></div>
+          <div style={{ flex:2 }}><GlowBtn full noArrow onClick={handleSave} disabled={loading}>{loading ? "Saving…" : "Save Changes"}</GlowBtn></div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function ChangePasswordModal({ open, onClose, onSave }) {
+  const [current, setCurrent] = useState("");
+  const [next,    setNext]    = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
+
+  const reset = () => { setCurrent(""); setNext(""); setConfirm(""); setError(""); };
+
+  const handleSave = async () => {
+    setError("");
+    if (!current || !next || !confirm) { setError("All fields are required."); return; }
+    if (next !== confirm) { setError("New passwords do not match."); return; }
+    if (next.length < 8) { setError("Password must be at least 8 characters."); return; }
+    setLoading(true);
+    try {
+      await onSave({ currentPassword: current, newPassword: next });
+      reset();
+      onClose();
+    } catch (e) {
+      setError(e?.message || "Failed to change password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal open={open} onClose={() => { reset(); onClose(); }} maxWidth={400}>
+      <div style={{ padding:"26px 22px" }}>
+        <div style={{ fontSize:18,fontWeight:800,marginBottom:20 }}>Change Password</div>
+        <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+          <div>
+            <div className="acc-label">CURRENT PASSWORD</div>
+            <input className="acc-field" type="password" value={current} onChange={e => setCurrent(e.target.value)} />
+          </div>
+          <div>
+            <div className="acc-label">NEW PASSWORD</div>
+            <input className="acc-field" type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="Min. 8 characters" />
+          </div>
+          <div>
+            <div className="acc-label">CONFIRM NEW PASSWORD</div>
+            <input className="acc-field" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+          </div>
+        </div>
+        {error && (
+          <div style={{ marginTop:12,padding:"9px 13px",borderRadius:9,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:T.red,fontSize:13 }}>
+            {error}
+          </div>
+        )}
+        <div style={{ display:"flex",gap:10,marginTop:22 }}>
+          <button onClick={() => { reset(); onClose(); }} style={{
+            flex:1,padding:12,borderRadius:11,border:`1px solid ${T.border}`,
+            background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",
+          }}>Cancel</button>
+          <div style={{ flex:2 }}><GlowBtn full noArrow onClick={handleSave} disabled={loading}>{loading ? "Saving…" : "Update Password"}</GlowBtn></div>
         </div>
       </div>
     </Modal>
@@ -365,11 +461,12 @@ function AddVehicleModal({ open, onClose, onAdd }) {
   );
 }
 
-export default function AccountTab({ user, onLogout, vehicles, profile, onProfileUpdate, onAddVehicle }) {
+export default function AccountTab({ user, onLogout, vehicles, profile, onProfileUpdate, onAddVehicle, onSaveProfile, onChangePassword }) {
   const { isMobile } = useBreakpoint();
 
-  const [editOpen,   setEditOpen]   = useState(false);
-  const [addVehicle, setAddVehicle] = useState(false);
+  const [editOpen,      setEditOpen]      = useState(false);
+  const [addVehicle,    setAddVehicle]    = useState(false);
+  const [changePassOpen, setChangePassOpen] = useState(false);
   const [prefs, setPrefs] = useState({
     notifications: true,
     location:      true,
@@ -521,8 +618,8 @@ export default function AccountTab({ user, onLogout, vehicles, profile, onProfil
                 <div style={{ fontSize:13,fontWeight:700,color:T.sub,letterSpacing:.5 }}>ACCOUNT</div>
               </div>
               {[
-                { icon:"👤", label:"Edit Profile",    sub:"Name, email & phone",     action:() => setEditOpen(true) },
-                { icon:"🔒", label:"Security",        sub:"Password & PIN settings", action:() => {}               },
+                { icon:"👤", label:"Edit Profile",    sub:"Name, email & phone",     action:() => setEditOpen(true)       },
+                { icon:"🔒", label:"Security",        sub:"Password & PIN settings", action:() => setChangePassOpen(true) },
                 { icon:"💳", label:"Payment Methods", sub:"Cards & saved payments",  action:() => {}               },
                 { icon:"🛡", label:"Privacy",         sub:"Data & permissions",      action:() => {}               },
               ].map(item => (
@@ -572,7 +669,8 @@ export default function AccountTab({ user, onLogout, vehicles, profile, onProfil
           </div>
         </div>
 
-        <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} user={user} />
+        <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} user={user} profile={profile} onSave={onSaveProfile} />
+        <ChangePasswordModal open={changePassOpen} onClose={() => setChangePassOpen(false)} onSave={onChangePassword} />
         <AddVehicleModal
           open={addVehicle}
           onClose={() => setAddVehicle(false)}

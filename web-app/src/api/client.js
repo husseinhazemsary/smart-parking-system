@@ -5,12 +5,36 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// Dispatched when the backend returns 401 so AppShell can force-logout.
 export function dispatchAuthExpired() {
   window.dispatchEvent(new CustomEvent("auth:expired"));
 }
 
-export default async function apiFetch(path, options = {}) {
+// Single in-flight refresh promise shared across concurrent 401s
+let _refreshing = null;
+
+async function tryRefresh() {
+  if (_refreshing) return _refreshing;
+  const rt = localStorage.getItem("refreshToken");
+  if (!rt) return false;
+  _refreshing = fetch(`${BASE_URL}/api/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: rt }),
+  })
+    .then(async r => {
+      if (!r.ok) return false;
+      const d = await r.json().catch(() => null);
+      if (!d?.accessToken) return false;
+      localStorage.setItem("token", d.accessToken);
+      if (d.refreshToken) localStorage.setItem("refreshToken", d.refreshToken);
+      return true;
+    })
+    .catch(() => false)
+    .finally(() => { _refreshing = null; });
+  return _refreshing;
+}
+
+export default async function apiFetch(path, options = {}, _retry = false) {
   const { method = "GET", headers = {}, body } = options;
   const init = {
     method,
@@ -30,7 +54,15 @@ export default async function apiFetch(path, options = {}) {
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    // Try every field shape backends typically use
+    if (res.status === 401 && !_retry) {
+      // Only attempt refresh if the user was actually authenticated
+      const hadToken = !!localStorage.getItem("token");
+      if (hadToken) {
+        const refreshed = await tryRefresh();
+        if (refreshed) return apiFetch(path, options, true);
+        dispatchAuthExpired();
+      }
+    }
     const message =
       data?.detail ||
       data?.message ||
@@ -38,10 +70,6 @@ export default async function apiFetch(path, options = {}) {
       data?.errors?.join(", ") ||
       res.statusText ||
       "Request failed";
-
-    // Automatically signal session expiry so the UI can show the login modal
-    if (res.status === 401) dispatchAuthExpired();
-
     throw new Error(message);
   }
 

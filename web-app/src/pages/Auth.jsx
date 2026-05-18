@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { T } from "../constants/theme";
 import Modal from "../components/ui/Modal";
 import GlowBtn from "../components/ui/GlowBtn";
-
-const API = "http://localhost:8081";
+import apiFetch from "../api/client";
 
 export default function AuthModal({ open, onClose, onAuth }){
   const [mode, setMode]   = useState("login");
@@ -24,20 +23,13 @@ export default function AuthModal({ open, onClose, onAuth }){
 
     setLoading(true);
     try {
-      const url  = mode === "login" ? `${API}/api/auth/login` : `${API}/api/auth/register`;
+      const path = mode === "login" ? "/api/auth/login" : "/api/auth/register";
       const body = mode === "login"
         ? { email: form.email, password: form.password }
         : { fullName: form.name, email: form.email, password: form.password,
             phoneNumber: form.phone, dateOfBirth: form.dob };
 
-      const res  = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-
-      if (!res.ok) { setError(data.detail || "Something went wrong."); return; }
+      const data = await apiFetch(path, { method: "POST", body: JSON.stringify(body) });
 
       localStorage.setItem("token",        data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
@@ -46,8 +38,8 @@ export default function AuthModal({ open, onClose, onAuth }){
       localStorage.setItem("userEmail",    data.user.email);
 
       onAuth({ id: data.user.id, name: data.user.fullName, email: data.user.email, token: data.accessToken });
-    } catch {
-      setError("Network error — is the server running?");
+    } catch (e) {
+      setError(e?.message || "Network error — is the server running?");
     } finally {
       setLoading(false);
     }
