@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { T } from "../../constants/theme";
 import useBreakpoint from "../../hooks/useBreakpoint";
 import apiFetch from "../../api/client";
+import { detectEV } from "../../utils/evDetection";
 import GlowBtn from "../ui/GlowBtn";
 import Card from "../ui/Card";
 import BottomNav from "./BottomNav";
@@ -28,13 +29,17 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
       v.makeAndModel && v.makeAndModel !== label ? v.makeAndModel : null,
       v.plateNumber || null,
     ].filter(Boolean);
+    const [make = "", model = ""] = (v.makeAndModel || "").split(" ");
     return {
       id: v.id,
       icon: "🚗",
       label,
       sub: subParts.join(" · "),
-      isEV: false,
+      isEV: detectEV(make, model),
       vehicleType: v.vehicleType,
+      plateNumber: v.plateNumber,
+      makeAndModel: v.makeAndModel,
+      nickname: v.nickname,
     };
   };
 
@@ -75,7 +80,7 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
     loadVehicles();
     loadCurrentSession();
     loadProfile();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProfile = async () => {
     try {
@@ -251,7 +256,7 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
     }
   };
 
-  // ── Add vehicle from Account tab ───────────────────────────────────────────
+  // ── Vehicle CRUD from Account tab ──────────────────────────────────────────
 
   const handleAddVehicle = async vehicleData => {
     const res = await apiFetch("/api/users/me/vehicles", {
@@ -267,6 +272,27 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
     });
     await loadVehicles();
     return res;
+  };
+
+  const handleUpdateVehicle = async (id, vehicleData) => {
+    const res = await apiFetch(`/api/users/me/vehicles/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        plateNumber: vehicleData.plateNumber,
+        vehicleType: vehicleData.vehicleType || "SEDAN",
+        makeAndModel: vehicleData.makeAndModel || null,
+        nickname: vehicleData.nickname || null,
+        isDefault: vehicleData.isDefault ?? false,
+        autoPay: vehicleData.autoPay ?? false,
+      }),
+    });
+    await loadVehicles();
+    return res;
+  };
+
+  const handleDeleteVehicle = async id => {
+    await apiFetch(`/api/users/me/vehicles/${id}`, { method: "DELETE" });
+    await loadVehicles();
   };
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -397,7 +423,8 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
             profile={{ ...profile, vehicles }}
             onProfileUpdate={setProfile}
             onAddVehicle={handleAddVehicle}
-            onVehiclesRefresh={loadVehicles}
+            onUpdateVehicle={handleUpdateVehicle}
+            onDeleteVehicle={handleDeleteVehicle}
             onSaveProfile={handleSaveProfile}
             onChangePassword={handleChangePassword}
           />

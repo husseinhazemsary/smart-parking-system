@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
-import { SPOTS, availColor, availLabel } from "../data/spots";
+import { availColor, availLabel } from "../data/spots";
+import apiFetch from "../api/client";
 
 import Navbar from "../components/layout/Navbar";
 import GlowBtn from "../components/ui/GlowBtn";
@@ -27,15 +28,6 @@ const B2B_FEATURES = [
   { icon:"📊", title:"Analytics Dashboard",         body:"Heatmaps, revenue trends, peak prediction and 30+ metrics exportable to your BI stack." },
 ];
 
-/* Image paths keyed by spot id — place files in src/assets/ */
-const SPOT_IMAGES = {
-  1: new URL("../assets/arkan2.jpg",    import.meta.url).href,
-  2: new URL("../assets/ngu.jpg",   import.meta.url).href,
-  3: new URL("../assets/airport.jpg", import.meta.url).href,
-  4: new URL("../assets/tahrir.jpg", import.meta.url).href,
-  5: new URL("../assets/city-stars.jpg",    import.meta.url).href,
-  6: new URL("../assets/dandy.jpg",    import.meta.url).href,
-};
 
 function Reveal({ children, delay=0, direction="up", style={} }){
   const ref = useRef(null);
@@ -483,7 +475,7 @@ function LandingCard({s, onViewDetails, delay, index=0}){
         {/* Photo / fallback */}
         <div style={{height:140, position:"relative", overflow:"hidden"}}>
           <img
-            src={SPOT_IMAGES[s.id]}
+            src={s.imageUrl}
             alt={s.name}
             onError={e=>{ e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
             style={{
@@ -599,8 +591,28 @@ function CTAEmoji(){
 
 export default function Landing({onEnter,onViewDetails,onAuthOpen,onBusiness,user}){
   const [scrolled,setScrolled]=useState(false);
+  const [featuredLots, setFeaturedLots] = useState([]);
   const {isMobile}=useBreakpoint();
+
   useEffect(()=>{ const h=()=>setScrolled(window.scrollY>40); window.addEventListener("scroll",h); return()=>window.removeEventListener("scroll",h); },[]);
+
+  useEffect(()=>{
+    apiFetch("/api/parking-lots")
+      .then(data=>{
+        const mapped = (data||[]).map(lot=>({
+          id:        lot.id,
+          name:      lot.name,
+          address:   lot.address,
+          total:     lot.totalSlots,
+          available: lot.availableSlots,
+          rate:      lot.hourlyRate!=null ? Number(lot.hourlyRate) : 0,
+          imageUrl:  lot.imageUrl || null,
+        }));
+        setFeaturedLots(mapped);
+      })
+      .catch(()=>{}); // silently fail — section just stays empty
+  },[]);
+
   const scrollTo=id=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"});
 
   return(
@@ -760,7 +772,15 @@ export default function Landing({onEnter,onViewDetails,onAuthOpen,onBusiness,use
           </Reveal>
 
           <div style={{display:"grid",gridTemplateColumns:`repeat(${isMobile?"1":isTabletVal()?"2":"3"},1fr)`,gap:20}}>
-            {SPOTS.slice(0,3).map((s,i)=>(
+            {featuredLots.length===0 && [0,1,2].map(i=>(
+              <div key={i} style={{
+                borderRadius:18,overflow:"hidden",
+                background:"rgba(17,0,48,.4)",border:"1.5px solid rgba(125,57,235,.1)",
+                height:280,display:"flex",alignItems:"center",justifyContent:"center",
+                color:"rgba(125,57,235,.3)",fontSize:32,
+              }}>🅿️</div>
+            ))}
+            {featuredLots.slice(0,3).map((s,i)=>(
               <LandingCard key={s.id} s={s} onViewDetails={onViewDetails} delay={i*100} index={i}/>
             ))}
           </div>

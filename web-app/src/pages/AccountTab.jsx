@@ -774,14 +774,114 @@ const menuItemStyle = {
   cursor:"pointer",transition:"background .15s",
 };
 
+// ── Edit Vehicle Modal ────────────────────────────────────────────────────────
+
+function EditVehicleModal({ open, onClose, vehicle, onSave }) {
+  const [make,        setMake]        = useState("");
+  const [model,       setModel]       = useState("");
+  const [nickname,    setNickname]    = useState("");
+  const [plate,       setPlate]       = useState("");
+  const [vehicleType, setVehicleType] = useState("SEDAN");
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState("");
+
+  useEffect(() => {
+    if (open && vehicle) {
+      const parts = (vehicle.makeAndModel || "").split(" ");
+      setMake(parts[0] || "");
+      setModel(parts.slice(1).join(" ") || "");
+      setNickname(vehicle.nickname || "");
+      setPlate(vehicle.plateNumber || "");
+      setVehicleType(vehicle.vehicleType || "SEDAN");
+      setError("");
+    }
+  }, [open, vehicle]);
+
+  const handleSave = async () => {
+    setError("");
+    if (!plate.replace(/\s/g, "")) { setError("License plate is required."); return; }
+    setLoading(true);
+    try {
+      const makeModel = `${make.trim()} ${model.trim()}`.trim() || undefined;
+      await onSave(vehicle.id, {
+        plateNumber:  plate.trim().toUpperCase(),
+        vehicleType,
+        makeAndModel: makeModel,
+        nickname:     nickname.trim() || null,
+      });
+      onClose();
+    } catch (e) {
+      setError(e?.message || "Failed to update vehicle.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} maxWidth={480}>
+      <div style={{ padding:"26px 22px" }}>
+        <div style={{ fontSize:18,fontWeight:800,marginBottom:16 }}>Edit Vehicle</div>
+
+        <div style={{ marginBottom:14 }}>
+          <div className="acc-label">NICKNAME <span style={{ color:T.sub,fontWeight:400,letterSpacing:0 }}>(optional)</span></div>
+          <input className="acc-field" value={nickname} onChange={e => setNickname(e.target.value)} placeholder="e.g. Daily Driver, Work Car…" />
+        </div>
+
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
+          <div>
+            <div className="acc-label">MAKE</div>
+            <input className="acc-field" value={make} onChange={e => setMake(e.target.value)} placeholder="Toyota" />
+          </div>
+          <div>
+            <div className="acc-label">MODEL</div>
+            <input className="acc-field" value={model} onChange={e => setModel(e.target.value)} placeholder="Corolla" />
+          </div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <div className="acc-label">VEHICLE TYPE</div>
+          <select className="acc-field" value={vehicleType} onChange={e => setVehicleType(e.target.value)} style={{ appearance:"none",cursor:"pointer" }}>
+            {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+
+        <div style={{ marginBottom:14,padding:"14px 14px 10px",borderRadius:12,border:`1px solid ${T.border}`,background:"rgba(255,255,255,.02)" }}>
+          <div className="acc-label" style={{ marginBottom:10 }}>LICENSE PLATE *</div>
+          <EgyptianPlatePicker key={open ? vehicle?.id : "closed"} onChange={setPlate} initialPlate={plate} />
+        </div>
+
+        {error && (
+          <div style={{ marginBottom:12,padding:"10px 13px",borderRadius:9,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:T.red,fontSize:13 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display:"flex",gap:10,marginTop:4 }}>
+          <button onClick={onClose} style={{
+            flex:1,padding:12,borderRadius:11,border:`1px solid ${T.border}`,
+            background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",
+          }}>Cancel</button>
+          <div style={{ flex:2 }}>
+            <GlowBtn full noArrow onClick={handleSave} disabled={loading}>
+              {loading ? "Saving…" : "Save Changes"}
+            </GlowBtn>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // ── Account Tab ───────────────────────────────────────────────────────────────
 
-export default function AccountTab({ user, onLogout, vehicles, profile, onProfileUpdate, onAddVehicle, onSaveProfile, onChangePassword }) {
+export default function AccountTab({ user, onLogout, vehicles, profile, onProfileUpdate, onAddVehicle, onUpdateVehicle, onDeleteVehicle, onSaveProfile, onChangePassword }) {
   const { isMobile } = useBreakpoint();
 
-  const [editOpen,       setEditOpen]       = useState(false);
-  const [addVehicle,     setAddVehicle]     = useState(false);
-  const [changePassOpen, setChangePassOpen] = useState(false);
+  const [editOpen,        setEditOpen]        = useState(false);
+  const [addVehicle,      setAddVehicle]      = useState(false);
+  const [editVehicle,     setEditVehicle]     = useState(null); // vehicle object or null
+  const [changePassOpen,  setChangePassOpen]  = useState(false);
+  const [deletingId,      setDeletingId]      = useState(null);
   const [prefs, setPrefs] = useState({
     notifications: true,
     location:      true,
@@ -885,6 +985,29 @@ export default function AccountTab({ user, onLogout, vehicles, profile, onProfil
                       )}
                     </div>
                     <div style={{ fontSize:12,color:T.sub }}>{v.sub}</div>
+                  </div>
+                  <div style={{ display:"flex",gap:6,flexShrink:0 }}>
+                    <button
+                      onClick={() => setEditVehicle(v)}
+                      style={{
+                        padding:"4px 10px",borderRadius:7,fontSize:11,fontWeight:600,
+                        border:`1px solid ${T.border}`,background:"transparent",
+                        color:T.sub,fontFamily:"inherit",cursor:"pointer",
+                      }}
+                    >Edit</button>
+                    <button
+                      onClick={async () => {
+                        setDeletingId(v.id);
+                        try { await onDeleteVehicle?.(v.id); } finally { setDeletingId(null); }
+                      }}
+                      disabled={deletingId === v.id}
+                      style={{
+                        padding:"4px 10px",borderRadius:7,fontSize:11,fontWeight:600,
+                        border:"1px solid rgba(239,68,68,.25)",background:"rgba(239,68,68,.06)",
+                        color:T.red,fontFamily:"inherit",cursor:"pointer",
+                        opacity: deletingId === v.id ? .5 : 1,
+                      }}
+                    >{deletingId === v.id ? "…" : "Remove"}</button>
                   </div>
                 </div>
               ))}
@@ -995,6 +1118,12 @@ export default function AccountTab({ user, onLogout, vehicles, profile, onProfil
           open={addVehicle}
           onClose={() => setAddVehicle(false)}
           onAdd={onAddVehicle}
+        />
+        <EditVehicleModal
+          open={!!editVehicle}
+          onClose={() => setEditVehicle(null)}
+          vehicle={editVehicle}
+          onSave={onUpdateVehicle}
         />
       </div>
     </div>

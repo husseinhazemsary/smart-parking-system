@@ -1,44 +1,49 @@
 import React, { useState, useEffect } from "react";
 import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
-import { SPOTS, availColor, availLabel } from "../data/spots";
+import { availColor, availLabel } from "../data/spots";
+import apiFetch from "../api/client";
 import ProgressBar from "../components/ui/ProgressBar";
 import GlowBtn from "../components/ui/GlowBtn";
 
-// Seeded random — stable across renders so slot states are consistent
-function seededRand(seed) {
-  let s = seed;
-  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+function formatHours(open, close) {
+  if (!open || !close) return "24/7";
+  const fmt = t => {
+    const [h, m] = t.split(":");
+    const hour = parseInt(h, 10);
+    return `${(hour % 12) || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
+  };
+  return `${fmt(open)} – ${fmt(close)}`;
 }
 
-// Generates deterministic slot data for a parking spot
-function generateSlots(spotId, total) {
-  const rand = seededRand(spotId * 9973);
-  const levels = total > 100 ? 3 : total > 50 ? 2 : 1;
-  const perLevel = Math.ceil(total / levels);
-  const allSlots = [];
-  let id = 1;
-  for (let lv = 1; lv <= levels; lv++) {
-    const count = lv === levels ? total - perLevel * (levels - 1) : perLevel;
-    for (let i = 0; i < count; i++) {
-      const r1 = rand(), r2 = rand(), r3 = rand();
-      allSlots.push({
-        id: `${spotId}-${id}`,
-        slotNum: id,
-        level: lv,
-        type: r2 < 0.05 ? "ev" : r2 < 0.1 ? "accessible" : "standard",
-        status: r1 < 0.3 ? "available" : "occupied",
-        predictedMinutes: Math.floor(r3 * 50 + 5),   
-        confidence: Math.floor(r3 * 25 + 68),         
-      });
-      id++;
-    }
-  }
-  return allSlots;
+function mapLot(lot) {
+  return {
+    id:        lot.id,
+    name:      lot.name,
+    address:   lot.address,
+    total:     lot.totalSlots,
+    available: lot.availableSlots,
+    distance:  lot.distanceKm ?? 0,
+    rate:      lot.hourlyRate != null ? Number(lot.hourlyRate) : 0,
+    hours:     formatHours(lot.openingTime, lot.closingTime),
+  };
 }
 
-const SPOT_SLOTS = {};
-SPOTS.forEach(s => { SPOT_SLOTS[s.id] = generateSlots(s.id, s.total); });
+function mapSlot(s, i) {
+  const label = s.slotLabel || String(i + 1);
+  const m = label.match(/^([A-Za-z])(\d+)$/);
+  const level   = m ? m[1].toUpperCase().charCodeAt(0) - 64 : 1;
+  const slotNum = m ? parseInt(m[2], 10) : i + 1;
+  return {
+    id:               s.id,
+    slotNum,
+    level,
+    type:             s.slotType === "HANDICAP" ? "accessible" : "standard",
+    status:           (s.status || "available").toLowerCase(),
+    predictedMinutes: ((slotNum * 7 + level * 3) % 46) + 5,
+    confidence:       ((slotNum * 13 + level) % 25) + 68,
+  };
+}
 
 // Category icons, colors, and slot status config
 const CAT_ICONS  = { Mall:"🏬", University:"🎓", Airport:"✈️", Street:"🚗", All:"📍" };
@@ -121,40 +126,65 @@ const CSS = `
 
 // Main FindTab component — search, filter, and view parking spots.
 export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, onSpotDetailOpened, profile }) {
-  const [search,     setSearch]     = useState("");
-  const [cat,        setCat]        = useState("All");
-  const [sort,       setSort]       = useState("distance");
-  const [detailSpot, setDetailSpot] = useState(null);
-  const [slotSpot,   setSlotSpot]   = useState(null);
+  const [search,      setSearch]      = useState("");
+  const [sort,        setSort]        = useState("distance");
+  const [detailSpot,  setDetailSpot]  = useState(null);
+  const [slotSpot,    setSlotSpot]    = useState(null);
+  const [lots,        setLots]        = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [fetchError,  setFetchError]  = useState("");
+  const [lotSlots,    setLotSlots]    = useState({});  // { [lotId]: slot[] }
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const { isMobile } = useBreakpoint();
 
-  useEffect(()=>{
-    if(initialSpotId){
-      const spot = SPOTS.find(s=>s.id===initialSpotId);
-      if(spot){ setDetailSpot(spot); setSlotSpot(null); }
+  // Load parking lots from API
+  useEffect(() => {
+    apiFetch("/api/parking-lots")
+      .then(data => setLots((data || []).map(mapLot)))
+      .catch(e => setFetchError(e.message || "Failed to load parking lots"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Open detail modal when a shared lot link is followed
+  useEffect(() => {
+    if (initialSpotId && lots.length > 0) {
+      const spot = lots.find(s => s.id === initialSpotId);
+      if (spot) { setDetailSpot(spot); setSlotSpot(null); }
       onSpotDetailOpened?.();
     }
-  },[initialSpotId]);
+  }, [initialSpotId, lots]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cats = ["All","Mall","University","Airport","Street"];
-
-  const filtered = SPOTS
+  const filtered = lots
     .filter(s =>
-      (cat==="All" || s.category===cat) &&
-      (s.name.toLowerCase().includes(search.toLowerCase()) ||
-       s.address.toLowerCase().includes(search.toLowerCase()))
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.address.toLowerCase().includes(search.toLowerCase())
     )
-    .sort((a,b) =>
-      sort==="distance" ? a.distance-b.distance :
-      sort==="price"    ? a.rate-b.rate :
-      sort==="avail"    ? b.available-a.available : 0
+    .sort((a, b) =>
+      sort === "distance" ? a.distance - b.distance :
+      sort === "price"    ? a.rate - b.rate :
+      sort === "avail"    ? b.available - a.available : 0
     );
 
-  const openDetail = (s) => { setDetailSpot(s); setSlotSpot(null); };
-  const openSlots  = (s) => { setSlotSpot(s);   setDetailSpot(null); };
-  const closeAll   = ()  => { setDetailSpot(null); setSlotSpot(null); };
+  const openDetail = s => { setDetailSpot(s); setSlotSpot(null); };
 
-  const handleReserve = (spot) => {
+  const openSlots = async s => {
+    setSlotSpot(s);
+    setDetailSpot(null);
+    if (lotSlots[s.id]) return; // already cached
+    setSlotsLoading(true);
+    try {
+      const data = await apiFetch(`/api/parking-lots/${s.id}/slots`);
+      setLotSlots(prev => ({ ...prev, [s.id]: (data || []).map(mapSlot) }));
+    } catch {
+      setLotSlots(prev => ({ ...prev, [s.id]: [] }));
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
+  const closeAll = () => { setDetailSpot(null); setSlotSpot(null); };
+
+  const handleReserve = spot => {
     if (!user) { onAuthOpen?.(); return; }
     closeAll();
     onReserve(spot);
@@ -197,38 +227,28 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
           )}
         </div>
 
-        {/* Filters + sort */}
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
-          {cats.map(c=>(
-            <button key={c} className="ft-cat-pill" onClick={()=>setCat(c)} style={{
-              borderColor: cat===c ? (CAT_COLORS[c]||T.purple) : T.border,
-              background:  cat===c ? `${CAT_COLORS[c]||T.purple}1A` : "transparent",
-              color:       cat===c ? (CAT_COLORS[c]||T.purple) : T.sub,
-            }}>
-              {c}
-            </button>
+        {/* Sort */}
+        <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:14}}>
+          <span style={{fontSize:11,color:T.sub,marginRight:2}}>Sort:</span>
+          {[["distance","Nearest"],["price","Price"],["avail","Available"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setSort(v)} style={{
+              padding:"5px 9px",borderRadius:7,
+              border:`1px solid ${sort===v?T.purple:T.border}`,
+              background:sort===v?"rgba(125,57,235,.12)":"transparent",
+              color:sort===v?T.purple:T.sub,
+              fontSize:11,fontWeight:sort===v?700:400,
+              cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",
+              transition:"all .15s",
+            }}>{l}</button>
           ))}
-          <div style={{marginLeft:"auto",display:"flex",gap:5,alignItems:"center",flexShrink:0}}>
-            <span style={{fontSize:11,color:T.sub,marginRight:2}}>Sort:</span>
-            {[["distance","Nearest"],["price","Price"],["avail","Available"]].map(([v,l])=>(
-              <button key={v} onClick={()=>setSort(v)} style={{
-                padding:"5px 9px",borderRadius:7,
-                border:`1px solid ${sort===v?T.purple:T.border}`,
-                background:sort===v?"rgba(125,57,235,.12)":"transparent",
-                color:sort===v?T.purple:T.sub,
-                fontSize:11,fontWeight:sort===v?700:400,
-                cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",
-                transition:"all .15s",
-              }}>{l}</button>
-            ))}
-          </div>
         </div>
 
-        <div style={{fontSize:12,color:T.sub,marginBottom:14}}>
-          {filtered.length} location{filtered.length!==1?"s":""} found
-          {cat!=="All"?` in ${cat}`:""}
-          {search?` matching "${search}"`:""}
-        </div>
+        {!loading && !fetchError && (
+          <div style={{fontSize:12,color:T.sub,marginBottom:14}}>
+            {filtered.length} location{filtered.length!==1?"s":""} found
+            {search?` matching "${search}"`:""}
+          </div>
+        )}
       </div>
 
       {/* ── Card grid ── */}
@@ -238,14 +258,38 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
         gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill, minmax(300px, 1fr))",
         gap:16, overflowY:"auto", flex:1,
       }}>
-        {filtered.length===0 && (
+        {loading && (
+          <div style={{gridColumn:"1/-1",textAlign:"center",padding:"64px 0",color:T.sub}}>
+            <div style={{fontSize:32,marginBottom:12,opacity:.5}}>🅿️</div>
+            <div style={{fontSize:14,fontWeight:600}}>Loading parking locations…</div>
+          </div>
+        )}
+        {!loading && fetchError && (
+          <div style={{gridColumn:"1/-1",textAlign:"center",padding:"48px 0"}}>
+            <div style={{fontSize:32,marginBottom:10}}>⚠️</div>
+            <div style={{fontSize:14,fontWeight:700,color:T.red,marginBottom:6}}>Could not load parking lots</div>
+            <div style={{fontSize:12,color:T.sub,marginBottom:16}}>{fetchError}</div>
+            <button onClick={() => {
+              setFetchError(""); setLoading(true);
+              apiFetch("/api/parking-lots")
+                .then(data => setLots((data || []).map(mapLot)))
+                .catch(e => setFetchError(e.message || "Failed to load parking lots"))
+                .finally(() => setLoading(false));
+            }} style={{
+              padding:"8px 20px",borderRadius:9,border:`1px solid ${T.border}`,
+              background:"rgba(125,57,235,.08)",color:T.purple,
+              fontFamily:"inherit",fontSize:13,cursor:"pointer",
+            }}>Retry</button>
+          </div>
+        )}
+        {!loading && !fetchError && filtered.length === 0 && (
           <div style={{gridColumn:"1/-1",textAlign:"center",padding:"64px 0",color:T.sub}}>
             <div style={{fontSize:40,marginBottom:12}}>🔍</div>
             <div style={{fontSize:16,fontWeight:700,marginBottom:6}}>No locations found</div>
-            <div style={{fontSize:13}}>Try a different search or category</div>
+            <div style={{fontSize:13}}>Try a different search term</div>
           </div>
         )}
-        {filtered.map((s,i)=>(
+        {!loading && filtered.map((s,i)=>(
           <SpotCard
             key={s.id} spot={s} index={i}
             onViewDetail={()=>openDetail(s)}
@@ -267,7 +311,8 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
       {slotSpot && (
         <SlotMapModal
           spot={slotSpot}
-          slots={SPOT_SLOTS[slotSpot.id]}
+          slots={lotSlots[slotSpot.id] || []}
+          slotsLoading={slotsLoading}
           user={user}
           profile={profile}
           onClose={closeAll}
@@ -351,14 +396,14 @@ function SpotCard({ spot:s, onViewDetail, onViewSlots }) {
 function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen }) {
   const ac = availColor(s.available, s.total);
   const al = availLabel(s.available, s.total);
-  const catColor = CAT_COLORS[s.category] || T.purple;
+  const catColor = (s.category && CAT_COLORS[s.category]) || T.purple;
   const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name+" "+s.address)}`;
 
   useEffect(()=>{
     const h = e => { if(e.key==="Escape") onClose(); };
     window.addEventListener("keydown",h);
     return()=>window.removeEventListener("keydown",h);
-  },[]);
+  },[]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="ft-modal-overlay" onClick={onClose}>
@@ -380,9 +425,11 @@ function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen
             onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.14)"}
             onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"}>✕</button>
 
-          <span style={{fontSize:10,fontWeight:700,color:catColor,padding:"2px 8px",borderRadius:4,background:`${catColor}20`,marginBottom:10,display:"inline-block"}}>
-            {CAT_ICONS[s.category]} {s.category}
-          </span>
+          {s.category && (
+            <span style={{fontSize:10,fontWeight:700,color:catColor,padding:"2px 8px",borderRadius:4,background:`${catColor}20`,marginBottom:10,display:"inline-block"}}>
+              {CAT_ICONS[s.category]} {s.category}
+            </span>
+          )}
           <h2 style={{fontSize:20,fontWeight:800,letterSpacing:-.5,marginBottom:3,lineHeight:1.2}}>{s.name}</h2>
           <div style={{fontSize:12,color:T.sub,marginBottom:10}}>📍 {s.address}</div>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -474,7 +521,7 @@ function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen
 }
 
 // SlotMapModal — interactive floor-plan view with per-slot selection.
-function SlotMapModal({ spot:s, slots, user, profile, onClose, onBack, onReserve, onAuthOpen }) {
+function SlotMapModal({ spot:s, slots, slotsLoading, profile, onClose, onBack, onReserve }) {
   const [activeLevel,  setActiveLevel]  = useState(1);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
@@ -504,7 +551,7 @@ function SlotMapModal({ spot:s, slots, user, profile, onClose, onBack, onReserve
     };
     window.addEventListener("keydown",h);
     return()=>window.removeEventListener("keydown",h);
-  },[selectedSlot]);
+  },[selectedSlot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="ft-modal-overlay" onClick={()=>{ if(selectedSlot) setSelectedSlot(null); else onClose(); }}>
@@ -664,7 +711,18 @@ function SlotMapModal({ spot:s, slots, user, profile, onClose, onBack, onReserve
           )}
 
           {/* Slot grid */}
+          {slotsLoading && (
+            <div style={{textAlign:"center",padding:"36px 0",color:T.sub,fontSize:13}}>
+              Loading slots…
+            </div>
+          )}
+          {!slotsLoading && slots.length === 0 && (
+            <div style={{textAlign:"center",padding:"36px 0",color:T.sub,fontSize:13}}>
+              No slot data available for this lot.
+            </div>
+          )}
           <div style={{
+            display: slotsLoading || slots.length === 0 ? "none" : undefined,
             background:"rgba(7,0,26,.6)",borderRadius:12,padding:"13px 10px",
             border:`1px solid ${T.border}`,marginBottom:14,overflowX:"auto",
           }}>
@@ -717,9 +775,7 @@ function SlotMapModal({ spot:s, slots, user, profile, onClose, onBack, onReserve
             <SlotInfoPanel
               slot={selectedSlot}
               spot={s}
-              user={user}
               gmapsUrl={gmapsUrl}
-              onAuthOpen={onAuthOpen}
               hasEV={hasEV}
               isAccessible={isAccessible}
             />
@@ -765,7 +821,7 @@ function SlotMapModal({ spot:s, slots, user, profile, onClose, onBack, onReserve
 }
 
 // SlotInfoPanel — shows details for the selected slot, or ML prediction if occupied.
-function SlotInfoPanel({ slot:sl, spot:s, user, gmapsUrl, onAuthOpen, hasEV, isAccessible }) {
+function SlotInfoPanel({ slot:sl, spot:s, gmapsUrl, hasEV, isAccessible }) {
   const cfg = slotTileColor(sl);
   const statusCfg = SLOT_CONFIG[sl.status];
 
