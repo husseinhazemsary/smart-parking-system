@@ -1,19 +1,29 @@
 package com.backend.smart_parking.admin;
 
 import com.backend.smart_parking.admin.dto.*;
+import com.backend.smart_parking.parking.ParkingLot;
+import com.backend.smart_parking.parking.ParkingLotRepository;
 import com.backend.smart_parking.parking.ParkingSlot;
 import com.backend.smart_parking.parking.ParkingSlotRepository;
 import com.backend.smart_parking.reservation.Reservation;
 import com.backend.smart_parking.reservation.ReservationRepository;
 import com.backend.smart_parking.reservation.ReservationStatus;
+import com.backend.smart_parking.user.AuthProvider;
+import com.backend.smart_parking.user.Role;
+import com.backend.smart_parking.user.User;
+import com.backend.smart_parking.user.UserRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -21,16 +31,73 @@ public class AdminService {
 
     private final ReservationRepository reservationRepository;
     private final ParkingSlotRepository slotRepository;
+    private final UserRepository userRepository;
+    private final ParkingLotRepository parkingLotRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminService(ReservationRepository reservationRepository,
-                        ParkingSlotRepository slotRepository) {
+                        ParkingSlotRepository slotRepository,
+                        UserRepository userRepository,
+                        ParkingLotRepository parkingLotRepository,
+                        PasswordEncoder passwordEncoder) {
         this.reservationRepository = reservationRepository;
         this.slotRepository = slotRepository;
+        this.userRepository = userRepository;
+        this.parkingLotRepository = parkingLotRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public ReservationStatsResponse getReservationStats() {
-        BigDecimal totalRevenue = reservationRepository
-                .findAllByStatus(ReservationStatus.COMPLETED)
+    public List<LotAdminResponse> getLotAdmins() {
+        return userRepository.findAllByRole(Role.ROLE_LOT_ADMIN).stream()
+                .map(this::toLotAdminResponse)
+                .toList();
+    }
+
+    @Transactional
+    public LotAdminResponse createLotAdmin(CreateLotAdminRequest req) {
+        if (userRepository.existsByEmail(req.email()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+        ParkingLot lot = parkingLotRepository.findById(req.assignedLotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking lot not found"));
+        User user = new User();
+        user.setFullName(req.fullName());
+        user.setEmail(req.email());
+        user.setPassword(passwordEncoder.encode(req.password()));
+        user.setProvider(AuthProvider.LOCAL);
+        user.setRole(Role.ROLE_LOT_ADMIN);
+        user.setAssignedLot(lot);
+        if (req.phoneNumber() != null && !req.phoneNumber().isBlank())
+            user.setPhoneNumber(req.phoneNumber());
+        User saved = userRepository.save(user);
+        return toLotAdminResponse(saved);
+    }
+
+    @Transactional
+    public LotAdminResponse updateLotAdmin(UUID id, UpdateLotAdminRequest req) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lot admin not found"));
+        if (!user.getEmail().equals(req.email()) && userRepository.existsByEmail(req.email()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+        ParkingLot lot = parkingLotRepository.findById(req.assignedLotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking lot not found"));
+        user.setFullName(req.fullName());
+        user.setEmail(req.email());
+        user.setPhoneNumber(req.phoneNumber() != null && !req.phoneNumber().isBlank() ? req.phoneNumber() : null);
+        user.setAssignedLot(lot);
+        if (req.password() != null && !req.password().isBlank())
+            user.setPassword(passwordEncoder.encode(req.password()));
+        return toLotAdminResponse(userRepository.save(user));
+    }
+
+    private LotAdminResponse toLotAdminResponse(User u) {
+        return new LotAdminResponse(
+                u.getId(), u.getFullName(), u.getEmail(), u.getPhoneNumber(),
+                u.getAssignedLot() != null ? u.getAssignedLot().getId() : null,
+                u.getAssignedLot() != null ? u.getAssignedLot().getName() : null);
+    }
+
+    public ReservationStatsResponse getReservationStats(User caller) {
+        BigDecimal totalRevenue = getReservationsForCaller(caller, ReservationStatus.COMPLETED)
                 .stream()
                 .map(this::calculateAmount)
                 .filter(a -> a != null)
@@ -38,42 +105,53 @@ public class AdminService {
         return new ReservationStatsResponse(totalRevenue);
     }
 
-    public SessionStatsResponse getSessionStats() {
-        long active    = reservationRepository.countByStatus(ReservationStatus.ACTIVE);
-        long completed = reservationRepository.countByStatus(ReservationStatus.COMPLETED);
-        return new SessionStatsResponse(active, completed);
+    public SessionStatsResponse getSessionStats(User caller) {
+        List<Reservation> active    = getReservationsForCaller(caller, ReservationStatus.ACTIVE);
+        List<Reservation> completed = getReservationsForCaller(caller, ReservationStatus.COMPLETED);
+        return new SessionStatsResponse(active.size(), completed.size());
     }
 
-    public List<AdminSessionResponse> getRecentSessions(int hours) {
+    public List<AdminSessionResponse> getRecentSessions(int hours, User caller) {
         Instant since = Instant.now().minusSeconds((long) hours * 3600);
-        return reservationRepository
-                .findByEnteredAtAfterOrderByEnteredAtDesc(since)
-                .stream()
-                .map(this::toSessionResponse)
-                .toList();
+        List<Reservation> reservations = isLotAdmin(caller)
+                ? reservationRepository.findByEnteredAtAfterAndGate_ParkingLot_IdOrderByEnteredAtDesc(since, caller.getAssignedLot().getId())
+                : reservationRepository.findByEnteredAtAfterOrderByEnteredAtDesc(since);
+        return reservations.stream().map(this::toSessionResponse).toList();
     }
 
-    public List<AdminReservationResponse> getAllReservations() {
-        return reservationRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(this::toReservationResponse)
-                .toList();
+    public List<AdminReservationResponse> getAllReservations(User caller) {
+        List<Reservation> reservations = isLotAdmin(caller)
+                ? reservationRepository.findAllByGate_ParkingLot_IdOrderByCreatedAtDesc(caller.getAssignedLot().getId())
+                : reservationRepository.findAllByOrderByCreatedAtDesc();
+        return reservations.stream().map(this::toReservationResponse).toList();
     }
 
-    public List<AdminSessionResponse> getAllSessions() {
-        return reservationRepository
-                .findAllByStatusInOrderByCreatedAtDesc(
-                        List.of(ReservationStatus.ACTIVE, ReservationStatus.COMPLETED))
-                .stream()
-                .map(this::toSessionResponse)
-                .toList();
+    public List<AdminSessionResponse> getAllSessions(User caller) {
+        List<ReservationStatus> statuses = List.of(ReservationStatus.ACTIVE, ReservationStatus.COMPLETED);
+        List<Reservation> reservations = isLotAdmin(caller)
+                ? reservationRepository.findAllByStatusInAndGate_ParkingLot_IdOrderByCreatedAtDesc(statuses, caller.getAssignedLot().getId())
+                : reservationRepository.findAllByStatusInOrderByCreatedAtDesc(statuses);
+        return reservations.stream().map(this::toSessionResponse).toList();
     }
 
-    public List<AdminSlotResponse> getAllSlots() {
-        return slotRepository.findAll()
-                .stream()
-                .map(this::toSlotResponse)
-                .toList();
+    public List<AdminSlotResponse> getAllSlots(User caller) {
+        List<ParkingSlot> slots = isLotAdmin(caller)
+                ? slotRepository.findAllByParkingLotIdOrderBySlotLabel(caller.getAssignedLot().getId())
+                : slotRepository.findAll();
+        return slots.stream().map(this::toSlotResponse).toList();
+    }
+
+    private boolean isLotAdmin(User user) {
+        return user.getRole() == Role.ROLE_LOT_ADMIN;
+    }
+
+    private List<Reservation> getReservationsForCaller(User caller, ReservationStatus status) {
+        if (isLotAdmin(caller)) {
+            UUID lotId = caller.getAssignedLot().getId();
+            return reservationRepository.findAllByGate_ParkingLot_IdOrderByCreatedAtDesc(lotId)
+                    .stream().filter(r -> r.getStatus() == status).toList();
+        }
+        return reservationRepository.findAllByStatus(status);
     }
 
     private AdminReservationResponse toReservationResponse(Reservation r) {

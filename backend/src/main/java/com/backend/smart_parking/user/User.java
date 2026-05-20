@@ -1,5 +1,6 @@
 package com.backend.smart_parking.user;
 
+import com.backend.smart_parking.parking.ParkingLot;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -43,6 +44,10 @@ public class User implements UserDetails {
 
     private String providerId;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "assigned_lot_id")
+    private ParkingLot assignedLot;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -80,6 +85,7 @@ public class User implements UserDetails {
     public String getProviderId() { return providerId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public ParkingLot getAssignedLot() { return assignedLot; }
 
     public void setFullName(String fullName) { this.fullName = fullName; }
     public void setEmail(String email) { this.email = email; }
@@ -90,4 +96,5 @@ public class User implements UserDetails {
     public void setProviderId(String providerId) { this.providerId = providerId; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+    public void setAssignedLot(ParkingLot assignedLot) { this.assignedLot = assignedLot; }
 }

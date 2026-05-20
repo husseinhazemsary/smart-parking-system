@@ -26,4 +26,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<Reservation> findAllByStatusInOrderByCreatedAtDesc(List<ReservationStatus> statuses);
 
     List<Reservation> findByEnteredAtAfterOrderByEnteredAtDesc(Instant since);
+
+    List<Reservation> findAllByGate_ParkingLot_IdOrderByCreatedAtDesc(UUID lotId);
+
+    List<Reservation> findAllByStatusInAndGate_ParkingLot_IdOrderByCreatedAtDesc(List<ReservationStatus> statuses, UUID lotId);
+
+    List<Reservation> findByEnteredAtAfterAndGate_ParkingLot_IdOrderByEnteredAtDesc(Instant since, UUID lotId);
 }

@@ -1,24 +1,38 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ParkingSquare, Radio,
-  CalendarCheck, Clock, Settings, LogOut, MapPin
+  CalendarCheck, Clock, MapPin, Users, LogOut, Settings
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
-const links = [
-  { to: '/',            icon: LayoutDashboard, label: 'Overview'      },
-  { to: '/slots',       icon: ParkingSquare,   label: 'Parking Slots' },
-  { to: '/live-feed',   icon: Radio,           label: 'Live Feed'     },
-  { to: '/reservations',icon: CalendarCheck,   label: 'Reservations'  },
-  { to: '/sessions',    icon: Clock,           label: 'Sessions'      },
+const baseLinks = [
+  { to: '/',             icon: LayoutDashboard, label: 'Overview'      },
+  { to: '/slots',        icon: ParkingSquare,   label: 'Parking Slots' },
+  { to: '/reservations', icon: CalendarCheck,   label: 'Reservations'  },
+  { to: '/sessions',     icon: Clock,           label: 'Sessions'      },
+]
+
+const lotAdminLinks = [
+  { to: '/live-feed', icon: Radio, label: 'Live Feed' },
+]
+
+const adminOnlyLinks = [
+  { to: '/parking-lots', icon: MapPin,  label: 'Parking Lots' },
+  { to: '/lot-admins',   icon: Users,   label: 'Lot Admins'   },
 ]
 
 export default function Sidebar() {
   const navigate = useNavigate()
+  const { user, logout, isSuperAdmin } = useAuth()
 
   function handleLogout() {
-    localStorage.removeItem('token')
+    logout()
     navigate('/login')
   }
+
+  const links = isSuperAdmin
+    ? [baseLinks[0], adminOnlyLinks[0], ...baseLinks.slice(1), adminOnlyLinks[1]]
+    : [...baseLinks, ...lotAdminLinks]
 
   return (
     <aside style={{
@@ -40,17 +54,20 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Location */}
+      {/* Role badge + lot info */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <MapPin size={13}/> Locations
+          <MapPin size={13}/>
+          {isSuperAdmin ? 'All Locations' : 'Your Location'}
         </div>
         <div style={{
           background: '#0d1426', border: '1px solid #1a2540',
-          borderRadius: 8, padding: '10px 14px', fontSize: 14,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          borderRadius: 8, padding: '10px 14px', fontSize: 13
         }}>
-          Arkan Plaza <span style={{ color: '#4a5568' }}>▼</span>
+          {isSuperAdmin
+            ? <span style={{ color: '#3b82f6', fontWeight: 600 }}>Super Admin</span>
+            : <span>{user?.assignedLotName ?? 'Lot Admin'}</span>}
+          <div style={{ color: '#4a5568', fontSize: 11, marginTop: 2 }}>{user?.email}</div>
         </div>
       </div>
 

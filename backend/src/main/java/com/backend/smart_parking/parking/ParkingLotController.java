@@ -5,6 +5,7 @@ import com.backend.smart_parking.user.User;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,35 @@ public class ParkingLotController {
 
     public ParkingLotController(ParkingLotService parkingLotService) {
         this.parkingLotService = parkingLotService;
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ParkingLotDetailResponse create(@Valid @RequestBody CreateParkingLotRequest request) {
+        return parkingLotService.createLot(request);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ParkingLotDetailResponse update(@PathVariable UUID id,
+                                           @Valid @RequestBody CreateParkingLotRequest request) {
+        return parkingLotService.updateLot(id, request);
+    }
+
+    @PostMapping("/{id}/gates")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public GateResponse addGate(@PathVariable UUID id,
+                                @Valid @RequestBody CreateGateRequest request) {
+        return parkingLotService.addGate(id, request);
+    }
+
+    @DeleteMapping("/{lotId}/gates/{gateId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void removeGate(@PathVariable UUID lotId, @PathVariable UUID gateId) {
+        parkingLotService.removeGate(lotId, gateId);
     }
 
     @GetMapping

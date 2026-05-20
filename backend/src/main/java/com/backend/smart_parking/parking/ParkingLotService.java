@@ -157,6 +157,71 @@ public class ParkingLotService {
         return toAlertResponse(saved);
     }
 
+    @Transactional
+    public GateResponse addGate(UUID lotId, CreateGateRequest req) {
+        ParkingLot lot = findLotOrThrow(lotId);
+        Gate gate = new Gate();
+        gate.setName(req.name());
+        gate.setLocation(req.location());
+        gate.setActive(true);
+        gate.setParkingLot(lot);
+        Gate saved = gateRepository.save(gate);
+        return new GateResponse(saved.getId(), saved.getName());
+    }
+
+    @Transactional
+    public void removeGate(UUID lotId, UUID gateId) {
+        findLotOrThrow(lotId);
+        Gate gate = gateRepository.findById(gateId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gate not found"));
+        gate.setActive(false);
+        gateRepository.save(gate);
+    }
+
+    @Transactional
+    public ParkingLotDetailResponse updateLot(UUID id, CreateParkingLotRequest req) {
+        ParkingLot lot = findLotOrThrow(id);
+        lot.setName(req.name());
+        lot.setNameAr(req.nameAr());
+        lot.setAddress(req.address());
+        lot.setAddressAr(req.addressAr());
+        lot.setPhoneNumber(req.phoneNumber());
+        lot.setLatitude(req.latitude());
+        lot.setLongitude(req.longitude());
+        lot.setHourlyRate(req.hourlyRate());
+        lot.setOpeningTime(req.openingTime());
+        lot.setClosingTime(req.closingTime());
+        lot.setNumberOfGates(req.numberOfGates() > 0 ? req.numberOfGates() : 1);
+        lot.setImageUrl(req.imageUrl());
+        lot.setHasSubscriptions(req.hasSubscriptions());
+        if (req.amenities() != null) lot.setAmenities(req.amenities());
+        if (req.operatingDays() != null) lot.setOperatingDays(req.operatingDays());
+        parkingLotRepository.save(lot);
+        return getLotDetail(id);
+    }
+
+    @Transactional
+    public ParkingLotDetailResponse createLot(CreateParkingLotRequest req) {
+        ParkingLot lot = new ParkingLot();
+        lot.setName(req.name());
+        lot.setNameAr(req.nameAr());
+        lot.setAddress(req.address());
+        lot.setAddressAr(req.addressAr());
+        lot.setPhoneNumber(req.phoneNumber());
+        lot.setLatitude(req.latitude());
+        lot.setLongitude(req.longitude());
+        lot.setHourlyRate(req.hourlyRate());
+        lot.setOpeningTime(req.openingTime());
+        lot.setClosingTime(req.closingTime());
+        lot.setNumberOfGates(req.numberOfGates() > 0 ? req.numberOfGates() : 1);
+        lot.setImageUrl(req.imageUrl());
+        lot.setHasSubscriptions(req.hasSubscriptions());
+        lot.setAmenities(req.amenities() != null ? req.amenities() : new java.util.ArrayList<>());
+        lot.setOperatingDays(req.operatingDays() != null ? req.operatingDays() : new java.util.ArrayList<>(java.util.List.of(java.time.DayOfWeek.values())));
+        ParkingLot saved = parkingLotRepository.save(lot);
+        return getLotDetail(saved.getId());
+    }
+
     // ---- helpers ----
 
     private ParkingLot findLotOrThrow(UUID id) {

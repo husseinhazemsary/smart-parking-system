@@ -25,6 +25,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -48,7 +49,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/parking-lots/*/alerts/active").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/parking-lots/*/reports").authenticated()
                         .requestMatchers("/api/parking-lots/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/admin/lot-admins").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/lot-admins/*").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "LOT_ADMIN")
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )

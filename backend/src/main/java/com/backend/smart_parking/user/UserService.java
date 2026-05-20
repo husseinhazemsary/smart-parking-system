@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.UUID;
+
 @Service
 @Transactional
 public class UserService {
@@ -56,6 +58,8 @@ public class UserService {
     }
 
     private UserProfileResponse toResponse(User user) {
+        UUID assignedLotId = user.getAssignedLot() != null ? user.getAssignedLot().getId() : null;
+        String assignedLotName = user.getAssignedLot() != null ? user.getAssignedLot().getName() : null;
         return new UserProfileResponse(
                 user.getId(),
                 user.getFullName(),
@@ -63,7 +67,10 @@ public class UserService {
                 user.getPhoneNumber(),
                 user.getDateOfBirth(),
                 user.getProvider(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getRole(),
+                assignedLotId,
+                assignedLotName
         );
     }
 }

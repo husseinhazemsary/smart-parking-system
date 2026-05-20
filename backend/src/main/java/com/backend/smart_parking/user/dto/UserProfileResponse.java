@@ -1,6 +1,7 @@
 package com.backend.smart_parking.user.dto;
 
 import com.backend.smart_parking.user.AuthProvider;
+import com.backend.smart_parking.user.Role;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,5 +14,8 @@ public record UserProfileResponse(
         String phoneNumber,
         LocalDate dateOfBirth,
         AuthProvider provider,
-        Instant createdAt
+        Instant createdAt,
+        Role role,
+        UUID assignedLotId,
+        String assignedLotName
 ) {}
