@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "parking_lots")
+@Table(name = "parking_lot")
 public class ParkingLot {
 
     @Id

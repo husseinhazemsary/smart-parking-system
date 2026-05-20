@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
-import { availColor, availLabel } from "../data/spots";
+const availColor = (available, total) => {
+  const pct = total > 0 ? available / total : 0;
+  return pct > 0.5 ? "#22C55E" : pct > 0.2 ? "#F59E0B" : "#EF4444";
+};
+const availLabel = (available, total) => {
+  const pct = total > 0 ? available / total : 0;
+  return pct > 0.5 ? "Available" : pct > 0.2 ? "Limited" : "Almost Full";
+};
 import apiFetch from "../api/client";
 
 import Navbar from "../components/layout/Navbar";
