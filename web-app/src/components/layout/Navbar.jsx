@@ -54,8 +54,8 @@ export default function Navbar({ scrolled, isMobile, user, onEnter, onAuthOpen, 
               <GlowBtn small noArrow onClick={onEnter}>Dashboard</GlowBtn>
             ) : (
               <div style={{display:"flex",gap:10}}>
-                {!isMobile && <GlowBtn small outline noArrow onClick={onAuthOpen}>Log In</GlowBtn>}
-                <GlowBtn small noArrow onClick={onAuthOpen}>Sign Up</GlowBtn>
+                {!isMobile && <GlowBtn small outline noArrow onClick={()=>onAuthOpen?.("login")}>Log In</GlowBtn>}
+                <GlowBtn small noArrow onClick={()=>onAuthOpen?.("signup")}>Sign Up</GlowBtn>
               </div>
             )}
 
@@ -109,7 +109,7 @@ export default function Navbar({ scrolled, isMobile, user, onEnter, onAuthOpen, 
             <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:10}}>
               <GlowBtn full gold onClick={()=>{ onBusiness?.(); setMenuOpen(false); }} noArrow>Explore for Business</GlowBtn>
               {!user && (
-                <GlowBtn full onClick={()=>{ onAuthOpen?.(); setMenuOpen(false); }} noArrow>Sign In</GlowBtn>
+                <GlowBtn full onClick={()=>{ onAuthOpen?.("login"); setMenuOpen(false); }} noArrow>Sign In</GlowBtn>
               )}
             </div>
           </div>

@@ -11,6 +11,7 @@ import BusinessPage from "./pages/BusinessPage";
 export default function Ezrakna(){
   const [view,setView]=useState("landing");   // landing | app | business
   const [authOpen,setAuthOpen]=useState(false);
+  const [authInitialMode,setAuthInitialMode]=useState("login");
   const [user,setUser]=useState(null);
   const [initialSpotId,setInitialSpotId]=useState(null);
 
@@ -72,11 +73,11 @@ export default function Ezrakna(){
         section{scroll-margin-top:68px;}
       `}</style>
 
-      {view==="landing"  && <Landing onEnter={handleEnter} onViewDetails={handleEnterWithSpot} onAuthOpen={()=>setAuthOpen(true)} onBusiness={handleBusiness} user={user} />}
-      {view==="app"      && <AppShell user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} onBack={()=>go("landing")} onAuthOpen={()=>setAuthOpen(true)} initialSpotId={initialSpotId} onSpotDetailOpened={()=>setInitialSpotId(null)} />}
+      {view==="landing"  && <Landing onEnter={handleEnter} onViewDetails={handleEnterWithSpot} onAuthOpen={(mode="login")=>{ setAuthInitialMode(mode); setAuthOpen(true); }} onBusiness={handleBusiness} user={user} />}
+      {view==="app"      && <AppShell user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} onBack={()=>go("landing")} onAuthOpen={(mode="login")=>{ setAuthInitialMode(mode); setAuthOpen(true); }} initialSpotId={initialSpotId} onSpotDetailOpened={()=>setInitialSpotId(null)} />}
       {view==="business" && <BusinessPage onBack={()=>go("landing")} />}
 
-      <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuth={handleAuth} />
+      <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuth={handleAuth} initialMode={authInitialMode} />
     </div>
   );
 }

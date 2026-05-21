@@ -851,7 +851,7 @@ export default function Landing({onEnter,onViewDetails,onAuthOpen,onBusiness,use
               Join thousands of Cairo drivers. No subscription — pay only when you park.
             </p>
             <div className="glow-btn-wrap" style={{display:"inline-block"}}>
-              <GlowBtn onClick={()=>{user?onEnter():onAuthOpen();}} style={{fontSize:17,padding:"16px 48px"}}>
+              <GlowBtn onClick={()=>{user?onEnter():onAuthOpen("signup");}} style={{fontSize:17,padding:"16px 48px"}}>
                 {user?"Open Dashboard":"Get Started"}
               </GlowBtn>
             </div>
