@@ -2,12 +2,14 @@
 // Displays: user greeting, search bar, active parking session timer,
 // nearby parking cards, and a monthly snapshot summary.
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/parking_lot_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/saved_place_provider.dart';
 import '../../providers/parking_provider.dart';
 import '../../providers/locale_provider.dart';
@@ -26,6 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Duration _elapsed = const Duration(hours: 1, minutes: 23, seconds: 45);
   Timer? _timer;
   String _locationLabel = 'Cairo, Egypt';
+  double? _lastLat;
+  double? _lastLon;
+  String _lastLang = '';
 
   @override
   void initState() {
@@ -38,8 +43,21 @@ class _HomeScreenState extends State<HomeScreen> {
     Future.delayed(const Duration(milliseconds: 600), _initLocation);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final lang = context.read<LocaleProvider>().isArabic ? 'ar' : 'en';
+    if (lang != _lastLang && _lastLat != null && _lastLon != null) {
+      _lastLang = lang;
+      _reverseGeocode(_lastLat!, _lastLon!, lang).then((label) {
+        if (mounted) setState(() => _locationLabel = label);
+      });
+    }
+  }
+
   Future<void> _initLocation() async {
     final provider = context.read<ParkingProvider>();
+    final lang = context.read<LocaleProvider>().isArabic ? 'ar' : 'en';
 
     // 1. Location services (device GPS toggle).
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -112,7 +130,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final last = await Geolocator.getLastKnownPosition();
       debugPrint('[LOC] lastKnown=$last');
       if (last != null && mounted) {
-        setState(() => _locationLabel = 'Your Location');
+        _lastLat = last.latitude;
+        _lastLon = last.longitude;
+        _lastLang = lang;
+        final label = await _reverseGeocode(last.latitude, last.longitude, lang);
+        if (mounted) setState(() => _locationLabel = label);
         provider.refreshLotsWithLocation(last.latitude, last.longitude);
         return;
       }
@@ -131,12 +153,44 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       debugPrint('[LOC] got pos: ${pos.latitude}, ${pos.longitude}');
       if (!mounted) return;
-      setState(() => _locationLabel = 'Your Location');
+      _lastLat = pos.latitude;
+      _lastLon = pos.longitude;
+      _lastLang = lang;
+      final label = await _reverseGeocode(pos.latitude, pos.longitude, lang);
+      if (mounted) setState(() => _locationLabel = label);
       provider.refreshLotsWithLocation(pos.latitude, pos.longitude);
     } catch (e) {
       debugPrint('[LOC] getCurrentPosition error: $e — loading unsorted');
       if (mounted) provider.fetchLots();
     }
+  }
+
+  Future<String> _reverseGeocode(double lat, double lon, String lang) async {
+    try {
+      final response = await Dio().get(
+        'https://nominatim.openstreetmap.org/reverse',
+        queryParameters: {
+          'format': 'json',
+          'lat': lat,
+          'lon': lon,
+          'zoom': 10,
+          'accept-language': lang,
+        },
+        options: Options(
+          headers: {'User-Agent': 'Ezrakna/1.0'},
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      );
+      final addr = response.data['address'] as Map<String, dynamic>?;
+      if (addr != null) {
+        final city = addr['city'] ?? addr['town'] ?? addr['village'] ?? addr['county'];
+        final country = addr['country'];
+        if (city != null && country != null) return '$city, $country';
+        if (city != null) return city as String;
+        if (country != null) return country as String;
+      }
+    } catch (_) {}
+    return 'Your Location';
   }
 
   @override
@@ -680,7 +734,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Hello, Nour',
+                        Text('${l10n.hello}, ${context.watch<AuthProvider>().userName ?? ''}',
                             style: TextStyle(
                                 color: textPrimary,
                                 fontSize: 18,
@@ -773,9 +827,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 5),
-                        const Text(
-                          'LIVE',
-                          style: TextStyle(
+                        Text(
+                          l10n.live,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
                             fontWeight: FontWeight.w800,

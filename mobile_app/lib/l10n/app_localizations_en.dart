@@ -129,7 +129,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signIn => 'Sign In';
 
   @override
+  String get logIn => 'Log In';
+
+  @override
   String get welcomeBack => 'Welcome Back';
+
+  @override
+  String get hello => 'Hello';
+
+  @override
+  String get live => 'LIVE';
 
   @override
   String get passwordHintLogin => 'Enter your password';
@@ -330,9 +339,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewDetails => 'View Details';
-
-  @override
-  String get live => 'LIVE';
 
   @override
   String get estCost => 'EST. COST';

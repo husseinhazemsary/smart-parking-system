@@ -45,8 +45,11 @@
   "notificationsConsent": "I agree to receive safety notifications and updates about my driving habits",
   "alreadyHaveAccount": "Already have an account?",
   "signIn": "Sign In",
+  "logIn": "Log In",
 
   "welcomeBack": "Welcome Back",
+  "hello": "Hello",
+  "live": "LIVE",
   "passwordHintLogin": "Enter your password",
   "rememberMe": "Remember me",
   "forgotPassword": "Forgot Password?",

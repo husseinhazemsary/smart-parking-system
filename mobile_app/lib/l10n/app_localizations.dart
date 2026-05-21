@@ -332,11 +332,29 @@ abstract class AppLocalizations {
   /// **'Sign In'**
   String get signIn;
 
+  /// No description provided for @logIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log In'**
+  String get logIn;
+
   /// No description provided for @welcomeBack.
   ///
   /// In en, this message translates to:
   /// **'Welcome Back'**
   String get welcomeBack;
+
+  /// No description provided for @hello.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello'**
+  String get hello;
+
+  /// No description provided for @live.
+  ///
+  /// In en, this message translates to:
+  /// **'LIVE'**
+  String get live;
 
   /// No description provided for @passwordHintLogin.
   ///
@@ -733,12 +751,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Details'**
   String get viewDetails;
-
-  /// No description provided for @live.
-  ///
-  /// In en, this message translates to:
-  /// **'LIVE'**
-  String get live;
 
   /// No description provided for @estCost.
   ///

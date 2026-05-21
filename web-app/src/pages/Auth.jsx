@@ -244,13 +244,6 @@ export default function AuthModal({ open, onClose, onAuth }) {
           {loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}
         </GlowBtn>
 
-        <div style={{ textAlign:"center", marginTop:16, fontSize:13, color:T.sub }}>
-          {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-          <button onClick={() => switchMode(mode === "login" ? "signup" : "login")}
-            style={{ background:"none", border:"none", color:T.purple, fontWeight:700, cursor:"pointer", fontFamily:"inherit", fontSize:13 }}>
-            {mode === "login" ? "Sign Up" : "Log In"}
-          </button>
-        </div>
       </div>
     </Modal>
   );

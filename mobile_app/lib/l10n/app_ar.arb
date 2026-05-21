@@ -45,8 +45,11 @@
   "notificationsConsent": "أوافق على تلقي إشعارات السلامة وتحديثات حول عادات القيادة",
   "alreadyHaveAccount": "لديك حساب بالفعل؟",
   "signIn": "تسجيل الدخول",
+  "logIn": "تسجيل الدخول",
 
   "welcomeBack": "مرحباً بعودتك",
+  "hello": "مرحباً",
+  "live": "مباشر",
   "passwordHintLogin": "أدخل كلمة المرور",
   "rememberMe": "تذكرني",
   "forgotPassword": "نسيت كلمة المرور؟",

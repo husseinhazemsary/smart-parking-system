@@ -129,7 +129,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get signIn => 'تسجيل الدخول';
 
   @override
+  String get logIn => 'تسجيل الدخول';
+
+  @override
   String get welcomeBack => 'مرحباً بعودتك';
+
+  @override
+  String get hello => 'مرحباً';
+
+  @override
+  String get live => 'مباشر';
 
   @override
   String get passwordHintLogin => 'أدخل كلمة المرور';
@@ -330,9 +339,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get viewDetails => 'عرض التفاصيل';
-
-  @override
-  String get live => 'مباشر';
 
   @override
   String get estCost => 'التكلفة المتوقعة';

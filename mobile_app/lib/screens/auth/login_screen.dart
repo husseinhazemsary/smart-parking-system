@@ -88,11 +88,25 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    _LangToggle(),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                          ),
+                        ),
+                        child: Icon(Icons.arrow_back, size: 20, color: colorScheme.onSurface),
+                      ),
+                    ),
+                    const Spacer(),
+                    _LangToggle(isDark: isDark),
                     const SizedBox(width: 10),
-                    _ThemeToggle(themeProvider: themeProvider),
+                    _ThemeToggle(themeProvider: themeProvider, isDark: isDark),
                   ],
                 ),
               ),
@@ -107,20 +121,39 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
 
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                            ),
+                      Container(
+                        height: 40,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceDark : const Color(0xFFF0EEF6),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark ? AppColors.borderDark : const Color(0xFFD8D0F0),
                           ),
-                          child: Icon(Icons.arrow_back, size: 20, color: colorScheme.onSurface),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _AuthTabButton(
+                                label: l10n.logIn,
+                                isActive: true,
+                                isDark: isDark,
+                                onTap: null,
+                              ),
+                            ),
+                            Expanded(
+                              child: _AuthTabButton(
+                                label: l10n.signUp,
+                                isActive: false,
+                                isDark: isDark,
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const SignupScreen()),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
@@ -235,7 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : Text(l10n.signIn),
+                            : Text(l10n.logIn),
                       ),
 
                       const SizedBox(height: 24),
@@ -276,36 +309,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
 
                       const SizedBox(height: 28),
-
-                      Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const SignupScreen()),
-                            );
-                          },
-                          child: RichText(
-                            text: TextSpan(
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isDark
-                                    ? AppColors.textSecondaryDark
-                                    : AppColors.textSecondaryLight,
-                              ),
-                              children: [
-                                TextSpan(text: '${l10n.noAccount} '),
-                                TextSpan(
-                                  text: l10n.signUp,
-                                  style: const TextStyle(
-                                    color: AppColors.purple,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
 
                       if (kDebugMode) ...[
                         const SizedBox(height: 20),
@@ -455,19 +458,21 @@ class _GoogleIcon extends StatelessWidget {
 }
 
 class _LangToggle extends StatelessWidget {
-  const _LangToggle();
+  final bool isDark;
+  const _LangToggle({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final localeProvider = context.watch<LocaleProvider>();
     final isArabic = localeProvider.isArabic;
+    final inactiveColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     return Container(
       height: 34,
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderDark),
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -486,7 +491,7 @@ class _LangToggle extends StatelessWidget {
               child: Text(
                 'EN',
                 style: TextStyle(
-                  color: !isArabic ? Colors.white : AppColors.textSecondaryDark,
+                  color: !isArabic ? Colors.white : inactiveColor,
                   fontWeight: !isArabic ? FontWeight.w700 : FontWeight.w400,
                   fontSize: 13,
                 ),
@@ -507,7 +512,7 @@ class _LangToggle extends StatelessWidget {
               child: Text(
                 'AR',
                 style: TextStyle(
-                  color: isArabic ? Colors.white : AppColors.textSecondaryDark,
+                  color: isArabic ? Colors.white : inactiveColor,
                   fontWeight: isArabic ? FontWeight.w700 : FontWeight.w400,
                   fontSize: 13,
                 ),
@@ -522,7 +527,8 @@ class _LangToggle extends StatelessWidget {
 
 class _ThemeToggle extends StatelessWidget {
   final ThemeProvider themeProvider;
-  const _ThemeToggle({required this.themeProvider});
+  final bool isDark;
+  const _ThemeToggle({required this.themeProvider, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -531,14 +537,53 @@ class _ThemeToggle extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderDark),
+          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
         ),
         child: Icon(
-          themeProvider.isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-          color: Colors.white,
+          isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
+          color: isDark ? Colors.white : AppColors.textSecondaryLight,
           size: 18,
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthTabButton extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final bool isDark;
+  final VoidCallback? onTap;
+
+  const _AuthTabButton({
+    required this.label,
+    required this.isActive,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.purple : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive
+                ? Colors.white
+                : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 14,
+          ),
         ),
       ),
     );
