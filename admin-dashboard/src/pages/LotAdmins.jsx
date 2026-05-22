@@ -3,8 +3,8 @@ import { Plus, X, User, Pencil } from 'lucide-react'
 import api from '../api/axios'
 import PasswordField from '../components/PasswordField'
 
-const emptyCreate = { fullName: '', email: '', password: '', phoneNumber: '', assignedLotId: '' }
-const emptyEdit   = { fullName: '', email: '', password: '', phoneNumber: '', assignedLotId: '' }
+const emptyCreate = { fullName: '', email: '', password: '', phoneNumber: '', assignedLotIds: [] }
+const emptyEdit   = { fullName: '', email: '', password: '', phoneNumber: '', assignedLotIds: [] }
 
 const TEXT_FIELDS = [
   { label: 'Full Name',    name: 'fullName',    type: 'text',  required: true  },
@@ -44,21 +44,33 @@ function AdminForm({ form, onChange, onSubmit, submitLabel, isEdit, lots, saving
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <label style={{ fontSize: 12, color: '#4a5568' }}>Assigned Parking Lot *</label>
-        <select
-          name="assignedLotId" value={form.assignedLotId}
-          onChange={onChange} required
-          style={{
-            background: '#131c30', border: '1px solid #1a2540',
-            color: form.assignedLotId ? '#fff' : '#4a5568',
-            padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none'
-          }}
-        >
-          <option value="">Select a parking lot</option>
-          {lots.map(lot => (
-            <option key={lot.id} value={lot.id}>{lot.name}</option>
-          ))}
-        </select>
+        <label style={{ fontSize: 12, color: '#4a5568' }}>Assigned Parking Lots *</label>
+        <div style={{
+          background: '#131c30', border: '1px solid #1a2540',
+          borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 160, overflowY: 'auto'
+        }}>
+          {lots.map(lot => {
+            const checked = form.assignedLotIds.includes(lot.id)
+            return (
+              <label key={lot.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: checked ? '#fff' : '#94a3b8' }}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={e => {
+                    const next = e.target.checked
+                      ? [...form.assignedLotIds, lot.id]
+                      : form.assignedLotIds.filter(id => id !== lot.id)
+                    onChange({ target: { name: 'assignedLotIds', value: next } })
+                  }}
+                />
+                {lot.name}
+              </label>
+            )
+          })}
+        </div>
+        {form.assignedLotIds.length === 0 && (
+          <span style={{ fontSize: 11, color: '#ef4444' }}>Select at least one lot</span>
+        )}
       </div>
 
       <button type="submit" disabled={saving} style={{
@@ -121,11 +133,11 @@ export default function LotAdmins() {
   function openEdit(admin) {
     setEditTarget(admin)
     setEditForm({
-      fullName:      admin.fullName,
-      email:         admin.email,
-      phoneNumber:   admin.phoneNumber ?? '',
-      assignedLotId: admin.assignedLotId ?? '',
-      password:      '',
+      fullName:        admin.fullName,
+      email:           admin.email,
+      phoneNumber:     admin.phoneNumber ?? '',
+      assignedLotIds:  admin.assignedLotIds ?? [],
+      password:        '',
     })
     setError('')
   }
@@ -200,10 +212,12 @@ export default function LotAdmins() {
                 )}
               </div>
               <div style={{ textAlign: 'right', marginRight: 12 }}>
-                <div style={{ fontSize: 12, color: '#4a5568' }}>Assigned lot</div>
-                <div style={{ fontSize: 14, color: '#3b82f6', fontWeight: 600 }}>
-                  {admin.assignedLotName ?? '—'}
-                </div>
+                <div style={{ fontSize: 12, color: '#4a5568', marginBottom: 4 }}>Assigned lots</div>
+                {admin.assignedLotNames?.length > 0
+                  ? admin.assignedLotNames.map(n => (
+                    <div key={n} style={{ fontSize: 13, color: '#3b82f6', fontWeight: 500 }}>{n}</div>
+                  ))
+                  : <div style={{ fontSize: 13, color: '#4a5568' }}>—</div>}
               </div>
               <button onClick={() => openEdit(admin)} style={{
                 background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',

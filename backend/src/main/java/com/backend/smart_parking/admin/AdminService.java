@@ -1,10 +1,9 @@
 package com.backend.smart_parking.admin;
 
 import com.backend.smart_parking.admin.dto.*;
-import com.backend.smart_parking.parking.ParkingLot;
-import com.backend.smart_parking.parking.ParkingLotRepository;
-import com.backend.smart_parking.parking.ParkingSlot;
-import com.backend.smart_parking.parking.ParkingSlotRepository;
+import com.backend.smart_parking.parking.*;
+import com.backend.smart_parking.parking.dto.CreateParkingLotRequest;
+import com.backend.smart_parking.parking.dto.ParkingLotDetailResponse;
 import com.backend.smart_parking.reservation.Reservation;
 import com.backend.smart_parking.reservation.ReservationRepository;
 import com.backend.smart_parking.reservation.ReservationStatus;
@@ -57,19 +56,19 @@ public class AdminService {
     public LotAdminResponse createLotAdmin(CreateLotAdminRequest req) {
         if (userRepository.existsByEmail(req.email()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
-        ParkingLot lot = parkingLotRepository.findById(req.assignedLotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking lot not found"));
+        List<ParkingLot> lots = parkingLotRepository.findAllById(req.assignedLotIds());
+        if (lots.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No valid parking lots found");
         User user = new User();
         user.setFullName(req.fullName());
         user.setEmail(req.email());
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setProvider(AuthProvider.LOCAL);
         user.setRole(Role.ROLE_LOT_ADMIN);
-        user.setAssignedLot(lot);
+        user.setAssignedLots(lots);
         if (req.phoneNumber() != null && !req.phoneNumber().isBlank())
             user.setPhoneNumber(req.phoneNumber());
-        User saved = userRepository.save(user);
-        return toLotAdminResponse(saved);
+        return toLotAdminResponse(userRepository.save(user));
     }
 
     @Transactional
@@ -78,22 +77,48 @@ public class AdminService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lot admin not found"));
         if (!user.getEmail().equals(req.email()) && userRepository.existsByEmail(req.email()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
-        ParkingLot lot = parkingLotRepository.findById(req.assignedLotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking lot not found"));
+        List<ParkingLot> lots = parkingLotRepository.findAllById(req.assignedLotIds());
+        if (lots.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No valid parking lots found");
         user.setFullName(req.fullName());
         user.setEmail(req.email());
         user.setPhoneNumber(req.phoneNumber() != null && !req.phoneNumber().isBlank() ? req.phoneNumber() : null);
-        user.setAssignedLot(lot);
+        user.setAssignedLots(lots);
         if (req.password() != null && !req.password().isBlank())
             user.setPassword(passwordEncoder.encode(req.password()));
         return toLotAdminResponse(userRepository.save(user));
     }
 
-    private LotAdminResponse toLotAdminResponse(User u) {
-        return new LotAdminResponse(
-                u.getId(), u.getFullName(), u.getEmail(), u.getPhoneNumber(),
-                u.getAssignedLot() != null ? u.getAssignedLot().getId() : null,
-                u.getAssignedLot() != null ? u.getAssignedLot().getName() : null);
+    public List<ParkingLotDetailResponse> getMyLots(User caller) {
+        return caller.getAssignedLots().stream()
+                .map(this::toLotDetailResponse)
+                .toList();
+    }
+
+    @Transactional
+    public ParkingLotDetailResponse updateMyLot(UUID lotId, CreateParkingLotRequest req, User caller) {
+        boolean isAssigned = caller.getAssignedLots().stream().anyMatch(l -> l.getId().equals(lotId));
+        if (!isAssigned)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not assigned to this lot");
+        ParkingLot lot = parkingLotRepository.findById(lotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking lot not found"));
+        lot.setName(req.name());
+        lot.setNameAr(req.nameAr());
+        lot.setAddress(req.address());
+        lot.setAddressAr(req.addressAr());
+        lot.setPhoneNumber(req.phoneNumber());
+        lot.setLatitude(req.latitude());
+        lot.setLongitude(req.longitude());
+        lot.setHourlyRate(req.hourlyRate());
+        lot.setOpeningTime(req.openingTime());
+        lot.setClosingTime(req.closingTime());
+        lot.setNumberOfGates(req.numberOfGates() > 0 ? req.numberOfGates() : 1);
+        lot.setImageUrl(req.imageUrl());
+        lot.setHasSubscriptions(req.hasSubscriptions());
+        if (req.amenities() != null) lot.setAmenities(req.amenities());
+        if (req.operatingDays() != null) lot.setOperatingDays(req.operatingDays());
+        if (req.category() != null) lot.setCategory(req.category());
+        return toLotDetailResponse(parkingLotRepository.save(lot));
     }
 
     public ReservationStatsResponse getReservationStats(User caller) {
@@ -114,14 +139,14 @@ public class AdminService {
     public List<AdminSessionResponse> getRecentSessions(int hours, User caller) {
         Instant since = Instant.now().minusSeconds((long) hours * 3600);
         List<Reservation> reservations = isLotAdmin(caller)
-                ? reservationRepository.findByEnteredAtAfterAndGate_ParkingLot_IdOrderByEnteredAtDesc(since, caller.getAssignedLot().getId())
+                ? reservationRepository.findByEnteredAtAfterAndGate_ParkingLot_IdInOrderByEnteredAtDesc(since, getAssignedLotIds(caller))
                 : reservationRepository.findByEnteredAtAfterOrderByEnteredAtDesc(since);
         return reservations.stream().map(this::toSessionResponse).toList();
     }
 
     public List<AdminReservationResponse> getAllReservations(User caller) {
         List<Reservation> reservations = isLotAdmin(caller)
-                ? reservationRepository.findAllByGate_ParkingLot_IdOrderByCreatedAtDesc(caller.getAssignedLot().getId())
+                ? reservationRepository.findAllByGate_ParkingLot_IdInOrderByCreatedAtDesc(getAssignedLotIds(caller))
                 : reservationRepository.findAllByOrderByCreatedAtDesc();
         return reservations.stream().map(this::toReservationResponse).toList();
     }
@@ -129,26 +154,48 @@ public class AdminService {
     public List<AdminSessionResponse> getAllSessions(User caller) {
         List<ReservationStatus> statuses = List.of(ReservationStatus.ACTIVE, ReservationStatus.COMPLETED);
         List<Reservation> reservations = isLotAdmin(caller)
-                ? reservationRepository.findAllByStatusInAndGate_ParkingLot_IdOrderByCreatedAtDesc(statuses, caller.getAssignedLot().getId())
+                ? reservationRepository.findAllByStatusInAndGate_ParkingLot_IdInOrderByCreatedAtDesc(statuses, getAssignedLotIds(caller))
                 : reservationRepository.findAllByStatusInOrderByCreatedAtDesc(statuses);
         return reservations.stream().map(this::toSessionResponse).toList();
     }
 
     public List<AdminSlotResponse> getAllSlots(User caller) {
         List<ParkingSlot> slots = isLotAdmin(caller)
-                ? slotRepository.findAllByParkingLotIdOrderBySlotLabel(caller.getAssignedLot().getId())
+                ? slotRepository.findAllByParkingLotIdInOrderBySlotLabel(getAssignedLotIds(caller))
                 : slotRepository.findAll();
         return slots.stream().map(this::toSlotResponse).toList();
     }
+
+    // ---- helpers ----
 
     private boolean isLotAdmin(User user) {
         return user.getRole() == Role.ROLE_LOT_ADMIN;
     }
 
+    private List<UUID> getAssignedLotIds(User user) {
+        return user.getAssignedLots().stream().map(ParkingLot::getId).toList();
+    }
+
+    private LotAdminResponse toLotAdminResponse(User u) {
+        List<UUID> ids   = u.getAssignedLots().stream().map(ParkingLot::getId).toList();
+        List<String> names = u.getAssignedLots().stream().map(ParkingLot::getName).toList();
+        return new LotAdminResponse(u.getId(), u.getFullName(), u.getEmail(), u.getPhoneNumber(), ids, names);
+    }
+
+    private ParkingLotDetailResponse toLotDetailResponse(ParkingLot lot) {
+        int total     = slotRepository.countByParkingLotId(lot.getId());
+        int available = slotRepository.countByParkingLotIdAndStatus(lot.getId(), SlotStatus.AVAILABLE);
+        return new ParkingLotDetailResponse(
+                lot.getId(), lot.getName(), lot.getNameAr(), lot.getAddress(), lot.getAddressAr(),
+                lot.getPhoneNumber(), lot.getLatitude(), lot.getLongitude(), lot.getHourlyRate(),
+                lot.getOpeningTime(), lot.getClosingTime(), lot.getAmenities(), lot.getOperatingDays(),
+                lot.getNumberOfGates(), available, total, lot.getImageUrl(), lot.isHasSubscriptions(),
+                lot.getCategory());
+    }
+
     private List<Reservation> getReservationsForCaller(User caller, ReservationStatus status) {
         if (isLotAdmin(caller)) {
-            UUID lotId = caller.getAssignedLot().getId();
-            return reservationRepository.findAllByGate_ParkingLot_IdOrderByCreatedAtDesc(lotId)
+            return reservationRepository.findAllByGate_ParkingLot_IdInOrderByCreatedAtDesc(getAssignedLotIds(caller))
                     .stream().filter(r -> r.getStatus() == status).toList();
         }
         return reservationRepository.findAllByStatus(status);

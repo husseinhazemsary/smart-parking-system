@@ -3,17 +3,18 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import PasswordField from './components/PasswordField'
 import Sidebar      from './components/Sidebar'
-import Overview     from './pages/Overview'
-import ParkingSlots from './pages/ParkingSlots'
-import LiveFeed     from './pages/LiveFeed'
-import Reservations from './pages/Reservations'
-import Sessions     from './pages/Sessions'
+import Overview       from './pages/Overview'
+import ParkingSlots   from './pages/ParkingSlots'
+import LiveFeed       from './pages/LiveFeed'
+import Reservations   from './pages/Reservations'
+import Sessions       from './pages/Sessions'
 import ParkingLots      from './pages/ParkingLots'
 import ParkingLotDetail from './pages/ParkingLotDetail'
 import LotAdmins        from './pages/LotAdmins'
+import MyParkingLots    from './pages/MyParkingLots'
 
 function ProtectedLayout() {
-  const { user, isSuperAdmin } = useAuth()
+  const { user, isSuperAdmin, isLotAdmin } = useAuth()
   if (!user) return <Navigate to="/login" replace/>
 
   return (
@@ -26,6 +27,7 @@ function ProtectedLayout() {
           <Route path="/live-feed"    element={<LiveFeed/>}/>
           <Route path="/reservations" element={<Reservations/>}/>
           <Route path="/sessions"     element={<Sessions/>}/>
+          {isLotAdmin  && <Route path="/my-lots"          element={<MyParkingLots/>}/>}
           {isSuperAdmin && <Route path="/parking-lots"     element={<ParkingLots/>}/>}
           {isSuperAdmin && <Route path="/parking-lots/:id" element={<ParkingLotDetail/>}/>}
           {isSuperAdmin && <Route path="/lot-admins"       element={<LotAdmins/>}/>}

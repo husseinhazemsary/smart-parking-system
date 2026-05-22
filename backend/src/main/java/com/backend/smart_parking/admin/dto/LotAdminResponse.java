@@ -1,5 +1,6 @@
 package com.backend.smart_parking.admin.dto;
 
+import java.util.List;
 import java.util.UUID;
 
 public record LotAdminResponse(
@@ -7,6 +8,6 @@ public record LotAdminResponse(
         String fullName,
         String email,
         String phoneNumber,
-        UUID assignedLotId,
-        String assignedLotName
+        List<UUID> assignedLotIds,
+        List<String> assignedLotNames
 ) {}

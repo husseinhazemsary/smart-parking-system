@@ -59,6 +59,10 @@ public class ParkingLot {
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LotCategory category = LotCategory.OTHER;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "parking_lot_amenities", joinColumns = @JoinColumn(name = "parking_lot_id"))
     @Column(name = "amenity")
@@ -87,6 +91,7 @@ public class ParkingLot {
     public List<DayOfWeek> getOperatingDays() { return operatingDays; }
     public boolean isHasSubscriptions() { return hasSubscriptions; }
     public boolean isActive() { return isActive; }
+    public LotCategory getCategory() { return category; }
 
     public void setName(String name) { this.name = name; }
     public void setNameAr(String nameAr) { this.nameAr = nameAr; }
@@ -104,4 +109,5 @@ public class ParkingLot {
     public void setOperatingDays(List<DayOfWeek> operatingDays) { this.operatingDays = operatingDays; }
     public void setHasSubscriptions(boolean hasSubscriptions) { this.hasSubscriptions = hasSubscriptions; }
     public void setActive(boolean active) { isActive = active; }
+    public void setCategory(LotCategory category) { this.category = category; }
 }

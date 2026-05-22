@@ -4,12 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 
 const DAYS = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']
+const CATEGORIES = ['MALL','UNIVERSITY','AIRPORT','STREET','OTHER']
 
 const empty = {
   name: '', nameAr: '', address: '', addressAr: '', phoneNumber: '',
   latitude: '', longitude: '', hourlyRate: '', openingTime: '07:00',
   closingTime: '23:00', numberOfGates: 1, imageUrl: '', hasSubscriptions: false,
-  amenities: [], operatingDays: [...DAYS],
+  amenities: [], operatingDays: [...DAYS], category: 'OTHER',
 }
 
 export default function ParkingLots() {
@@ -162,6 +163,7 @@ export default function ParkingLots() {
                   <Field label="Address (AR)" name="addressAr" value={form.addressAr} onChange={handleChange}/>
                   <Field label="Phone Number" name="phoneNumber" value={form.phoneNumber} onChange={handleChange}/>
                   <Field label="Image URL" name="imageUrl" value={form.imageUrl} onChange={handleChange}/>
+                  <SelectField label="Category" name="category" value={form.category} onChange={handleChange} options={CATEGORIES}/>
                 </div>
               </Section>
 
@@ -273,6 +275,26 @@ function Field({ label, name, value, onChange, required, type = 'text', step, mi
           fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box'
         }}
       />
+    </div>
+  )
+}
+
+function SelectField({ label, name, value, onChange, options, required }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 12, color: '#4a5568' }}>{label}{required && ' *'}</label>
+      <select
+        name={name} value={value} onChange={onChange} required={required}
+        style={{
+          background: '#131c30', border: '1px solid #1a2540',
+          color: '#fff', padding: '10px 12px', borderRadius: 8,
+          fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', cursor: 'pointer'
+        }}
+      >
+        {options.map(opt => (
+          <option key={opt} value={opt}>{opt.charAt(0) + opt.slice(1).toLowerCase()}</option>
+        ))}
+      </select>
     </div>
   )
 }

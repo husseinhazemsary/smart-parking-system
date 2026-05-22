@@ -1,6 +1,8 @@
 package com.backend.smart_parking.admin;
 
 import com.backend.smart_parking.admin.dto.*;
+import com.backend.smart_parking.parking.dto.CreateParkingLotRequest;
+import com.backend.smart_parking.parking.dto.ParkingLotDetailResponse;
 import com.backend.smart_parking.user.User;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -67,5 +69,17 @@ public class AdminController {
     @GetMapping("/slots")
     public List<AdminSlotResponse> allSlots(@AuthenticationPrincipal User user) {
         return adminService.getAllSlots(user);
+    }
+
+    @GetMapping("/my-lots")
+    public List<ParkingLotDetailResponse> getMyLots(@AuthenticationPrincipal User user) {
+        return adminService.getMyLots(user);
+    }
+
+    @PutMapping("/my-lots/{lotId}")
+    public ParkingLotDetailResponse updateMyLot(@PathVariable UUID lotId,
+                                                @Valid @RequestBody CreateParkingLotRequest request,
+                                                @AuthenticationPrincipal User user) {
+        return adminService.updateMyLot(lotId, request, user);
     }
 }

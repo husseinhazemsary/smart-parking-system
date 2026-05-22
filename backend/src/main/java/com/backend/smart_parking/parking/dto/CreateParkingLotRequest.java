@@ -1,5 +1,6 @@
 package com.backend.smart_parking.parking.dto;
 
+import com.backend.smart_parking.parking.LotCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -23,5 +24,6 @@ public record CreateParkingLotRequest(
         String imageUrl,
         boolean hasSubscriptions,
         List<String> amenities,
-        List<DayOfWeek> operatingDays
+        List<DayOfWeek> operatingDays,
+        LotCategory category
 ) {}

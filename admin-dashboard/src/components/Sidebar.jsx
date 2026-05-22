@@ -13,7 +13,8 @@ const baseLinks = [
 ]
 
 const lotAdminLinks = [
-  { to: '/live-feed', icon: Radio, label: 'Live Feed' },
+  { to: '/my-lots',   icon: MapPin,  label: 'My Parking Lots' },
+  { to: '/live-feed', icon: Radio,   label: 'Live Feed'       },
 ]
 
 const adminOnlyLinks = [
@@ -54,19 +55,15 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Role badge + lot info */}
+      {/* Role badge */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <MapPin size={13}/>
-          {isSuperAdmin ? 'All Locations' : 'Your Location'}
-        </div>
         <div style={{
           background: '#0d1426', border: '1px solid #1a2540',
           borderRadius: 8, padding: '10px 14px', fontSize: 13
         }}>
           {isSuperAdmin
             ? <span style={{ color: '#3b82f6', fontWeight: 600 }}>Super Admin</span>
-            : <span>{user?.assignedLotName ?? 'Lot Admin'}</span>}
+            : <span style={{ color: '#94a3b8', fontWeight: 500 }}>Lot Admin</span>}
           <div style={{ color: '#4a5568', fontSize: 11, marginTop: 2 }}>{user?.email}</div>
         </div>
       </div>

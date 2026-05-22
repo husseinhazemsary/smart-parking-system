@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Clock, Phone, DoorOpen, ParkingSquare, Pencil, X, Pl
 import api from '../api/axios'
 
 const DAYS = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']
+const CATEGORIES = ['MALL','UNIVERSITY','AIRPORT','STREET','OTHER']
 const statusColor = { AVAILABLE: '#22c55e', OCCUPIED: '#ef4444', RESERVED: '#f59e0b' }
 const statusBg    = { AVAILABLE: 'rgba(34,197,94,0.1)', OCCUPIED: 'rgba(239,68,68,0.1)', RESERVED: 'rgba(245,158,11,0.1)' }
 const typeColor   = { REGULAR: '#94a3b8', DISABLED: '#a78bfa', EV: '#34d399' }
@@ -61,6 +62,7 @@ export default function ParkingLotDetail() {
       hasSubscriptions: lot.hasSubscriptions ?? false,
       amenities:        lot.amenities       ? [...lot.amenities] : [],
       operatingDays:    lot.operatingDays   ? [...lot.operatingDays] : [...DAYS],
+      category:         lot.category        ?? 'OTHER',
     })
     setAmenityInput('')
     setSaveErr('')
@@ -357,6 +359,7 @@ export default function ParkingLotDetail() {
                   <EField label="Address (AR)" name="addressAr" value={editForm.addressAr} onChange={e => setEditForm(f => ({...f, addressAr: e.target.value}))}/>
                   <EField label="Phone Number" name="phoneNumber" value={editForm.phoneNumber} onChange={e => setEditForm(f => ({...f, phoneNumber: e.target.value}))}/>
                   <EField label="Image URL" name="imageUrl" value={editForm.imageUrl} onChange={e => setEditForm(f => ({...f, imageUrl: e.target.value}))}/>
+                  <ESelectField label="Category" value={editForm.category} onChange={e => setEditForm(f => ({...f, category: e.target.value}))} options={CATEGORIES}/>
                 </div>
               </Section>
 
@@ -473,6 +476,26 @@ function EField({ label, name, value, onChange, required, type = 'text', step, m
           fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box'
         }}
       />
+    </div>
+  )
+}
+
+function ESelectField({ label, value, onChange, options, required }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 12, color: '#4a5568' }}>{label}{required && ' *'}</label>
+      <select
+        value={value} onChange={onChange} required={required}
+        style={{
+          background: '#131c30', border: '1px solid #1a2540',
+          color: '#fff', padding: '10px 12px', borderRadius: 8,
+          fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', cursor: 'pointer'
+        }}
+      >
+        {options.map(opt => (
+          <option key={opt} value={opt}>{opt.charAt(0) + opt.slice(1).toLowerCase()}</option>
+        ))}
+      </select>
     </div>
   )
 }

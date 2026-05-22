@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -58,8 +59,10 @@ public class UserService {
     }
 
     private UserProfileResponse toResponse(User user) {
-        UUID assignedLotId = user.getAssignedLot() != null ? user.getAssignedLot().getId() : null;
-        String assignedLotName = user.getAssignedLot() != null ? user.getAssignedLot().getName() : null;
+        List<UUID> ids = user.getAssignedLots().stream()
+                .map(com.backend.smart_parking.parking.ParkingLot::getId).toList();
+        List<String> names = user.getAssignedLots().stream()
+                .map(com.backend.smart_parking.parking.ParkingLot::getName).toList();
         return new UserProfileResponse(
                 user.getId(),
                 user.getFullName(),
@@ -69,8 +72,8 @@ public class UserService {
                 user.getProvider(),
                 user.getCreatedAt(),
                 user.getRole(),
-                assignedLotId,
-                assignedLotName
+                ids,
+                names
         );
     }
 }

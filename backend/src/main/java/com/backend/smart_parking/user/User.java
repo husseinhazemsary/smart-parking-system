@@ -44,9 +44,13 @@ public class User implements UserDetails {
 
     private String providerId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "assigned_lot_id")
-    private ParkingLot assignedLot;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_assigned_lots",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "parking_lot_id")
+    )
+    private List<ParkingLot> assignedLots = new java.util.ArrayList<>();
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -85,7 +89,7 @@ public class User implements UserDetails {
     public String getProviderId() { return providerId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
-    public ParkingLot getAssignedLot() { return assignedLot; }
+    public List<ParkingLot> getAssignedLots() { return assignedLots; }
 
     public void setFullName(String fullName) { this.fullName = fullName; }
     public void setEmail(String email) { this.email = email; }
@@ -96,5 +100,5 @@ public class User implements UserDetails {
     public void setProviderId(String providerId) { this.providerId = providerId; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
-    public void setAssignedLot(ParkingLot assignedLot) { this.assignedLot = assignedLot; }
+    public void setAssignedLots(List<ParkingLot> assignedLots) { this.assignedLots = assignedLots; }
 }

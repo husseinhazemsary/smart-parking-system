@@ -29,14 +29,15 @@ export default function ParkingSlots() {
         .catch(console.error)
         .finally(() => setLoadingLots(false))
     } else {
-      // lot admin: only their assigned lot
-      if (user?.assignedLotId) {
-        setLots([{ id: user.assignedLotId, name: user.assignedLotName ?? 'My Lot' }])
-        setSelectedLotId(s => s || user.assignedLotId)
-      }
-      setLoadingLots(false)
+      api.get('/api/admin/my-lots')
+        .then(r => {
+          setLots(r.data)
+          if (r.data.length > 0) setSelectedLotId(s => s || r.data[0].id)
+        })
+        .catch(console.error)
+        .finally(() => setLoadingLots(false))
     }
-  }, [isSuperAdmin, user])
+  }, [isSuperAdmin])
 
   // load slots whenever selected lot changes
   useEffect(() => {

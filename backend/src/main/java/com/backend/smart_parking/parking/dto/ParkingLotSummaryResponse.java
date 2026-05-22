@@ -1,5 +1,7 @@
 package com.backend.smart_parking.parking.dto;
 
+import com.backend.smart_parking.parking.LotCategory;
+
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -16,5 +18,6 @@ public record ParkingLotSummaryResponse(
         BigDecimal hourlyRate,
         LocalTime openingTime,
         LocalTime closingTime,
-        String imageUrl
+        String imageUrl,
+        LotCategory category
 ) {}

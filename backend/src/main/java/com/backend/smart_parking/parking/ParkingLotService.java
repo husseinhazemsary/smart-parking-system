@@ -74,7 +74,8 @@ public class ParkingLotService {
                 available,
                 total,
                 lot.getImageUrl(),
-                lot.isHasSubscriptions()
+                lot.isHasSubscriptions(),
+                lot.getCategory()
         );
     }
 
@@ -196,6 +197,7 @@ public class ParkingLotService {
         lot.setHasSubscriptions(req.hasSubscriptions());
         if (req.amenities() != null) lot.setAmenities(req.amenities());
         if (req.operatingDays() != null) lot.setOperatingDays(req.operatingDays());
+        if (req.category() != null) lot.setCategory(req.category());
         parkingLotRepository.save(lot);
         return getLotDetail(id);
     }
@@ -218,6 +220,7 @@ public class ParkingLotService {
         lot.setHasSubscriptions(req.hasSubscriptions());
         lot.setAmenities(req.amenities() != null ? req.amenities() : new java.util.ArrayList<>());
         lot.setOperatingDays(req.operatingDays() != null ? req.operatingDays() : new java.util.ArrayList<>(java.util.List.of(java.time.DayOfWeek.values())));
+        lot.setCategory(req.category() != null ? req.category() : LotCategory.OTHER);
         ParkingLot saved = parkingLotRepository.save(lot);
         return getLotDetail(saved.getId());
     }
@@ -247,7 +250,8 @@ public class ParkingLotService {
                 lot.getHourlyRate(),
                 lot.getOpeningTime(),
                 lot.getClosingTime(),
-                lot.getImageUrl()
+                lot.getImageUrl(),
+                lot.getCategory()
         );
     }
 

@@ -5,6 +5,7 @@ import com.backend.smart_parking.user.Role;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record UserProfileResponse(
@@ -16,6 +17,6 @@ public record UserProfileResponse(
         AuthProvider provider,
         Instant createdAt,
         Role role,
-        UUID assignedLotId,
-        String assignedLotName
+        List<UUID> assignedLotIds,
+        List<String> assignedLotNames
 ) {}

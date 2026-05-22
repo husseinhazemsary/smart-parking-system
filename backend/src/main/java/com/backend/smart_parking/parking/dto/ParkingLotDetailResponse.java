@@ -1,5 +1,7 @@
 package com.backend.smart_parking.parking.dto;
 
+import com.backend.smart_parking.parking.LotCategory;
+
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -24,5 +26,6 @@ public record ParkingLotDetailResponse(
         int availableSlots,
         int totalSlots,
         String imageUrl,
-        boolean hasSubscriptions
+        boolean hasSubscriptions,
+        LotCategory category
 ) {}
