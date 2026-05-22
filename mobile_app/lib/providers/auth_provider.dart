@@ -41,13 +41,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String email, String password, {bool rememberMe = false}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
       final data = await AuthService.login(email, password);
-      await _saveSession(data);
+      await _saveSession(data, persist: rememberMe);
       return true;
     } catch (e) {
       _error = _parseError(e);
@@ -76,7 +76,7 @@ class AuthProvider extends ChangeNotifier {
         dateOfBirth: dateOfBirth,
         password: password,
       );
-      await _saveSession(data);
+      await _saveSession(data, persist: true);
       return true;
     } catch (e) {
       _error = _parseError(e);
@@ -98,7 +98,7 @@ class AuthProvider extends ChangeNotifier {
     await _clearSession();
   }
 
-  Future<void> _saveSession(Map<String, dynamic> data) async {
+  Future<void> _saveSession(Map<String, dynamic> data, {required bool persist}) async {
     _accessToken = data['accessToken'] as String?;
     _refreshToken = data['refreshToken'] as String?;
     final user = data['user'] as Map<String, dynamic>?;
@@ -108,12 +108,14 @@ class AuthProvider extends ChangeNotifier {
 
     ApiClient.setAuthToken(_accessToken!);
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('access_token', _accessToken!);
-    await prefs.setString('refresh_token', _refreshToken!);
-    if (_userName != null) await prefs.setString('user_name', _userName!);
-    if (_userEmail != null) await prefs.setString('user_email', _userEmail!);
-    if (_userId != null) await prefs.setString('user_id', _userId!);
+    if (persist) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('access_token', _accessToken!);
+      await prefs.setString('refresh_token', _refreshToken!);
+      if (_userName != null) await prefs.setString('user_name', _userName!);
+      if (_userEmail != null) await prefs.setString('user_email', _userEmail!);
+      if (_userId != null) await prefs.setString('user_id', _userId!);
+    }
 
     notifyListeners();
   }

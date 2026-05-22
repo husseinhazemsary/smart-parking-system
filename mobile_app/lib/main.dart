@@ -17,16 +17,22 @@ import 'screens/splash/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize auth before runApp so SplashScreen can read state synchronously.
+  // Initialize providers before runApp so initial state is ready synchronously.
   final authProvider = AuthProvider();
-  await authProvider.init();
+  final themeProvider = ThemeProvider();
+  final localeProvider = LocaleProvider();
+  await Future.wait([
+    authProvider.init(),
+    themeProvider.init(),
+    localeProvider.init(),
+  ]);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: localeProvider),
         ChangeNotifierProvider(create: (_) => UserPrefsProvider()),
         ChangeNotifierProxyProvider<AuthProvider, UserProvider>(
           create: (_) => UserProvider(),

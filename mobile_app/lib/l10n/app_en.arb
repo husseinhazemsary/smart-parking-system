@@ -42,7 +42,7 @@
   "dobHint": "Enter your Date of Birth",
   "password": "Password",
   "passwordHint": "Create a password",
-  "notificationsConsent": "I agree to receive safety notifications and updates about my driving habits",
+  "notificationsConsent": "I agree to the Terms of Service and Privacy Policy",
   "alreadyHaveAccount": "Already have an account?",
   "signIn": "Sign In",
   "logIn": "Log In",
