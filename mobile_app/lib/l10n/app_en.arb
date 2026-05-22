@@ -246,6 +246,10 @@
     }
   },
   "failedToDeleteVehicle": "Failed to delete vehicle",
+  "chooseNewDefaultTitle": "Choose a New Default",
+  "chooseNewDefaultSubtitle": "Your default vehicle was removed. Choose a replacement.",
+  "noVehiclesAfterDelete": "You have no other vehicles. Add one to enable Auto-Pay and gate recognition.",
+  "later": "Later",
   "myVehiclesTitle": "My Vehicles",
   "vehicleDefaultHint": "This vehicle will be used for Auto-Pay and entry recognition by default.",
 
@@ -253,6 +257,10 @@
   "chooseFromGallery": "Choose from Gallery",
   "couldNotReadPlate": "Could not read plate. Please enter manually.",
   "plateRequired": "License plate number is required.",
+  "plateLettersError": "Letters must be 2–3 characters.",
+  "plateArabicOnlyError": "Please enter Arabic letters only.",
+  "plateDigitsError": "Digits must be 2–4 characters.",
+  "makeRequired": "Make & Model is required.",
   "failedToSaveVehicle": "Failed to save vehicle",
   "editVehicle": "Edit Vehicle",
   "makeHint": "e.g. Toyota",

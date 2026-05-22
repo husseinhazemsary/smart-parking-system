@@ -6,6 +6,7 @@ import '../../providers/vehicle_provider.dart';
 import '../../models/vehicle_model.dart';
 import '../../l10n/app_localizations.dart';
 import 'add_vehicle_screen.dart';
+import '../../widgets/vehicle_default_picker.dart';
 
 class MyVehiclesScreen extends StatelessWidget {
   const MyVehiclesScreen({super.key});
@@ -30,16 +31,22 @@ class MyVehiclesScreen extends StatelessWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
-      final provider = context.read<VehicleProvider>();
-      final ok = await provider.deleteVehicle(vehicle.id);
-      if (!ok && context.mounted) {
-        final l10n2 = AppLocalizations.of(context)!;
+      final wasDefault = vehicle.isDefault;
+      final provider   = context.read<VehicleProvider>();
+      final ok         = await provider.deleteVehicle(vehicle.id);
+      if (!context.mounted) return;
+      if (!ok) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(provider.error ?? l10n2.failedToDeleteVehicle)),
+          SnackBar(content: Text(provider.error ?? l10n.failedToDeleteVehicle)),
         );
+      } else if (wasDefault) {
+        await _promptNewDefault(context);
       }
     }
   }
+
+  Future<void> _promptNewDefault(BuildContext context) =>
+      promptNewDefault(context);
 
   @override
   Widget build(BuildContext context) {
@@ -130,15 +137,22 @@ class MyVehiclesScreen extends StatelessWidget {
                                               _VehicleRow(
                                                 isDark: isDark,
                                                 vehicle: vehicle,
-                                                onTap: () =>
-                                                    Navigator.of(context)
-                                                        .push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        AddVehicleScreen(
-                                                            existing: vehicle),
-                                                  ),
-                                                ),
+                                                onTap: () async {
+                                                  final deletedDefault =
+                                                      await Navigator.of(context)
+                                                          .push<bool>(
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          AddVehicleScreen(
+                                                              existing: vehicle),
+                                                    ),
+                                                  );
+                                                  if (deletedDefault == true &&
+                                                      context.mounted) {
+                                                    await _promptNewDefault(
+                                                        context);
+                                                  }
+                                                },
                                                 onDelete: () =>
                                                     _confirmDelete(
                                                         context, vehicle),
@@ -256,7 +270,7 @@ class _VehicleRow extends StatelessWidget {
     final showMakeInSubtitle = vehicle.makeAndModel?.isNotEmpty == true &&
         vehicle.nickname?.isNotEmpty == true;
     final subtitleParts = [
-      vehicle.plateNumber,
+      vehicle.displayPlateNumber,
       typeLabel,
       if (showMakeInSubtitle) vehicle.makeAndModel!,
     ];
@@ -319,8 +333,8 @@ class _VehicleRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitleParts.join('  ·  '),
-                    style:
-                        TextStyle(fontSize: 12, color: textSecondary),
+                    style: TextStyle(fontSize: 12, color: textSecondary),
+                    textDirection: TextDirection.ltr,
                   ),
                 ],
               ),
@@ -340,3 +354,4 @@ class _VehicleRow extends StatelessWidget {
     );
   }
 }
+

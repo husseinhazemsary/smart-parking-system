@@ -62,7 +62,9 @@ public class SavedPlaceService {
                 sp.getId(),
                 sp.getParkingLot().getId(),
                 sp.getParkingLot().getName(),
+                sp.getParkingLot().getNameAr(),
                 sp.getParkingLot().getAddress(),
+                sp.getParkingLot().getAddressAr(),
                 sp.getSavedAt().toString()
         );
     }

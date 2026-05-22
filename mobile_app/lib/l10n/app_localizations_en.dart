@@ -672,6 +672,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failedToDeleteVehicle => 'Failed to delete vehicle';
 
   @override
+  String get chooseNewDefaultTitle => 'Choose a New Default';
+
+  @override
+  String get chooseNewDefaultSubtitle =>
+      'Your default vehicle was removed. Choose a replacement.';
+
+  @override
+  String get noVehiclesAfterDelete =>
+      'You have no other vehicles. Add one to enable Auto-Pay and gate recognition.';
+
+  @override
+  String get later => 'Later';
+
+  @override
   String get myVehiclesTitle => 'My Vehicles';
 
   @override
@@ -690,6 +704,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plateRequired => 'License plate number is required.';
+
+  @override
+  String get plateLettersError => 'Letters must be 2–3 characters.';
+
+  @override
+  String get plateArabicOnlyError => 'Please enter Arabic letters only.';
+
+  @override
+  String get plateDigitsError => 'Digits must be 2–4 characters.';
+
+  @override
+  String get makeRequired => 'Make & Model is required.';
 
   @override
   String get failedToSaveVehicle => 'Failed to save vehicle';

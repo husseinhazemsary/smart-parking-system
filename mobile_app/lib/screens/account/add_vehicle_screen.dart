@@ -20,10 +20,15 @@ class AddVehicleScreen extends StatefulWidget {
 }
 
 class _AddVehicleScreenState extends State<AddVehicleScreen> {
-  final _plateController    = TextEditingController();
-  final _nicknameController = TextEditingController();
-  final _makeController     = TextEditingController();
-  final _makeFocusNode      = FocusNode();
+  final _plateDigitsController  = TextEditingController();
+  final _plateLettersController = TextEditingController();
+  final _nicknameController     = TextEditingController();
+  final _makeController         = TextEditingController();
+  final _makeFocusNode          = FocusNode();
+
+  String? _plateDigitsError;
+  String? _plateLettersError;
+  String? _makeError;
 
   String _selectedType      = 'SEDAN';
   bool   _setAsDefault      = true;
@@ -67,19 +72,22 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     CarSearchService.prefetchMakes();
     final v = widget.existing;
     if (v != null) {
-      _plateController.text    = v.plateNumber;
-      _nicknameController.text = v.nickname ?? '';
-      _makeController.text     = v.makeAndModel ?? '';
-      _selectedType            = v.vehicleType;
-      _setAsDefault            = v.isDefault;
-      _autoPay                 = v.autoPay;
+      final existing = v.plateNumber;
+      _plateDigitsController.text  = _extractDigits(existing);
+      _plateLettersController.text = _extractLetters(existing).join(' ');
+      _nicknameController.text     = v.nickname ?? '';
+      _makeController.text         = v.makeAndModel ?? '';
+      _selectedType                = v.vehicleType;
+      _setAsDefault                = v.isDefault;
+      _autoPay                     = v.autoPay;
       _detectEV(v.makeAndModel ?? '');
     }
   }
 
   @override
   void dispose() {
-    _plateController.dispose();
+    _plateDigitsController.dispose();
+    _plateLettersController.dispose();
     _nicknameController.dispose();
     _makeController.dispose();
     _makeFocusNode.dispose();
@@ -97,6 +105,57 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     final lower    = text.toLowerCase();
     final detected = _evKeywords.any((kw) => lower.contains(kw));
     if (detected != _isEV) setState(() => _isEV = detected);
+  }
+
+  // Arabic letters only (no Latin)
+  List<String> _extractLetters(String raw) => raw.runes
+      .where((r) => r >= 0x0621 && r <= 0x064A)
+      .map(String.fromCharCode)
+      .toList();
+
+  // Keeps Arabic-Indic digits and converts ASCII 0-9 → ٠-٩
+  String _extractDigits(String raw) => raw.runes
+      .where((r) => (r >= 0x30 && r <= 0x39) || (r >= 0x0660 && r <= 0x0669))
+      .map((r) => String.fromCharCode(r >= 0x30 && r <= 0x39 ? r - 0x30 + 0x0660 : r))
+      .join();
+
+  void _onDigitsChanged(String value) {
+    final clean = _extractDigits(value);
+    if (clean != value) {
+      _plateDigitsController.value = _plateDigitsController.value.copyWith(
+        text:      clean,
+        selection: TextSelection.collapsed(offset: clean.length),
+        composing: TextRange.empty,
+      );
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final err  = clean.isNotEmpty && (clean.length < 2 || clean.length > 4)
+        ? l10n.plateDigitsError
+        : null;
+    if (_plateDigitsError != err) setState(() => _plateDigitsError = err);
+  }
+
+  bool _containsLatin(String value) => value.runes.any(
+      (r) => (r >= 0x41 && r <= 0x5A) || (r >= 0x61 && r <= 0x7A));
+
+  void _onLettersChanged(String value) {
+    final hasLatin  = _containsLatin(value);
+    final letters   = _extractLetters(value);
+    final formatted = letters.join(' ');
+    if (formatted != value) {
+      _plateLettersController.value = _plateLettersController.value.copyWith(
+        text:      formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+        composing: TextRange.empty,
+      );
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final err = hasLatin
+        ? l10n.plateArabicOnlyError
+        : letters.isNotEmpty && (letters.length < 2 || letters.length > 3)
+            ? l10n.plateLettersError
+            : null;
+    if (_plateLettersError != err) setState(() => _plateLettersError = err);
   }
 
   Future<void> _confirmDelete() async {
@@ -118,11 +177,12 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final provider = context.read<VehicleProvider>();
+    final wasDefault = widget.existing!.isDefault;
+    final provider   = context.read<VehicleProvider>();
     final ok = await provider.deleteVehicle(widget.existing!.id);
     if (!mounted) return;
     if (ok) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(wasDefault);
     } else {
       final l10n2 = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -163,7 +223,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     setState(() => _isScanning = false);
 
     if (plate != null) {
-      _plateController.text = plate;
+      _plateDigitsController.text  = _extractDigits(plate);
+      _plateLettersController.text = _extractLetters(plate).join(' ');
+      setState(() { _plateDigitsError = null; _plateLettersError = null; });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.couldNotReadPlate)),
@@ -172,17 +234,38 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   }
 
   Future<void> _save() async {
-    final plate = _plateController.text.trim();
-    if (plate.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.plateRequired)),
-      );
+    final l10n   = AppLocalizations.of(context)!;
+    final digits  = _extractDigits(_plateDigitsController.text.trim());
+    final letters = _extractLetters(_plateLettersController.text.trim());
+
+    bool hasError = false;
+    if (digits.isEmpty || digits.length < 2 || digits.length > 4) {
+      setState(() => _plateDigitsError =
+          digits.isEmpty ? l10n.plateRequired : l10n.plateDigitsError);
+      hasError = true;
+    }
+    if (letters.isEmpty || letters.length < 2 || letters.length > 3) {
+      setState(() => _plateLettersError =
+          letters.isEmpty ? l10n.plateRequired : l10n.plateLettersError);
+      hasError = true;
+    }
+    if (hasError) return;
+
+    final make = _makeController.text.trim();
+    if (make.isEmpty) {
+      setState(() => _makeError = l10n.makeRequired);
       return;
     }
 
+    setState(() {
+      _plateDigitsError  = null;
+      _plateLettersError = null;
+      _makeError         = null;
+    });
+
+    final plate    = '$digits ${letters.join(' ')}';
     final provider = context.read<VehicleProvider>();
     final nickname = _nicknameController.text.trim();
-    final make     = _makeController.text.trim();
 
     bool ok;
     if (_isEditing) {
@@ -247,17 +330,22 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Text(
-                      l10n.cancel,
-                      style: const TextStyle(
-                        color: AppColors.accentGreen,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                  if (_isEditing)
+                    GestureDetector(
+                      onTap: isLoading ? null : _confirmDelete,
+                      child: Text(
+                        l10n.delete,
+                        style: TextStyle(
+                          color: isLoading
+                              ? Colors.redAccent.withValues(alpha: 0.4)
+                              : Colors.redAccent,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ),
+                    )
+                  else
+                    const SizedBox(width: 48),
                 ],
               ),
             ),
@@ -279,51 +367,143 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
                     const SizedBox(height: 24),
 
-                    _FieldLabel(l10n.licensePlate, textColor: textPrimary),
-                    const SizedBox(height: 8),
-                    _GradientFieldBox(
-                      child: TextFormField(
-                        controller: _plateController,
-                        decoration: InputDecoration(
-                          hintText: l10n.licensePlateHint,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          suffixIconConstraints:
-                              const BoxConstraints(minHeight: 48, minWidth: 0),
-                          suffixIcon: _isScanning
-                              ? const Padding(
-                                  padding: EdgeInsets.all(12),
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _FieldLabel(l10n.licensePlate, textColor: textPrimary),
+                        GestureDetector(
+                          onTap: _isScanning ? null : _scanPlate,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isScanning)
+                                const SizedBox(
+                                  width: 13, height: 13,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(Icons.camera_alt,
-                                          size: 20, color: textSecondary),
-                                      onPressed: _scanPlate,
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.close,
-                                          size: 14, color: textSecondary.withValues(alpha: 0.45)),
-                                      onPressed: () => _plateController.clear(),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
+                              else
+                                Icon(Icons.camera_alt,
+                                    size: 15,
+                                    color: AppColors.accentGreen),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Scan Plate',
+                                style: TextStyle(
+                                  color: _isScanning
+                                      ? textSecondary
+                                      : AppColors.accentGreen,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
                                 ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Digits (left) ──────────────────────────────
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _GradientFieldBox(
+                                child: TextFormField(
+                                  controller: _plateDigitsController,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  onChanged: _onDigitsChanged,
+                                  decoration: InputDecoration(
+                                    hintText: '١٢٣٤',
+                                    hintStyle: TextStyle(
+                                        color: textSecondary.withValues(alpha: 0.5)),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 14),
+                                    suffixIconConstraints: const BoxConstraints(
+                                        minHeight: 36, minWidth: 0),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(Icons.close,
+                                          size: 14,
+                                          color: textSecondary.withValues(alpha: 0.45)),
+                                      onPressed: () {
+                                        _plateDigitsController.clear();
+                                        setState(() => _plateDigitsError = null);
+                                      },
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_plateDigitsError != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _plateDigitsError!,
+                                  style: const TextStyle(
+                                      color: Colors.redAccent, fontSize: 11),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // ── Letters (right) ────────────────────────────
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _GradientFieldBox(
+                                child: TextFormField(
+                                  controller: _plateLettersController,
+                                  textAlign: TextAlign.center,
+                                  onChanged: _onLettersChanged,
+                                  decoration: InputDecoration(
+                                    hintText: 'أ ب ج',
+                                    hintStyle: TextStyle(
+                                        color: textSecondary.withValues(alpha: 0.5)),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 14),
+                                    suffixIconConstraints: const BoxConstraints(
+                                        minHeight: 36, minWidth: 0),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(Icons.close,
+                                          size: 14,
+                                          color: textSecondary.withValues(alpha: 0.45)),
+                                      onPressed: () {
+                                        _plateLettersController.clear();
+                                        setState(() => _plateLettersError = null);
+                                      },
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_plateLettersError != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _plateLettersError!,
+                                  style: const TextStyle(
+                                      color: Colors.redAccent, fontSize: 11),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 20),
@@ -447,7 +627,12 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           child: TextFormField(
                             controller: controller,
                             focusNode: focusNode,
-                            onChanged: _detectEV,
+                            onChanged: (v) {
+                              _detectEV(v);
+                              if (_makeError != null && v.trim().isNotEmpty) {
+                                setState(() => _makeError = null);
+                              }
+                            },
                             onFieldSubmitted: (_) => onFieldSubmitted(),
                             decoration: InputDecoration(
                               hintText: l10n.makeHint,
@@ -541,6 +726,17 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                         );
                       },
                     ),
+                    if (_makeError != null) ...[
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          _makeError!,
+                          style: const TextStyle(
+                              color: Colors.redAccent, fontSize: 12),
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 12),
                     Container(
@@ -727,24 +923,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                                 : l10n.saveVehicle),
                       ),
                     ),
-
-                    if (_isEditing) ...[
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: TextButton(
-                          onPressed: isLoading ? null : _confirmDelete,
-                          child: Text(
-                            l10n.deleteVehicle,
-                            style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
 
                     const SizedBox(height: 24),
                   ],

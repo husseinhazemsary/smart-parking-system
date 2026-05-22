@@ -672,6 +672,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get failedToDeleteVehicle => 'فشل حذف السيارة';
 
   @override
+  String get chooseNewDefaultTitle => 'اختر سيارة افتراضية جديدة';
+
+  @override
+  String get chooseNewDefaultSubtitle =>
+      'تم حذف سيارتك الافتراضية. اختر بديلاً.';
+
+  @override
+  String get noVehiclesAfterDelete =>
+      'ليس لديك سيارات أخرى. أضف سيارة لتفعيل الدفع التلقائي والتعرف على البوابة.';
+
+  @override
+  String get later => 'لاحقاً';
+
+  @override
   String get myVehiclesTitle => 'سياراتي';
 
   @override
@@ -689,6 +703,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get plateRequired => 'رقم لوحة السيارة مطلوب.';
+
+  @override
+  String get plateLettersError => 'الحروف يجب أن تكون من 2 إلى 3 أحرف.';
+
+  @override
+  String get plateArabicOnlyError => 'يرجى إدخال حروف عربية فقط.';
+
+  @override
+  String get plateDigitsError => 'الأرقام يجب أن تكون من 2 إلى 4 أرقام.';
+
+  @override
+  String get makeRequired => 'الماركة والموديل مطلوبان.';
 
   @override
   String get failedToSaveVehicle => 'فشل حفظ السيارة';

@@ -111,6 +111,32 @@ class VehicleProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> setDefaultVehicle(String id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final v = _vehicles.firstWhere((v) => v.id == id);
+      await VehicleService.updateVehicle(
+        id:           id,
+        plateNumber:  v.plateNumber,
+        nickname:     v.nickname,
+        vehicleType:  v.vehicleType,
+        makeAndModel: v.makeAndModel,
+        isDefault:    true,
+        autoPay:      v.autoPay,
+      );
+      _vehicles = _vehicles.map((v) => v.copyWith(isDefault: v.id == id)).toList();
+      return true;
+    } catch (e) {
+      _error = _parseError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> deleteVehicle(String id) async {
     _isLoading = true;
     _error = null;

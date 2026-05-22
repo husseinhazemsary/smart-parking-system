@@ -49,9 +49,26 @@ class VehicleModel {
         createdAt: createdAt,
       );
 
+  // Always formats as: digits then space-separated letters (e.g. أ ب ج ١٢٣٤)
+  String get displayPlateNumber {
+    final raw     = plateNumber;
+    final digits  = raw.runes
+        .where((r) => (r >= 0x30 && r <= 0x39) || (r >= 0x0660 && r <= 0x0669))
+        .map((r) => String.fromCharCode(r >= 0x30 && r <= 0x39 ? r - 0x30 + 0x0660 : r))
+        .join();
+    final letters = raw.runes
+        .where((r) => r >= 0x0621 && r <= 0x064A)
+        .map(String.fromCharCode)
+        .toList();
+    final parts = <String>[];
+    if (letters.isNotEmpty) parts.add(letters.join(' '));
+    if (digits.isNotEmpty)  parts.add(digits);
+    return parts.isEmpty ? raw : parts.join(' ');
+  }
+
   String get displayName {
     if (nickname?.isNotEmpty == true) return nickname!;
     if (makeAndModel?.isNotEmpty == true) return makeAndModel!;
-    return plateNumber;
+    return displayPlateNumber;
   }
 }

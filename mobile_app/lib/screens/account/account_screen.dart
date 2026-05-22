@@ -13,6 +13,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/vehicle_model.dart';
 import '../../providers/vehicle_provider.dart';
 import '../account/add_vehicle_screen.dart';
+import '../../widgets/vehicle_default_picker.dart';
 import '../account/edit_profile_screen.dart';
 import '../account/change_password_screen.dart';
 import '../auth/login_screen.dart';
@@ -396,11 +397,17 @@ class _AccountScreenState extends State<AccountScreen> {
                     _VehicleRow(
                       isDark: isDark,
                       vehicle: v,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => AddVehicleScreen(existing: v),
-                        ),
-                      ),
+                      onTap: () async {
+                        final deletedDefault =
+                            await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder: (_) => AddVehicleScreen(existing: v),
+                          ),
+                        );
+                        if (deletedDefault == true && context.mounted) {
+                          await promptNewDefault(context);
+                        }
+                      },
                     ),
                     Divider(color: borderColor, height: 1),
                   ],

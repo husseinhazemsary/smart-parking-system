@@ -1394,6 +1394,30 @@ abstract class AppLocalizations {
   /// **'Failed to delete vehicle'**
   String get failedToDeleteVehicle;
 
+  /// No description provided for @chooseNewDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a New Default'**
+  String get chooseNewDefaultTitle;
+
+  /// No description provided for @chooseNewDefaultSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your default vehicle was removed. Choose a replacement.'**
+  String get chooseNewDefaultSubtitle;
+
+  /// No description provided for @noVehiclesAfterDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no other vehicles. Add one to enable Auto-Pay and gate recognition.'**
+  String get noVehiclesAfterDelete;
+
+  /// No description provided for @later.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get later;
+
   /// No description provided for @myVehiclesTitle.
   ///
   /// In en, this message translates to:
@@ -1429,6 +1453,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'License plate number is required.'**
   String get plateRequired;
+
+  /// No description provided for @plateLettersError.
+  ///
+  /// In en, this message translates to:
+  /// **'Letters must be 2–3 characters.'**
+  String get plateLettersError;
+
+  /// No description provided for @plateArabicOnlyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter Arabic letters only.'**
+  String get plateArabicOnlyError;
+
+  /// No description provided for @plateDigitsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Digits must be 2–4 characters.'**
+  String get plateDigitsError;
+
+  /// No description provided for @makeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Make & Model is required.'**
+  String get makeRequired;
 
   /// No description provided for @failedToSaveVehicle.
   ///

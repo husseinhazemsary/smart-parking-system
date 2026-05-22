@@ -381,6 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final bottomPadding = MediaQuery.of(ctx).viewPadding.bottom;
         return Consumer<SavedPlaceProvider>(
           builder: (ctx, provider, _) {
+            final isArabic = context.read<LocaleProvider>().isArabic;
             return Padding(
               padding: EdgeInsets.fromLTRB(24, 20, 24, 36 + bottomPadding),
               child: Column(
@@ -447,9 +448,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(place.parkingLotName,
+                                          Text(place.localizedName(isArabic),
                                               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
-                                          Text(place.address,
+                                          Text(place.localizedAddress(isArabic),
                                               style: TextStyle(fontSize: 12, color: subColor)),
                                         ],
                                       ),

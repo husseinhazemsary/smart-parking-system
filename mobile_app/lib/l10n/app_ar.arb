@@ -246,6 +246,10 @@
     }
   },
   "failedToDeleteVehicle": "فشل حذف السيارة",
+  "chooseNewDefaultTitle": "اختر سيارة افتراضية جديدة",
+  "chooseNewDefaultSubtitle": "تم حذف سيارتك الافتراضية. اختر بديلاً.",
+  "noVehiclesAfterDelete": "ليس لديك سيارات أخرى. أضف سيارة لتفعيل الدفع التلقائي والتعرف على البوابة.",
+  "later": "لاحقاً",
   "myVehiclesTitle": "سياراتي",
   "vehicleDefaultHint": "ستُستخدم هذه السيارة تلقائياً للدفع التلقائي والتعرف على الدخول.",
 
@@ -253,6 +257,10 @@
   "chooseFromGallery": "الاختيار من المعرض",
   "couldNotReadPlate": "تعذّر قراءة اللوحة. يرجى الإدخال يدوياً.",
   "plateRequired": "رقم لوحة السيارة مطلوب.",
+  "plateLettersError": "الحروف يجب أن تكون من 2 إلى 3 أحرف.",
+  "plateArabicOnlyError": "يرجى إدخال حروف عربية فقط.",
+  "plateDigitsError": "الأرقام يجب أن تكون من 2 إلى 4 أرقام.",
+  "makeRequired": "الماركة والموديل مطلوبان.",
   "failedToSaveVehicle": "فشل حفظ السيارة",
   "editVehicle": "تعديل السيارة",
   "makeHint": "مثال: تويوتا",
