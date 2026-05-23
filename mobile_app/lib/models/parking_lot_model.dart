@@ -38,6 +38,23 @@ bool isCurrentlyOpen(String open, String close, List<String> operatingDays) {
   return c > o ? cur >= o && cur < c : cur >= o || cur < c;
 }
 
+enum LotCategory { mall, university, airport, street, other }
+
+LotCategory _parseCategory(dynamic val) {
+  switch ((val as String?)?.toUpperCase()) {
+    case 'MALL':
+      return LotCategory.mall;
+    case 'UNIVERSITY':
+      return LotCategory.university;
+    case 'AIRPORT':
+      return LotCategory.airport;
+    case 'STREET':
+      return LotCategory.street;
+    default:
+      return LotCategory.other;
+  }
+}
+
 class ParkingLotSummary {
   final String id;
   final String name;
@@ -51,6 +68,7 @@ class ParkingLotSummary {
   final String openingTime;
   final String closingTime;
   final String? imageUrl;
+  final LotCategory category;
 
   const ParkingLotSummary({
     required this.id,
@@ -65,6 +83,7 @@ class ParkingLotSummary {
     this.addressAr,
     this.distanceKm,
     this.imageUrl,
+    this.category = LotCategory.other,
   });
 
   factory ParkingLotSummary.fromJson(Map<String, dynamic> j) {
@@ -81,6 +100,7 @@ class ParkingLotSummary {
       openingTime: _parseTime(j['openingTime']),
       closingTime: _parseTime(j['closingTime']),
       imageUrl: j['imageUrl'] as String?,
+      category: _parseCategory(j['category']),
     );
   }
 

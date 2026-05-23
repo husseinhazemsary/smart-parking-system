@@ -33,6 +33,7 @@ function mapLot(lot) {
     distance:  lot.distanceKm ?? 0,
     rate:      lot.hourlyRate != null ? Number(lot.hourlyRate) : 0,
     hours:     formatHours(lot.openingTime, lot.closingTime),
+    category:  normalizeCategory(lot.category),
   };
 }
 
@@ -55,6 +56,19 @@ function mapSlot(s, i) {
 // Category icons, colors, and slot status config
 const CAT_ICONS  = { Mall:"🏬", University:"🎓", Airport:"✈️", Street:"🚗", All:"📍" };
 const CAT_COLORS = { Mall:"#C084FC", University:T.green, Airport:"#F59E0B", Street:"#38BDF8" };
+
+const CATEGORIES = [
+  { key: null,         label: "All"          },
+  { key: "Mall",       label: "Malls"        },
+  { key: "University", label: "Universities" },
+  { key: "Airport",    label: "Airports"     },
+  { key: "Street",     label: "Streets"      },
+];
+
+function normalizeCategory(raw) {
+  const map = { MALL:"Mall", UNIVERSITY:"University", AIRPORT:"Airport", STREET:"Street" };
+  return map[raw] ?? null;
+}
 
 const SLOT_CONFIG = {
   available: { color:"#22C55E", bg:"rgba(34,197,94,.15)",  border:"rgba(34,197,94,.4)",  icon:"✓" },
@@ -134,6 +148,7 @@ const CSS = `
 // Main FindTab component — search, filter, and view parking spots.
 export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, onSpotDetailOpened, profile }) {
   const [search,      setSearch]      = useState("");
+  const [category,    setCategory]    = useState(null);
   const [sort,        setSort]        = useState("distance");
   const [detailSpot,  setDetailSpot]  = useState(null);
   const [slotSpot,    setSlotSpot]    = useState(null);
@@ -163,8 +178,9 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
 
   const filtered = lots
     .filter(s =>
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.address.toLowerCase().includes(search.toLowerCase())
+      (category === null || s.category === category) &&
+      (s.name.toLowerCase().includes(search.toLowerCase()) ||
+       s.address.toLowerCase().includes(search.toLowerCase()))
     )
     .sort((a, b) =>
       sort === "distance" ? a.distance - b.distance :
@@ -250,10 +266,34 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
           ))}
         </div>
 
+        {/* Category filter chips */}
+        <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:4,marginBottom:14,scrollbarWidth:"none"}}>
+          {CATEGORIES.map(cat => {
+            const active = category === cat.key;
+            const color  = cat.key ? (CAT_COLORS[cat.key] || T.purple) : T.purple;
+            return (
+              <button
+                key={cat.label}
+                className="ft-cat-pill"
+                onClick={() => setCategory(active ? null : cat.key)}
+                style={{
+                  borderColor: active ? color : T.border,
+                  background:  active ? `${color}20` : "transparent",
+                  color:       active ? color : T.sub,
+                  flexShrink: 0,
+                }}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
         {!loading && !fetchError && (
           <div style={{fontSize:12,color:T.sub,marginBottom:14}}>
             {filtered.length} location{filtered.length!==1?"s":""} found
-            {search?` matching "${search}"`:""}
+            {category ? ` in ${CATEGORIES.find(c=>c.key===category)?.label}` : ""}
+            {search ? ` matching "${search}"` : ""}
           </div>
         )}
       </div>

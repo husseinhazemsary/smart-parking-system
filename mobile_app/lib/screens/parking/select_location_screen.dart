@@ -37,6 +37,14 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
     super.dispose();
   }
 
+  static const _categoryFilters = [
+    null,
+    LotCategory.mall,
+    LotCategory.university,
+    LotCategory.airport,
+    LotCategory.street,
+  ];
+
   List<String> _categoryKeys(AppLocalizations l10n) => [
         l10n.categoryAll,
         l10n.categoryMalls,
@@ -46,34 +54,8 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
       ];
 
   bool _matchesCategory(ParkingLotSummary lot, int index) {
-    if (index == 0) return true;
-    final name = lot.name.toLowerCase();
-    final nameAr = (lot.nameAr ?? '').toLowerCase();
-    final addr = lot.address.toLowerCase();
-    final addrAr = (lot.addressAr ?? '').toLowerCase();
-    switch (index) {
-      case 1: // Malls
-        return name.contains('mall') || nameAr.contains('مول');
-      case 2: // Universities
-        return name.contains('univ') ||
-            nameAr.contains('جامع') ||
-            addr.contains('univ') ||
-            addrAr.contains('جامع');
-      case 3: // Airports
-        return name.contains('airport') ||
-            nameAr.contains('مطار') ||
-            addr.contains('airport') ||
-            addrAr.contains('مطار');
-      case 4: // Streets
-        return name.contains('street') ||
-            nameAr.contains('شارع') ||
-            addr.contains('street') ||
-            addrAr.contains('شارع') ||
-            addr.contains(' rd') ||
-            addr.contains(' st ');
-      default:
-        return true;
-    }
+    final filter = _categoryFilters[index];
+    return filter == null || lot.category == filter;
   }
 
   List<ParkingLotSummary> _applySort(List<ParkingLotSummary> lots) {
