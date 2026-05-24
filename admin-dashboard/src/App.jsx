@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import PasswordField from './components/PasswordField'
 import Sidebar      from './components/Sidebar'
+import logo         from './assets/logo.png'
 import Overview       from './pages/Overview'
 import ParkingSlots   from './pages/ParkingSlots'
 import LiveFeed       from './pages/LiveFeed'
@@ -86,7 +87,7 @@ function Login() {
         borderRadius: 16, padding: 40, width: 380
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🅿</div>
+          <img src={logo} alt="EzRakna" style={{ width: 64, height: 64, objectFit: 'contain', marginBottom: 12 }}/>
           <div style={{ fontWeight: 700, fontSize: 20 }}>EzRakna</div>
           <div style={{ color: '#4a5568', fontSize: 13, marginTop: 4 }}>Admin Dashboard</div>
         </div>
