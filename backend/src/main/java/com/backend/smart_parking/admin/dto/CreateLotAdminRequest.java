@@ -10,7 +10,6 @@ import java.util.UUID;
 public record CreateLotAdminRequest(
         @NotBlank String fullName,
         @Email @NotBlank String email,
-        @NotBlank String password,
         @NotEmpty List<UUID> assignedLotIds,
         String phoneNumber
 ) {}

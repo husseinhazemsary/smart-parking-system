@@ -1,105 +1,52 @@
 import { useEffect, useState } from 'react'
-import { Plus, X, User, Pencil } from 'lucide-react'
+import { Plus, X, User, Pencil, Trash2, Mail, AlertTriangle, Copy, Check, RefreshCw } from 'lucide-react'
 import api from '../api/axios'
 import PasswordField from '../components/PasswordField'
 
-const emptyCreate = { fullName: '', email: '', password: '', phoneNumber: '', assignedLotIds: [] }
+const emptyCreate = { fullName: '', email: '', phoneNumber: '', assignedLotIds: [] }
 const emptyEdit   = { fullName: '', email: '', password: '', phoneNumber: '', assignedLotIds: [] }
 
-const TEXT_FIELDS = [
-  { label: 'Full Name',    name: 'fullName',    type: 'text',  required: true  },
-  { label: 'Email',        name: 'email',       type: 'email', required: true  },
-  { label: 'Phone Number', name: 'phoneNumber', type: 'tel',   required: false },
-]
-
-function AdminForm({ form, onChange, onSubmit, submitLabel, isEdit, lots, saving }) {
+function LotCheckboxes({ form, onChange, lots }) {
   return (
-    <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {TEXT_FIELDS.map(f => (
-        <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: 12, color: '#4a5568' }}>{f.label}{f.required ? ' *' : ''}</label>
-          <input
-            name={f.name} type={f.type} value={form[f.name]}
-            onChange={onChange} required={f.required}
-            style={{
-              background: '#131c30', border: '1px solid #1a2540',
-              color: '#fff', padding: '10px 12px', borderRadius: 8,
-              fontSize: 13, outline: 'none'
-            }}
-          />
-        </div>
-      ))}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <label style={{ fontSize: 12, color: '#4a5568' }}>
-          {isEdit ? 'New Password (leave blank to keep current)' : 'Password *'}
-        </label>
-        <PasswordField
-          name="password"
-          value={form.password}
-          onChange={onChange}
-          placeholder={isEdit ? 'Leave blank to keep current' : 'Password'}
-          required={!isEdit}
-        />
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <label style={{ fontSize: 12, color: '#4a5568' }}>Assigned Parking Lots *</label>
-        <div style={{
-          background: '#131c30', border: '1px solid #1a2540',
-          borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 160, overflowY: 'auto'
-        }}>
-          {lots.map(lot => {
-            const checked = form.assignedLotIds.includes(lot.id)
-            return (
-              <label key={lot.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: checked ? '#fff' : '#94a3b8' }}>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={e => {
-                    const next = e.target.checked
-                      ? [...form.assignedLotIds, lot.id]
-                      : form.assignedLotIds.filter(id => id !== lot.id)
-                    onChange({ target: { name: 'assignedLotIds', value: next } })
-                  }}
-                />
-                {lot.name}
-              </label>
-            )
-          })}
-        </div>
-        {form.assignedLotIds.length === 0 && (
-          <span style={{ fontSize: 11, color: '#ef4444' }}>Select at least one lot</span>
-        )}
-      </div>
-
-      <button type="submit" disabled={saving} style={{
-        background: '#3b82f6', border: 'none', color: '#fff',
-        padding: '12px', borderRadius: 10, fontSize: 15,
-        fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', marginTop: 8,
-        opacity: saving ? 0.6 : 1
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 12, color: '#4a5568' }}>Assigned Parking Lots *</label>
+      <div style={{
+        background: '#131c30', border: '1px solid #1a2540', borderRadius: 8,
+        padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6,
+        maxHeight: 160, overflowY: 'auto',
       }}>
-        {saving ? 'Saving...' : submitLabel}
-      </button>
-    </form>
+        {lots.map(lot => {
+          const checked = form.assignedLotIds.includes(lot.id)
+          return (
+            <label key={lot.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: checked ? '#fff' : '#94a3b8' }}>
+              <input
+                type="checkbox" checked={checked}
+                onChange={e => {
+                  const next = e.target.checked
+                    ? [...form.assignedLotIds, lot.id]
+                    : form.assignedLotIds.filter(id => id !== lot.id)
+                  onChange({ target: { name: 'assignedLotIds', value: next } })
+                }}
+              />
+              {lot.name}
+            </label>
+          )
+        })}
+      </div>
+      {form.assignedLotIds.length === 0 && (
+        <span style={{ fontSize: 11, color: '#ef4444' }}>Select at least one lot</span>
+      )}
+    </div>
   )
 }
 
 function Modal({ title, onClose, error, children }) {
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-    }}>
-      <div style={{
-        background: '#0d1426', border: '1px solid #1a2540', borderRadius: 16,
-        padding: 32, width: 440, maxHeight: '90vh', overflowY: 'auto'
-      }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div style={{ background: '#0d1426', border: '1px solid #1a2540', borderRadius: 16, padding: 32, width: 440, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <span style={{ fontWeight: 700, fontSize: 17 }}>{title}</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-            <X size={20}/>
-          </button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={20}/></button>
         </div>
         {error && <div style={{ color: '#ef4444', marginBottom: 16, fontSize: 13 }}>{error}</div>}
         {children}
@@ -108,154 +55,490 @@ function Modal({ title, onClose, error, children }) {
   )
 }
 
-export default function LotAdmins() {
-  const [admins, setAdmins]         = useState([])
-  const [lots, setLots]             = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
-  const [editTarget, setEditTarget] = useState(null)
-  const [createForm, setCreateForm] = useState(emptyCreate)
-  const [editForm, setEditForm]     = useState(emptyEdit)
-  const [saving, setSaving]         = useState(false)
-  const [error, setError]           = useState('')
+function ConfirmDialog({ message, detail, confirmLabel = 'Confirm', danger = false, onConfirm, onCancel }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+      <div style={{ background: '#0d1426', border: '1px solid #1a2540', borderRadius: 14, padding: 28, width: 380 }}>
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 10 }}>{message}</div>
+        {detail && <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20, lineHeight: 1.5 }}>{detail}</div>}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onCancel} style={{ background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8', padding: '9px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
+            Cancel
+          </button>
+          <button onClick={onConfirm} style={{ background: danger ? '#ef4444' : '#3b82f6', border: 'none', color: '#fff', padding: '9px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/api/admin/lot-admins'),
-      api.get('/api/parking-lots'),
-    ]).then(([adminsRes, lotsRes]) => {
-      setAdmins(adminsRes.data)
-      setLots(lotsRes.data)
-    }).catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+// 2-step create modal: step 1 = fill form, step 2 = confirm email before sending
+function CreateModal({ onClose, lots, onSuccess }) {
+  const [step,   setStep]   = useState(1)
+  const [form,   setForm]   = useState(emptyCreate)
+  const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState('')
 
-  function openEdit(admin) {
-    setEditTarget(admin)
-    setEditForm({
-      fullName:        admin.fullName,
-      email:           admin.email,
-      phoneNumber:     admin.phoneNumber ?? '',
-      assignedLotIds:  admin.assignedLotIds ?? [],
-      password:        '',
-    })
-    setError('')
+  function handleChange(e) {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
-  async function handleCreate(e) {
+  function handleNext(e) {
     e.preventDefault()
+    setError('')
+    setStep(2)
+  }
+
+  async function handleConfirm() {
     setSaving(true)
     setError('')
     try {
-      const res = await api.post('/api/admin/lot-admins', createForm)
-      setAdmins(a => [...a, res.data])
-      setShowCreate(false)
-      setCreateForm(emptyCreate)
+      await api.post('/api/admin/lot-admins', form)
+      onSuccess(form.email)
     } catch (err) {
-      setError(err.response?.data?.detail ?? 'Failed to create lot admin')
+      setError(err.response?.data?.detail ?? 'Failed to send invitation')
+      setStep(1)
     } finally {
       setSaving(false)
     }
+  }
+
+  const inputStyle = { background: '#131c30', border: '1px solid #1a2540', color: '#fff', padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none' }
+
+  return (
+    <Modal title="Invite Lot Admin" onClose={onClose} error={error}>
+      {step === 1 ? (
+        <form onSubmit={handleNext} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[
+            { label: 'Full Name',    name: 'fullName',    type: 'text',  required: true  },
+            { label: 'Email',        name: 'email',       type: 'email', required: true  },
+            { label: 'Phone Number', name: 'phoneNumber', type: 'tel',   required: false },
+          ].map(f => (
+            <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 12, color: '#4a5568' }}>{f.label}{f.required ? ' *' : ''}</label>
+              <input name={f.name} type={f.type} value={form[f.name]} onChange={handleChange} required={f.required} style={inputStyle}/>
+            </div>
+          ))}
+          <LotCheckboxes form={form} onChange={handleChange} lots={lots}/>
+          <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(59,130,246,.07)', border: '1px solid rgba(59,130,246,.2)', fontSize: 12, color: '#94a3b8' }}>
+            An invitation email will be sent so the admin can set their own password.
+          </div>
+          <button type="submit" disabled={form.assignedLotIds.length === 0} style={{ background: '#3b82f6', border: 'none', color: '#fff', padding: '12px', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: form.assignedLotIds.length === 0 ? 'not-allowed' : 'pointer', marginTop: 8, opacity: form.assignedLotIds.length === 0 ? 0.5 : 1 }}>
+            Review & Send
+          </button>
+        </form>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>Please confirm the invitation details before sending.</p>
+
+          <div style={{ background: '#131c30', border: '1px solid #1a2540', borderRadius: 10, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { label: 'Name',  value: form.fullName },
+              { label: 'Phone', value: form.phoneNumber || '—' },
+              { label: 'Lots',  value: lots.filter(l => form.assignedLotIds.includes(l.id)).map(l => l.name).join(', ') },
+            ].map(row => (
+              <div key={row.label} style={{ display: 'flex', gap: 8, fontSize: 13 }}>
+                <span style={{ color: '#4a5568', width: 48, flexShrink: 0 }}>{row.label}</span>
+                <span style={{ color: '#fff' }}>{row.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Email shown large and prominently */}
+          <div style={{ borderRadius: 10, border: '2px solid rgba(59,130,246,.4)', background: 'rgba(59,130,246,.07)', padding: '14px 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Invitation will be sent to</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#60a5fa', wordBreak: 'break-all' }}>{form.email}</div>
+          </div>
+
+          <p style={{ fontSize: 12, color: '#4a5568', margin: 0 }}>Double-check the email address — the recipient will receive a link to access the admin dashboard.</p>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={() => setStep(1)} style={{ flex: 1, background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8', padding: '12px', borderRadius: 10, cursor: 'pointer', fontSize: 14 }}>
+              Back
+            </button>
+            <button onClick={handleConfirm} disabled={saving} style={{ flex: 2, background: '#3b82f6', border: 'none', color: '#fff', padding: '12px', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Sending…' : 'Confirm & Send'}
+            </button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  )
+}
+
+function ContactModal({ inv, onClose }) {
+  const [copied, setCopied] = useState(false)
+
+  const subject = `EzRakna Admin Invitation — Follow-up`
+  const body =
+`Hi ${inv.fullName},
+
+We noticed that your invitation to manage parking lots on EzRakna has expired without being accepted.
+
+Please let us know if you experienced any issues or if you'd like us to send a new invitation.
+
+Best regards,
+EzRakna Team`
+
+  function copyMessage() {
+    navigator.clipboard.writeText(body)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(inv.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div style={{ background: '#0d1426', border: '1px solid #1a2540', borderRadius: 16, padding: 28, width: 480, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <span style={{ fontWeight: 700, fontSize: 16 }}>Contact Lot Admin</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={20}/></button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 11, color: '#4a5568', textTransform: 'uppercase', letterSpacing: 1 }}>To</span>
+            <span style={{ fontSize: 14, color: '#60a5fa', fontWeight: 600 }}>{inv.email}</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 11, color: '#4a5568', textTransform: 'uppercase', letterSpacing: 1 }}>Subject</span>
+            <span style={{ fontSize: 13, color: '#e2e8f0' }}>{subject}</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 11, color: '#4a5568', textTransform: 'uppercase', letterSpacing: 1 }}>Message</span>
+            <div style={{ background: '#131c30', border: '1px solid #1a2540', borderRadius: 8, padding: '12px 14px', fontSize: 13, color: '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+              {body}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button onClick={copyMessage} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: copied ? 'rgba(34,197,94,.1)' : '#1a2540', border: `1px solid ${copied ? 'rgba(34,197,94,.3)' : '#2a3550'}`, color: copied ? '#22c55e' : '#94a3b8', padding: '10px', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+              {copied ? <><Check size={14}/> Copied!</> : <><Copy size={14}/> Copy Message</>}
+            </button>
+            <a href={gmailUrl} target="_blank" rel="noreferrer" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#3b82f6', border: 'none', color: '#fff', padding: '10px', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+              <Mail size={14}/> Open in Gmail
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function LotAdmins() {
+  const [admins,            setAdmins]            = useState([])
+  const [invitations,       setInvitations]       = useState([])
+  const [expiredInvitations,setExpiredInvitations] = useState([])
+  const [lots,              setLots]              = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [showCreate,   setShowCreate]   = useState(false)
+  const [editTarget,   setEditTarget]   = useState(null)
+  const [editForm,     setEditForm]     = useState(emptyEdit)
+  const [saving,       setSaving]       = useState(false)
+  const [editError,    setEditError]    = useState('')
+  const [invitedEmail, setInvitedEmail] = useState('')
+
+  useEffect(() => {
+    if (!invitedEmail) return
+    const t = setTimeout(() => setInvitedEmail(''), 5000)
+    return () => clearTimeout(t)
+  }, [invitedEmail])
+  const [confirm,      setConfirm]      = useState(null)
+  const [contactTarget,setContactTarget] = useState(null)
+
+  function load() {
+    return Promise.all([
+      api.get('/api/admin/lot-admins'),
+      api.get('/api/admin/invitations'),
+      api.get('/api/admin/invitations/expired'),
+      api.get('/api/parking-lots'),
+    ]).then(([adminsRes, invRes, expiredRes, lotsRes]) => {
+      setAdmins(adminsRes.data)
+      setInvitations(invRes.data)
+      setExpiredInvitations(expiredRes.data)
+      setLots(lotsRes.data)
+    }).catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
+
+  function openEdit(admin) {
+    setEditTarget(admin)
+    setEditForm({ fullName: admin.fullName, email: admin.email, phoneNumber: admin.phoneNumber ?? '', assignedLotIds: admin.assignedLotIds ?? [], password: '' })
+    setEditError('')
   }
 
   async function handleEdit(e) {
     e.preventDefault()
     setSaving(true)
-    setError('')
+    setEditError('')
     try {
       const res = await api.put(`/api/admin/lot-admins/${editTarget.id}`, editForm)
       setAdmins(a => a.map(x => x.id === editTarget.id ? res.data : x))
       setEditTarget(null)
     } catch (err) {
-      setError(err.response?.data?.detail ?? 'Failed to update lot admin')
+      setEditError(err.response?.data?.detail ?? 'Failed to update lot admin')
     } finally {
       setSaving(false)
     }
   }
 
+  function askDeleteAdmin(admin) {
+    setConfirm({
+      message: `Delete ${admin.fullName}?`,
+      detail: `This permanently deletes their account and revokes dashboard access immediately. Email: ${admin.email}`,
+      confirmLabel: 'Delete Admin',
+      danger: true,
+      onConfirm: async () => {
+        setConfirm(null)
+        await api.delete(`/api/admin/lot-admins/${admin.id}`)
+        setAdmins(a => a.filter(x => x.id !== admin.id))
+      },
+    })
+  }
+
+  function askRevokeInvitation(inv) {
+    setConfirm({
+      message: 'Cancel this invitation?',
+      detail: `The link sent to ${inv.email} will stop working immediately.`,
+      confirmLabel: 'Cancel Invitation',
+      danger: true,
+      onConfirm: async () => {
+        setConfirm(null)
+        await api.delete(`/api/admin/invitations/${inv.id}`)
+        setInvitations(list => list.filter(x => x.id !== inv.id))
+      },
+    })
+  }
+
+  const [resendingId, setResendingId] = useState(null)
+
+  async function handleResend(inv) {
+    setResendingId(inv.id)
+    try {
+      await api.post(`/api/admin/invitations/${inv.id}/resend`)
+      setExpiredInvitations(list => list.filter(x => x.id !== inv.id))
+      setInvitedEmail(inv.email)
+      load()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setResendingId(null)
+    }
+  }
+
+  function askDismissExpired(inv) {
+    setConfirm({
+      message: 'Remove this expired invitation?',
+      detail: `This removes the record for ${inv.email}. You can send a new invitation afterwards.`,
+      confirmLabel: 'Remove',
+      danger: true,
+      onConfirm: async () => {
+        setConfirm(null)
+        await api.delete(`/api/admin/invitations/${inv.id}`)
+        setExpiredInvitations(list => list.filter(x => x.id !== inv.id))
+      },
+    })
+  }
+
+  const inputStyle = { background: '#131c30', border: '1px solid #1a2540', color: '#fff', padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none' }
+
   return (
     <div>
+      {contactTarget && (
+        <ContactModal inv={contactTarget} onClose={() => setContactTarget(null)}/>
+      )}
+
+      {confirm && (
+        <ConfirmDialog
+          message={confirm.message}
+          detail={confirm.detail}
+          confirmLabel={confirm.confirmLabel}
+          danger={confirm.danger}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div>
           <h1 style={{ margin: 0 }}>Lot Admins</h1>
           <p style={{ color: '#4a5568', margin: '4px 0 0' }}>Manage parking lot administrators</p>
         </div>
-        <button onClick={() => { setShowCreate(true); setError('') }} style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: '#3b82f6', border: 'none', color: '#fff',
-          padding: '10px 18px', borderRadius: 10, fontSize: 14,
-          fontWeight: 600, cursor: 'pointer'
-        }}>
-          <Plus size={16}/> Create Lot Admin
+        <button onClick={() => { setShowCreate(true); setInvitedEmail('') }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#3b82f6', border: 'none', color: '#fff', padding: '10px 18px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+          <Plus size={16}/> Invite Lot Admin
         </button>
       </div>
 
-      {loading ? (
-        <div style={{ color: '#4a5568' }}>Loading...</div>
-      ) : admins.length === 0 ? (
-        <div style={{ color: '#4a5568' }}>No lot admins yet.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {admins.map(admin => (
-            <div key={admin.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px' }}>
-              <div style={{
-                width: 44, height: 44, background: '#1a2540', borderRadius: 10,
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <User size={20} color="#3b82f6"/>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{admin.fullName}</div>
-                <div style={{ color: '#4a5568', fontSize: 13 }}>{admin.email}</div>
-                {admin.phoneNumber && (
-                  <div style={{ color: '#4a5568', fontSize: 12, marginTop: 2 }}>{admin.phoneNumber}</div>
-                )}
-              </div>
-              <div style={{ textAlign: 'right', marginRight: 12 }}>
-                <div style={{ fontSize: 12, color: '#4a5568', marginBottom: 4 }}>Assigned lots</div>
-                {admin.assignedLotNames?.length > 0
-                  ? admin.assignedLotNames.map(n => (
-                    <div key={n} style={{ fontSize: 13, color: '#3b82f6', fontWeight: 500 }}>{n}</div>
-                  ))
-                  : <div style={{ fontSize: 13, color: '#4a5568' }}>—</div>}
-              </div>
-              <button onClick={() => openEdit(admin)} style={{
-                background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
-                padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6, fontSize: 13
-              }}>
-                <Pencil size={14}/> Edit
-              </button>
-            </div>
-          ))}
+      {invitedEmail && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(34,197,94,.08)', border: '1px solid rgba(34,197,94,.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 24 }}>
+          <Mail size={18} color="#22c55e"/>
+          <div style={{ flex: 1, fontSize: 14 }}>
+            Invitation sent to <strong>{invitedEmail}</strong>. They have 48 hours to set up their password.
+          </div>
+          <button onClick={() => setInvitedEmail('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 16 }}>✕</button>
         </div>
       )}
 
+      {loading ? <div style={{ color: '#4a5568' }}>Loading...</div> : (
+        <>
+          {/* ── Active admins ── */}
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: '#94a3b8', margin: '0 0 12px' }}>Active ({admins.length})</h2>
+            {admins.length === 0
+              ? <div style={{ color: '#4a5568', fontSize: 13 }}>No active lot admins yet.</div>
+              : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {admins.map(admin => (
+                    <div key={admin.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px' }}>
+                      <div style={{ width: 40, height: 40, background: '#1a2540', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <User size={18} color="#3b82f6"/>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{admin.fullName}</div>
+                        <div style={{ color: '#4a5568', fontSize: 12 }}>{admin.email}</div>
+                      </div>
+                      <div style={{ textAlign: 'right', marginRight: 12, flexShrink: 0 }}>
+                        <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 3 }}>Lots</div>
+                        {admin.assignedLotNames?.map(n => (
+                          <div key={n} style={{ fontSize: 12, color: '#3b82f6', fontWeight: 500 }}>{n}</div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <button onClick={() => openEdit(admin)} style={{ background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8', padding: '7px 11px', borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+                          <Pencil size={13}/> Edit
+                        </button>
+                        <button onClick={() => askDeleteAdmin(admin)} style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', padding: '7px 11px', borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+                          <Trash2 size={13}/> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+          </div>
+
+          {/* ── Pending invitations ── */}
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: '#94a3b8', margin: '0 0 12px' }}>Pending Invitations ({invitations.length})</h2>
+            {invitations.length === 0
+              ? <div style={{ color: '#4a5568', fontSize: 13 }}>No pending invitations.</div>
+              : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {invitations.map(inv => {
+                    const expiresIn = Math.max(0, Math.round((new Date(inv.expiresAt) - Date.now()) / 3600000))
+                    return (
+                      <div key={inv.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px', borderColor: 'rgba(245,158,11,.2)' }}>
+                        <div style={{ width: 40, height: 40, background: 'rgba(245,158,11,.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Mail size={18} color="#f59e0b"/>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{inv.fullName}</div>
+                          <div style={{ color: '#4a5568', fontSize: 12 }}>{inv.email}</div>
+                          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>Expires in ~{expiresIn}h</div>
+                        </div>
+                        <div style={{ textAlign: 'right', marginRight: 12, flexShrink: 0 }}>
+                          <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 3 }}>Lots</div>
+                          {inv.assignedLotNames?.map(n => (
+                            <div key={n} style={{ fontSize: 12, color: '#3b82f6', fontWeight: 500 }}>{n}</div>
+                          ))}
+                        </div>
+                        <button onClick={() => askRevokeInvitation(inv)} style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', padding: '7px 11px', borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, flexShrink: 0 }}>
+                          <X size={13}/> Revoke
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            }
+          </div>
+
+          {/* ── Expired invitations ── */}
+          {expiredInvitations.length > 0 && (
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: '#94a3b8', margin: '0 0 12px' }}>
+                Expired Invitations ({expiredInvitations.length})
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {expiredInvitations.map(inv => {
+                  const totalMins = Math.round((Date.now() - new Date(inv.expiresAt)) / 60000)
+                  const expiredAgo = totalMins < 60
+                    ? `${totalMins}m`
+                    : `${Math.floor(totalMins / 60)}h ${totalMins % 60}m`
+                  return (
+                    <div key={inv.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px', borderColor: 'rgba(239,68,68,.2)', background: 'rgba(239,68,68,.03)' }}>
+                      <div style={{ width: 40, height: 40, background: 'rgba(239,68,68,.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <AlertTriangle size={18} color="#ef4444"/>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{inv.fullName}</div>
+                        <div style={{ color: '#4a5568', fontSize: 12 }}>{inv.email}</div>
+                        <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>Expired {expiredAgo} ago</div>
+                      </div>
+                      <div style={{ textAlign: 'right', marginRight: 12, flexShrink: 0 }}>
+                        <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 3 }}>Lots</div>
+                        {inv.assignedLotNames?.map(n => (
+                          <div key={n} style={{ fontSize: 12, color: '#3b82f6', fontWeight: 500 }}>{n}</div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <button onClick={() => setContactTarget(inv)} style={{ background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8', padding: '7px 11px', borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+                          <Mail size={13}/> Contact
+                        </button>
+                        <button onClick={() => handleResend(inv)} disabled={resendingId === inv.id} style={{ background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.25)', color: '#60a5fa', padding: '7px 11px', borderRadius: 7, cursor: resendingId === inv.id ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, opacity: resendingId === inv.id ? 0.6 : 1 }}>
+                          <RefreshCw size={13}/> {resendingId === inv.id ? 'Sending…' : 'Resend'}
+                        </button>
+                        <button onClick={() => askDismissExpired(inv)} style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', padding: '7px 11px', borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+                          <Trash2 size={13}/> Remove
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
       {showCreate && (
-        <Modal title="Create Lot Admin" onClose={() => setShowCreate(false)} error={error}>
-          <AdminForm
-            form={createForm}
-            onChange={e => setCreateForm(f => ({ ...f, [e.target.name]: e.target.value }))}
-            onSubmit={handleCreate}
-            submitLabel="Create Lot Admin"
-            isEdit={false}
-            lots={lots}
-            saving={saving}
-          />
-        </Modal>
+        <CreateModal
+          lots={lots}
+          onClose={() => setShowCreate(false)}
+          onSuccess={email => { setShowCreate(false); setInvitedEmail(email); setInvitations(list => list); load() }}
+        />
       )}
 
       {editTarget && (
-        <Modal title={`Edit — ${editTarget.fullName}`} onClose={() => setEditTarget(null)} error={error}>
-          <AdminForm
-            form={editForm}
-            onChange={e => setEditForm(f => ({ ...f, [e.target.name]: e.target.value }))}
-            onSubmit={handleEdit}
-            submitLabel="Save Changes"
-            isEdit={true}
-            lots={lots}
-            saving={saving}
-          />
+        <Modal title={`Edit — ${editTarget.fullName}`} onClose={() => setEditTarget(null)} error={editError}>
+          <form onSubmit={handleEdit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { label: 'Full Name',    name: 'fullName',    type: 'text',  required: true  },
+              { label: 'Email',        name: 'email',       type: 'email', required: true  },
+              { label: 'Phone Number', name: 'phoneNumber', type: 'tel',   required: false },
+            ].map(f => (
+              <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: '#4a5568' }}>{f.label}{f.required ? ' *' : ''}</label>
+                <input name={f.name} type={f.type} value={editForm[f.name]} onChange={e => setEditForm(f2 => ({ ...f2, [e.target.name]: e.target.value }))} required={f.required} style={inputStyle}/>
+              </div>
+            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 12, color: '#4a5568' }}>Reset Password (leave blank to keep current)</label>
+              <PasswordField name="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} placeholder="Leave blank to keep current"/>
+            </div>
+            <LotCheckboxes form={editForm} onChange={e => setEditForm(f => ({ ...f, [e.target.name]: e.target.value }))} lots={lots}/>
+            <button type="submit" disabled={saving} style={{ background: '#3b82f6', border: 'none', color: '#fff', padding: '12px', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', marginTop: 8, opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </form>
         </Modal>
       )}
     </div>

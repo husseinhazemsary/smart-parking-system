@@ -112,7 +112,6 @@ export default function ParkingLots() {
                 }}/>
               )}
               <div style={{ fontWeight: 700, fontSize: 15 }}>{lot.name}</div>
-              {lot.nameAr && <div style={{ color: '#94a3b8', fontSize: 13 }}>{lot.nameAr}</div>}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#4a5568', fontSize: 13, marginTop: 6 }}>
                 <MapPin size={13}/> {lot.address}
               </div>

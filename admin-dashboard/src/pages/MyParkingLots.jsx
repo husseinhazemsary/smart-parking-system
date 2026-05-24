@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Pencil, X, MapPin, Clock, DoorOpen, ParkingSquare } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Pencil, X, MapPin, Clock, DoorOpen, ParkingSquare, ChevronRight } from 'lucide-react'
 import api from '../api/axios'
 
 const DAYS = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']
 const CATEGORIES = ['MALL','UNIVERSITY','AIRPORT','STREET','OTHER']
 
 export default function MyParkingLots() {
+  const navigate = useNavigate()
   const [lots,     setLots]     = useState([])
   const [loading,  setLoading]  = useState(true)
 
@@ -102,7 +104,10 @@ export default function MyParkingLots() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
           {lots.map(lot => (
-            <div key={lot.id} className="card">
+            <div key={lot.id} className="card" onClick={() => navigate(`/my-lots/${lot.id}`, { state: { lot } })}
+              style={{ cursor: 'pointer', transition: 'border-color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = ''}>
               {lot.imageUrl && (
                 <img src={lot.imageUrl} alt={lot.name} style={{
                   width: '100%', height: 140, objectFit: 'cover',
@@ -115,13 +120,18 @@ export default function MyParkingLots() {
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{lot.name}</div>
                   {lot.nameAr && <div style={{ color: '#94a3b8', fontSize: 13 }}>{lot.nameAr}</div>}
                 </div>
-                <button onClick={() => openEdit(lot)} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
-                  padding: '7px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer', flexShrink: 0
-                }}>
-                  <Pencil size={13}/> Edit
-                </button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={e => { e.stopPropagation(); openEdit(lot) }} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
+                    padding: '7px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer', flexShrink: 0
+                  }}>
+                    <Pencil size={13}/> Edit
+                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', color: '#4a5568' }}>
+                    <ChevronRight size={16}/>
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#4a5568' }}>

@@ -125,7 +125,7 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    public AuthResponse buildAuthResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
 
         RefreshToken refreshToken = new RefreshToken();

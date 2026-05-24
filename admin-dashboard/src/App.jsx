@@ -11,15 +11,18 @@ import Sessions       from './pages/Sessions'
 import ParkingLots      from './pages/ParkingLots'
 import ParkingLotDetail from './pages/ParkingLotDetail'
 import LotAdmins        from './pages/LotAdmins'
-import MyParkingLots    from './pages/MyParkingLots'
+import MyParkingLots       from './pages/MyParkingLots'
+import MyParkingLotDetail  from './pages/MyParkingLotDetail'
+import SetupPassword        from './pages/SetupPassword'
 
 function ProtectedLayout() {
   const { user, isSuperAdmin, isLotAdmin } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   if (!user) return <Navigate to="/login" replace/>
 
   return (
     <div className="layout">
-      <Sidebar/>
+      <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)}/>
       <main className="main-content">
         <Routes>
           <Route path="/"             element={<Overview/>}/>
@@ -28,6 +31,7 @@ function ProtectedLayout() {
           <Route path="/reservations" element={<Reservations/>}/>
           <Route path="/sessions"     element={<Sessions/>}/>
           {isLotAdmin  && <Route path="/my-lots"          element={<MyParkingLots/>}/>}
+          {isLotAdmin  && <Route path="/my-lots/:id"      element={<MyParkingLotDetail/>}/>}
           {isSuperAdmin && <Route path="/parking-lots"     element={<ParkingLots/>}/>}
           {isSuperAdmin && <Route path="/parking-lots/:id" element={<ParkingLotDetail/>}/>}
           {isSuperAdmin && <Route path="/lot-admins"       element={<LotAdmins/>}/>}
@@ -120,8 +124,9 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login/>}/>
-          <Route path="/*"     element={<ProtectedLayout/>}/>
+          <Route path="/login"          element={<Login/>}/>
+          <Route path="/setup-password" element={<SetupPassword/>}/>
+          <Route path="/*"              element={<ProtectedLayout/>}/>
         </Routes>
       </BrowserRouter>
     </AuthProvider>

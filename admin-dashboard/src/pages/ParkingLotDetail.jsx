@@ -154,7 +154,6 @@ export default function ParkingLotDetail() {
         </button>
         <div style={{ flex: 1 }}>
           <h1 style={{ margin: 0 }}>{lot.name}</h1>
-          {lot.nameAr && <div style={{ color: '#4a5568', fontSize: 14 }}>{lot.nameAr}</div>}
         </div>
         <button onClick={openEdit} style={{
           display: 'flex', alignItems: 'center', gap: 8,
@@ -180,7 +179,7 @@ export default function ParkingLotDetail() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <InfoRow icon={<MapPin size={15}/>}        label="Address"      value={lot.address}/>
               {lot.addressAr && <InfoRow icon={<MapPin size={15}/>} label="Address (AR)" value={lot.addressAr}/>}
-              <InfoRow icon={<Clock size={15}/>}         label="Hours"        value={`${lot.openingTime} – ${lot.closingTime}`}/>
+              <InfoRow icon={<Clock size={15}/>}         label="Hours"        value={`${lot.openingTime?.slice(0,5)} – ${lot.closingTime?.slice(0,5)}`}/>
               {lot.phoneNumber && <InfoRow icon={<Phone size={15}/>} label="Phone" value={lot.phoneNumber}/>}
               <InfoRow icon={<DoorOpen size={15}/>}      label="Gates"        value={lot.numberOfGates}/>
               <InfoRow icon={<ParkingSquare size={15}/>} label="Hourly Rate"  value={`${lot.hourlyRate} EGP/hr`}/>

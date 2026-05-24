@@ -28,15 +28,43 @@ public class AdminController {
     }
 
     @PostMapping("/lot-admins")
-    @ResponseStatus(HttpStatus.CREATED)
-    public LotAdminResponse createLotAdmin(@Valid @RequestBody CreateLotAdminRequest request) {
-        return adminService.createLotAdmin(request);
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void createLotAdmin(@Valid @RequestBody CreateLotAdminRequest request) {
+        adminService.createLotAdmin(request);
     }
 
     @PutMapping("/lot-admins/{id}")
     public LotAdminResponse updateLotAdmin(@PathVariable UUID id,
                                            @Valid @RequestBody UpdateLotAdminRequest request) {
         return adminService.updateLotAdmin(id, request);
+    }
+
+    @DeleteMapping("/lot-admins/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteLotAdmin(@PathVariable UUID id) {
+        adminService.deleteLotAdmin(id);
+    }
+
+    @GetMapping("/invitations")
+    public List<PendingInvitationResponse> getPendingInvitations() {
+        return adminService.getPendingInvitations();
+    }
+
+    @GetMapping("/invitations/expired")
+    public List<PendingInvitationResponse> getExpiredInvitations() {
+        return adminService.getExpiredInvitations();
+    }
+
+    @PostMapping("/invitations/{id}/resend")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendInvitation(@PathVariable UUID id) {
+        adminService.resendInvitation(id);
+    }
+
+    @DeleteMapping("/invitations/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeInvitation(@PathVariable UUID id) {
+        adminService.revokeInvitation(id);
     }
 
     @GetMapping("/reservations/stats")

@@ -1,16 +1,20 @@
 package com.backend.smart_parking.admin;
 
 import com.backend.smart_parking.admin.dto.*;
+import com.backend.smart_parking.email.EmailService;
+import com.backend.smart_parking.invitation.AdminInvitation;
+import com.backend.smart_parking.invitation.AdminInvitationRepository;
 import com.backend.smart_parking.parking.*;
 import com.backend.smart_parking.parking.dto.CreateParkingLotRequest;
 import com.backend.smart_parking.parking.dto.ParkingLotDetailResponse;
 import com.backend.smart_parking.reservation.Reservation;
 import com.backend.smart_parking.reservation.ReservationRepository;
 import com.backend.smart_parking.reservation.ReservationStatus;
-import com.backend.smart_parking.user.AuthProvider;
+import com.backend.smart_parking.token.RefreshTokenRepository;
 import com.backend.smart_parking.user.Role;
 import com.backend.smart_parking.user.User;
 import com.backend.smart_parking.user.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,17 +37,29 @@ public class AdminService {
     private final UserRepository userRepository;
     private final ParkingLotRepository parkingLotRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AdminInvitationRepository invitationRepository;
+    private final EmailService emailService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final String invitationBaseUrl;
 
     public AdminService(ReservationRepository reservationRepository,
                         ParkingSlotRepository slotRepository,
                         UserRepository userRepository,
                         ParkingLotRepository parkingLotRepository,
-                        PasswordEncoder passwordEncoder) {
+                        PasswordEncoder passwordEncoder,
+                        AdminInvitationRepository invitationRepository,
+                        EmailService emailService,
+                        RefreshTokenRepository refreshTokenRepository,
+                        @Value("${app.invitation.base-url:http://localhost:5174}") String invitationBaseUrl) {
         this.reservationRepository = reservationRepository;
         this.slotRepository = slotRepository;
         this.userRepository = userRepository;
         this.parkingLotRepository = parkingLotRepository;
         this.passwordEncoder = passwordEncoder;
+        this.invitationRepository = invitationRepository;
+        this.emailService = emailService;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.invitationBaseUrl = invitationBaseUrl;
     }
 
     public List<LotAdminResponse> getLotAdmins() {
@@ -53,22 +69,69 @@ public class AdminService {
     }
 
     @Transactional
-    public LotAdminResponse createLotAdmin(CreateLotAdminRequest req) {
+    public void deleteLotAdmin(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lot admin not found"));
+        if (user.getRole() != Role.ROLE_LOT_ADMIN)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete non-lot-admin users");
+        refreshTokenRepository.deleteByUser(user);
+        userRepository.delete(user);
+    }
+
+    public List<PendingInvitationResponse> getPendingInvitations() {
+        return invitationRepository.findByUsedFalseAndExpiresAtAfter(Instant.now()).stream()
+                .map(this::toPendingInvitationResponse)
+                .toList();
+    }
+
+    public List<PendingInvitationResponse> getExpiredInvitations() {
+        return invitationRepository.findByUsedFalseAndExpiresAtBefore(Instant.now()).stream()
+                .map(this::toPendingInvitationResponse)
+                .toList();
+    }
+
+    @Transactional
+    public void revokeInvitation(UUID id) {
+        AdminInvitation inv = invitationRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitation not found"));
+        invitationRepository.delete(inv);
+    }
+
+    @Transactional
+    public void resendInvitation(UUID id) {
+        AdminInvitation inv = invitationRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitation not found"));
+        inv.setToken(UUID.randomUUID());
+        inv.setExpiresAt(Instant.now().plus(Duration.ofHours(48)));
+        invitationRepository.save(inv);
+        String setupUrl = invitationBaseUrl + "/setup-password?token=" + inv.getToken();
+        List<String> lotNames = parkingLotRepository.findAllById(inv.getAssignedLotIds())
+                .stream().map(ParkingLot::getName).toList();
+        emailService.sendInvitationEmail(inv.getEmail(), inv.getFullName(), setupUrl, lotNames);
+    }
+
+    @Transactional
+    public void createLotAdmin(CreateLotAdminRequest req) {
         if (userRepository.existsByEmail(req.email()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+        if (invitationRepository.existsByEmail(req.email()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "An invitation is already pending for this email");
         List<ParkingLot> lots = parkingLotRepository.findAllById(req.assignedLotIds());
         if (lots.isEmpty())
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No valid parking lots found");
-        User user = new User();
-        user.setFullName(req.fullName());
-        user.setEmail(req.email());
-        user.setPassword(passwordEncoder.encode(req.password()));
-        user.setProvider(AuthProvider.LOCAL);
-        user.setRole(Role.ROLE_LOT_ADMIN);
-        user.setAssignedLots(lots);
-        if (req.phoneNumber() != null && !req.phoneNumber().isBlank())
-            user.setPhoneNumber(req.phoneNumber());
-        return toLotAdminResponse(userRepository.save(user));
+
+        AdminInvitation invitation = new AdminInvitation();
+        invitation.setEmail(req.email());
+        invitation.setFullName(req.fullName());
+        invitation.setPhoneNumber(req.phoneNumber());
+        invitation.setToken(UUID.randomUUID());
+        invitation.setExpiresAt(Instant.now().plus(Duration.ofHours(48)));
+        invitation.setAssignedLotIds(lots.stream().map(ParkingLot::getId).toList());
+        invitationRepository.save(invitation);
+
+        String setupUrl = invitationBaseUrl + "/setup-password?token=" + invitation.getToken();
+        List<String> lotNames = lots.stream().map(ParkingLot::getName).toList();
+        emailService.sendInvitationEmail(req.email(), req.fullName(), setupUrl, lotNames);
     }
 
     @Transactional
@@ -180,6 +243,15 @@ public class AdminService {
         List<UUID> ids   = u.getAssignedLots().stream().map(ParkingLot::getId).toList();
         List<String> names = u.getAssignedLots().stream().map(ParkingLot::getName).toList();
         return new LotAdminResponse(u.getId(), u.getFullName(), u.getEmail(), u.getPhoneNumber(), ids, names);
+    }
+
+    private PendingInvitationResponse toPendingInvitationResponse(AdminInvitation inv) {
+        List<ParkingLot> lots = parkingLotRepository.findAllById(inv.getAssignedLotIds());
+        List<UUID>   ids   = lots.stream().map(ParkingLot::getId).toList();
+        List<String> names = lots.stream().map(ParkingLot::getName).toList();
+        return new PendingInvitationResponse(
+                inv.getId(), inv.getEmail(), inv.getFullName(), inv.getPhoneNumber(),
+                inv.getExpiresAt(), ids, names);
     }
 
     private ParkingLotDetailResponse toLotDetailResponse(ParkingLot lot) {
