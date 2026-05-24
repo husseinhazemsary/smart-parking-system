@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Pencil, X, MapPin, Clock, DoorOpen, ParkingSquare, ChevronRight } from 'lucide-react'
 import api from '../api/axios'
+import { T } from '../constants/theme'
 
 const DAYS = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']
 const CATEGORIES = ['MALL','UNIVERSITY','AIRPORT','STREET','OTHER']
@@ -11,7 +12,6 @@ export default function MyParkingLots() {
   const [lots,     setLots]     = useState([])
   const [loading,  setLoading]  = useState(true)
 
-  // edit state
   const [editTarget, setEditTarget] = useState(null)
   const [editForm,   setEditForm]   = useState(null)
   const [saving,     setSaving]     = useState(false)
@@ -90,23 +90,23 @@ export default function MyParkingLots() {
     }
   }
 
-  if (loading) return <div style={{ color: '#4a5568' }}>Loading...</div>
+  if (loading) return <div style={{ color: T.textMuted }}>Loading...</div>
 
   return (
     <div>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ margin: 0 }}>My Parking Lots</h1>
-        <p style={{ color: '#4a5568', margin: '4px 0 0' }}>View and edit your assigned parking facilities</p>
+        <p style={{ color: T.textMuted, margin: '4px 0 0' }}>View and edit your assigned parking facilities</p>
       </div>
 
       {lots.length === 0 ? (
-        <div style={{ color: '#4a5568' }}>No parking lots assigned to you yet.</div>
+        <div style={{ color: T.textMuted }}>No parking lots assigned to you yet.</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
           {lots.map(lot => (
             <div key={lot.id} className="card" onClick={() => navigate(`/my-lots/${lot.id}`, { state: { lot } })}
               style={{ cursor: 'pointer', transition: 'border-color 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'}
+              onMouseEnter={e => e.currentTarget.style.borderColor = `rgba(125,57,235,0.4)`}
               onMouseLeave={e => e.currentTarget.style.borderColor = ''}>
               {lot.imageUrl && (
                 <img src={lot.imageUrl} alt={lot.name} style={{
@@ -118,23 +118,23 @@ export default function MyParkingLots() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{lot.name}</div>
-                  {lot.nameAr && <div style={{ color: '#94a3b8', fontSize: 13 }}>{lot.nameAr}</div>}
+                  {lot.nameAr && <div style={{ color: T.textSecondary, fontSize: 13 }}>{lot.nameAr}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={e => { e.stopPropagation(); openEdit(lot) }} style={{
                     display: 'flex', alignItems: 'center', gap: 6,
-                    background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
+                    background: T.border, border: `1px solid ${T.borderHover}`, color: T.textSecondary,
                     padding: '7px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer', flexShrink: 0
                   }}>
                     <Pencil size={13}/> Edit
                   </button>
-                  <div style={{ display: 'flex', alignItems: 'center', color: '#4a5568' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', color: T.textMuted }}>
                     <ChevronRight size={16}/>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#4a5568' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: T.textMuted }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <MapPin size={13}/> {lot.address}
                 </div>
@@ -152,14 +152,14 @@ export default function MyParkingLots() {
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <span style={{
                   background: lot.availableSlots > 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                  color: lot.availableSlots > 0 ? '#22c55e' : '#ef4444',
+                  color: lot.availableSlots > 0 ? T.success : T.danger,
                   padding: '3px 10px', borderRadius: 20, fontSize: 12
                 }}>
                   {lot.availableSlots} / {lot.totalSlots} available
                 </span>
                 {lot.category && (
                   <span style={{
-                    background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
+                    background: 'rgba(125,57,235,0.1)', color: T.accent,
                     padding: '3px 10px', borderRadius: 20, fontSize: 12
                   }}>
                     {lot.category.charAt(0) + lot.category.slice(1).toLowerCase()}
@@ -178,17 +178,17 @@ export default function MyParkingLots() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: '#0d1426', border: '1px solid #1a2540', borderRadius: 16,
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 16,
             padding: 32, width: 600, maxHeight: '90vh', overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <span style={{ fontWeight: 700, fontSize: 17 }}>Edit — {editTarget.name}</span>
-              <button onClick={() => setEditTarget(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+              <button onClick={() => setEditTarget(null)} style={{ background: 'none', border: 'none', color: T.textSecondary, cursor: 'pointer' }}>
                 <X size={20}/>
               </button>
             </div>
 
-            {saveErr && <div style={{ color: '#ef4444', marginBottom: 16, fontSize: 13 }}>{saveErr}</div>}
+            {saveErr && <div style={{ color: T.danger, marginBottom: 16, fontSize: 13 }}>{saveErr}</div>}
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
@@ -222,9 +222,9 @@ export default function MyParkingLots() {
                     return (
                       <button key={day} type="button" onClick={() => toggleDay(day)} style={{
                         padding: '6px 14px', borderRadius: 6, fontSize: 13, cursor: 'pointer',
-                        background: active ? 'rgba(59,130,246,0.15)' : '#131c30',
-                        color: active ? '#3b82f6' : '#4a5568',
-                        border: `1px solid ${active ? '#3b82f6' : '#1a2540'}`,
+                        background: active ? 'rgba(125,57,235,0.15)' : T.bgInput,
+                        color: active ? T.accent : T.textMuted,
+                        border: `1px solid ${active ? T.accent : T.border}`,
                         fontWeight: active ? 600 : 400
                       }}>
                         {day.slice(0, 3)}
@@ -241,23 +241,23 @@ export default function MyParkingLots() {
                     onChange={e => setAmenityInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAmenity() } }}
                     placeholder="Type an amenity and press Enter"
-                    style={{ flex: 1, background: '#131c30', border: '1px solid #1a2540', color: '#fff', padding: '9px 12px', borderRadius: 8, fontSize: 13, outline: 'none' }}
+                    style={{ flex: 1, background: T.bgInput, border: `1px solid ${T.border}`, color: '#fff', padding: '9px 12px', borderRadius: 8, fontSize: 13, outline: 'none' }}
                   />
                   <button type="button" onClick={addAmenity} style={{
-                    background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
+                    background: T.border, border: `1px solid ${T.borderHover}`, color: T.textSecondary,
                     padding: '9px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13
                   }}>Add</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {editForm.amenities.map(a => (
                     <span key={a} style={{
-                      background: '#1a2540', color: '#94a3b8',
+                      background: T.border, color: T.textSecondary,
                       padding: '4px 10px', borderRadius: 20, fontSize: 12,
                       display: 'flex', alignItems: 'center', gap: 6
                     }}>
                       {a}
                       <button type="button" onClick={() => removeAmenity(a)} style={{
-                        background: 'none', border: 'none', color: '#ef4444',
+                        background: 'none', border: 'none', color: T.danger,
                         cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 14
                       }}>×</button>
                     </span>
@@ -265,14 +265,14 @@ export default function MyParkingLots() {
                 </div>
               </Section>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#94a3b8', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: T.textSecondary, cursor: 'pointer' }}>
                 <input type="checkbox" checked={editForm.hasSubscriptions}
                   onChange={e => setEditForm(f => ({...f, hasSubscriptions: e.target.checked}))}/>
                 Has subscription plans
               </label>
 
               <button type="submit" disabled={saving} style={{
-                background: '#3b82f6', border: 'none', color: '#fff',
+                background: T.accent, border: 'none', color: '#fff',
                 padding: '12px', borderRadius: 10, fontSize: 15,
                 fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
                 opacity: saving ? 0.6 : 1
@@ -290,7 +290,7 @@ export default function MyParkingLots() {
 function Section({ label, children }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#4a5568', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{label}</div>
       {children}
     </div>
   )
@@ -299,12 +299,12 @@ function Section({ label, children }) {
 function EField({ label, value, onChange, required, type = 'text', step, min }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, color: '#4a5568' }}>{label}{required && ' *'}</label>
+      <label style={{ fontSize: 12, color: T.textMuted }}>{label}{required && ' *'}</label>
       <input
         value={value} onChange={onChange} required={required}
         type={type} step={step} min={min}
         style={{
-          background: '#131c30', border: '1px solid #1a2540',
+          background: T.bgInput, border: `1px solid ${T.border}`,
           color: '#fff', padding: '10px 12px', borderRadius: 8,
           fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box'
         }}
@@ -316,11 +316,11 @@ function EField({ label, value, onChange, required, type = 'text', step, min }) 
 function ESelectField({ label, value, onChange, options, required }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, color: '#4a5568' }}>{label}{required && ' *'}</label>
+      <label style={{ fontSize: 12, color: T.textMuted }}>{label}{required && ' *'}</label>
       <select
         value={value} onChange={onChange} required={required}
         style={{
-          background: '#131c30', border: '1px solid #1a2540',
+          background: T.bgInput, border: `1px solid ${T.border}`,
           color: '#fff', padding: '10px 12px', borderRadius: 8,
           fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', cursor: 'pointer'
         }}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Car } from 'lucide-react'
 import api from '../api/axios'
+import { T } from '../constants/theme'
 
 const statusBadge = {
   CONFIRMED:  'badge-green',
@@ -37,55 +38,55 @@ export default function Reservations() {
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #1a2540' }}>
+            <tr style={{ borderBottom: `1px solid ${T.border}` }}>
               {['VEHICLE', 'USER', 'TIME', 'STATUS', 'AMOUNT', 'ACCESS CODE'].map(h => (
                 <th key={h} style={{
                   padding: '14px 20px', textAlign: 'left',
-                  fontSize: 11, color: '#4a5568', fontWeight: 600, letterSpacing: '0.05em'
+                  fontSize: 11, color: T.textMuted, fontWeight: 600, letterSpacing: '0.05em'
                 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#4a5568' }}>Loading...</td></tr>
+              <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: T.textMuted }}>Loading...</td></tr>
             ) : reservations.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#4a5568' }}>No reservations found</td></tr>
+              <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: T.textMuted }}>No reservations found</td></tr>
             ) : (
               reservations.map((r, i) => (
                 <tr key={r.id} style={{
-                  borderBottom: '1px solid #0f1828',
+                  borderBottom: `1px solid ${T.bgDeep}`,
                   background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'
                 }}>
                   <td style={{ padding: '14px 20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{
-                        width: 36, height: 36, background: 'rgba(59,130,246,0.1)',
+                        width: 36, height: 36, background: 'rgba(125,57,235,0.1)',
                         borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}>
-                        <Car size={16} color="#3b82f6"/>
+                        <Car size={16} color={T.accent}/>
                       </div>
                       <span style={{ fontSize: 14, fontWeight: 600 }}>{r.slotNumber}</span>
                     </div>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#94a3b8' }}>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: T.textSecondary }}>
                     {r.userFullName}
                   </td>
                   <td style={{ padding: '14px 20px' }}>
                     <div style={{ fontSize: 13 }}>{formatDate(r.startTime)}</div>
-                    <div style={{ fontSize: 11, color: '#4a5568' }}>→ {formatDate(r.endTime)}</div>
+                    <div style={{ fontSize: 11, color: T.textMuted }}>→ {formatDate(r.endTime)}</div>
                   </td>
                   <td style={{ padding: '14px 20px' }}>
                     <span className={`badge ${statusBadge[r.status] || 'badge-gray'}`}>
                       {r.status}
                     </span>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#94a3b8' }}>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: T.textSecondary }}>
                     {r.totalAmount} EGP
                   </td>
                   <td style={{ padding: '14px 20px' }}>
                     <div style={{
-                      background: '#1a2540', padding: '6px 12px',
+                      background: T.border, padding: '6px 12px',
                       borderRadius: 8, fontSize: 13, fontWeight: 700,
                       display: 'inline-block', letterSpacing: '0.05em'
                     }}>

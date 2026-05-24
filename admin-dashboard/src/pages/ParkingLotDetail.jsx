@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, MapPin, Clock, Phone, DoorOpen, ParkingSquare, Pencil, X, Plus, Trash2, ExternalLink } from 'lucide-react'
 import api from '../api/axios'
+import { T } from '../constants/theme'
 
 const DAYS = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']
 const CATEGORIES = ['MALL','UNIVERSITY','AIRPORT','STREET','OTHER']
-const statusColor = { AVAILABLE: '#22c55e', OCCUPIED: '#ef4444', RESERVED: '#f59e0b' }
+const statusColor = { AVAILABLE: T.success, OCCUPIED: T.danger, RESERVED: T.warning }
 const statusBg    = { AVAILABLE: 'rgba(34,197,94,0.1)', OCCUPIED: 'rgba(239,68,68,0.1)', RESERVED: 'rgba(245,158,11,0.1)' }
-const typeColor   = { REGULAR: '#94a3b8', DISABLED: '#a78bfa', EV: '#34d399' }
+const typeColor   = { REGULAR: T.textSecondary, DISABLED: '#a78bfa', EV: '#34d399' }
 
 export default function ParkingLotDetail() {
   const { id } = useParams()
@@ -18,18 +19,15 @@ export default function ParkingLotDetail() {
   const [gates,   setGates]   = useState([])
   const [loading, setLoading] = useState(true)
 
-  // edit lot
   const [showEdit, setShowEdit] = useState(false)
   const [editForm, setEditForm] = useState(null)
   const [saving,   setSaving]   = useState(false)
   const [saveErr,  setSaveErr]  = useState('')
 
-  // add gate
   const [newGate,    setNewGate]    = useState({ name: '', location: '' })
   const [addingGate, setAddingGate] = useState(false)
   const [showGateForm, setShowGateForm] = useState(false)
 
-  // amenity input
   const [amenityInput, setAmenityInput] = useState('')
 
   useEffect(() => {
@@ -135,8 +133,8 @@ export default function ParkingLotDetail() {
     }
   }
 
-  if (loading) return <div style={{ color: '#4a5568' }}>Loading...</div>
-  if (!lot)    return <div style={{ color: '#ef4444' }}>Lot not found.</div>
+  if (loading) return <div style={{ color: T.textMuted }}>Loading...</div>
+  if (!lot)    return <div style={{ color: T.danger }}>Lot not found.</div>
 
   const available = slots.filter(s => s.status === 'AVAILABLE').length
   const occupied  = slots.filter(s => s.status === 'OCCUPIED').length
@@ -146,7 +144,7 @@ export default function ParkingLotDetail() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
         <button onClick={() => navigate('/parking-lots')} style={{
-          background: '#1a2540', border: 'none', color: '#94a3b8',
+          background: T.border, border: 'none', color: T.textSecondary,
           width: 38, height: 38, borderRadius: 8, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
@@ -157,7 +155,7 @@ export default function ParkingLotDetail() {
         </div>
         <button onClick={openEdit} style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
+          background: T.border, border: `1px solid ${T.borderHover}`, color: T.textSecondary,
           padding: '9px 16px', borderRadius: 8, fontSize: 14, cursor: 'pointer'
         }}>
           <Pencil size={15}/> Edit
@@ -186,11 +184,11 @@ export default function ParkingLotDetail() {
             </div>
             {lot.amenities?.length > 0 && (
               <div style={{ marginTop: 16 }}>
-                <div style={{ fontSize: 12, color: '#4a5568', marginBottom: 8 }}>Amenities</div>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>Amenities</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {lot.amenities.map(a => (
                     <span key={a} style={{
-                      background: '#1a2540', color: '#94a3b8',
+                      background: T.border, color: T.textSecondary,
                       padding: '4px 12px', borderRadius: 20, fontSize: 12
                     }}>{a}</span>
                   ))}
@@ -204,11 +202,11 @@ export default function ParkingLotDetail() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontWeight: 600, fontSize: 16 }}>Parking Slots</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 13, color: '#22c55e' }}>{available} available</span>
-                <span style={{ fontSize: 13, color: '#ef4444' }}>{occupied} occupied</span>
+                <span style={{ fontSize: 13, color: T.success }}>{available} available</span>
+                <span style={{ fontSize: 13, color: T.danger }}>{occupied} occupied</span>
                 <button onClick={() => navigate('/slots', { state: { lotId: id, lotName: lot.name } })} style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
+                  background: T.border, border: `1px solid ${T.borderHover}`, color: T.textSecondary,
                   padding: '5px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer'
                 }}>
                   <ExternalLink size={12}/> View Slots
@@ -216,17 +214,17 @@ export default function ParkingLotDetail() {
               </div>
             </div>
             {slots.length === 0 ? (
-              <div style={{ color: '#4a5568', fontSize: 13 }}>No slots added yet.</div>
+              <div style={{ color: T.textMuted, fontSize: 13 }}>No slots added yet.</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
                 {slots.map(slot => (
                   <div key={slot.id} style={{
-                    background: statusBg[slot.status] ?? '#1a2540',
-                    border: `1px solid ${statusColor[slot.status] ?? '#2a3550'}`,
+                    background: statusBg[slot.status] ?? T.border,
+                    border: `1px solid ${statusColor[slot.status] ?? T.borderHover}`,
                     borderRadius: 8, padding: '10px 8px', textAlign: 'center'
                   }}>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{slot.slotLabel}</div>
-                    <div style={{ fontSize: 11, color: typeColor[slot.slotType] ?? '#94a3b8', marginTop: 2 }}>{slot.slotType}</div>
+                    <div style={{ fontSize: 11, color: typeColor[slot.slotType] ?? T.textSecondary, marginTop: 2 }}>{slot.slotType}</div>
                     <div style={{ fontSize: 11, color: statusColor[slot.status], marginTop: 2 }}>{slot.status}</div>
                   </div>
                 ))}
@@ -241,13 +239,13 @@ export default function ParkingLotDetail() {
           {/* Availability */}
           <div className="card">
             <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>Availability</div>
-            <div style={{ fontSize: 36, fontWeight: 700, color: available > 0 ? '#22c55e' : '#ef4444' }}>{available}</div>
-            <div style={{ color: '#4a5568', fontSize: 13 }}>of {slots.length} slots available</div>
-            <div style={{ marginTop: 16, background: '#1a2540', borderRadius: 8, height: 8, overflow: 'hidden' }}>
+            <div style={{ fontSize: 36, fontWeight: 700, color: available > 0 ? T.success : T.danger }}>{available}</div>
+            <div style={{ color: T.textMuted, fontSize: 13 }}>of {slots.length} slots available</div>
+            <div style={{ marginTop: 16, background: T.border, borderRadius: 8, height: 8, overflow: 'hidden' }}>
               <div style={{
                 height: '100%', borderRadius: 8,
                 width: slots.length > 0 ? `${(available / slots.length) * 100}%` : '0%',
-                background: available / slots.length > 0.5 ? '#22c55e' : available / slots.length > 0.2 ? '#f59e0b' : '#ef4444',
+                background: available / slots.length > 0.5 ? T.success : available / slots.length > 0.2 ? T.warning : T.danger,
                 transition: 'width 0.3s'
               }}/>
             </div>
@@ -259,7 +257,7 @@ export default function ParkingLotDetail() {
               <span style={{ fontWeight: 600, fontSize: 15 }}>Gates</span>
               <button onClick={() => setShowGateForm(v => !v)} style={{
                 display: 'flex', alignItems: 'center', gap: 4,
-                background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
+                background: T.border, border: `1px solid ${T.borderHover}`, color: T.textSecondary,
                 padding: '5px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer'
               }}>
                 <Plus size={12}/> Add
@@ -270,12 +268,12 @@ export default function ParkingLotDetail() {
               <form onSubmit={handleAddGate} style={{ marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <input placeholder="Gate name *" value={newGate.name} required
                   onChange={e => setNewGate(g => ({...g, name: e.target.value}))}
-                  style={{ background: '#131c30', border: '1px solid #1a2540', color: '#fff', padding: '8px 10px', borderRadius: 6, fontSize: 13, outline: 'none' }}/>
+                  style={{ background: T.bgInput, border: `1px solid ${T.border}`, color: '#fff', padding: '8px 10px', borderRadius: 6, fontSize: 13, outline: 'none' }}/>
                 <input placeholder="Location (optional)" value={newGate.location}
                   onChange={e => setNewGate(g => ({...g, location: e.target.value}))}
-                  style={{ background: '#131c30', border: '1px solid #1a2540', color: '#fff', padding: '8px 10px', borderRadius: 6, fontSize: 13, outline: 'none' }}/>
+                  style={{ background: T.bgInput, border: `1px solid ${T.border}`, color: '#fff', padding: '8px 10px', borderRadius: 6, fontSize: 13, outline: 'none' }}/>
                 <button type="submit" disabled={addingGate} style={{
-                  background: '#3b82f6', border: 'none', color: '#fff', padding: '8px',
+                  background: T.accent, border: 'none', color: '#fff', padding: '8px',
                   borderRadius: 6, fontSize: 13, cursor: 'pointer', opacity: addingGate ? 0.6 : 1
                 }}>
                   {addingGate ? 'Adding...' : 'Add Gate'}
@@ -284,18 +282,18 @@ export default function ParkingLotDetail() {
             )}
 
             {gates.length === 0 ? (
-              <div style={{ color: '#4a5568', fontSize: 13 }}>No gates yet.</div>
+              <div style={{ color: T.textMuted, fontSize: 13 }}>No gates yet.</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {gates.map(gate => (
                   <div key={gate.id} style={{
-                    background: '#131c30', borderRadius: 8, padding: '10px 14px',
+                    background: T.bgInput, borderRadius: 8, padding: '10px 14px',
                     display: 'flex', alignItems: 'center', gap: 10
                   }}>
-                    <DoorOpen size={16} color="#3b82f6"/>
+                    <DoorOpen size={16} color={T.accent}/>
                     <span style={{ flex: 1, fontSize: 14 }}>{gate.name}</span>
                     <button onClick={() => handleRemoveGate(gate.id)} style={{
-                      background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer',
+                      background: 'none', border: 'none', color: T.danger, cursor: 'pointer',
                       padding: 4, display: 'flex', alignItems: 'center'
                     }}>
                       <Trash2 size={14}/>
@@ -315,9 +313,9 @@ export default function ParkingLotDetail() {
                 return (
                   <span key={day} style={{
                     padding: '4px 10px', borderRadius: 6, fontSize: 12,
-                    background: active ? 'rgba(59,130,246,0.15)' : '#131c30',
-                    color: active ? '#3b82f6' : '#4a5568',
-                    border: `1px solid ${active ? '#3b82f6' : '#1a2540'}`
+                    background: active ? 'rgba(125,57,235,0.15)' : T.bgInput,
+                    color: active ? T.accent : T.textMuted,
+                    border: `1px solid ${active ? T.accent : T.border}`
                   }}>
                     {day.slice(0, 3)}
                   </span>
@@ -335,21 +333,20 @@ export default function ParkingLotDetail() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: '#0d1426', border: '1px solid #1a2540', borderRadius: 16,
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 16,
             padding: 32, width: 600, maxHeight: '90vh', overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <span style={{ fontWeight: 700, fontSize: 17 }}>Edit Parking Lot</span>
-              <button onClick={() => setShowEdit(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+              <button onClick={() => setShowEdit(false)} style={{ background: 'none', border: 'none', color: T.textSecondary, cursor: 'pointer' }}>
                 <X size={20}/>
               </button>
             </div>
 
-            {saveErr && <div style={{ color: '#ef4444', marginBottom: 16, fontSize: 13 }}>{saveErr}</div>}
+            {saveErr && <div style={{ color: T.danger, marginBottom: 16, fontSize: 13 }}>{saveErr}</div>}
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-              {/* Basic info */}
               <Section label="Basic Info">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <EField label="Name (EN)" name="name" value={editForm.name} onChange={e => setEditForm(f => ({...f, name: e.target.value}))} required/>
@@ -362,7 +359,6 @@ export default function ParkingLotDetail() {
                 </div>
               </Section>
 
-              {/* Location & pricing */}
               <Section label="Location & Pricing">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <EField label="Latitude"  name="latitude"   value={editForm.latitude}   onChange={e => setEditForm(f => ({...f, latitude: e.target.value}))}   required type="number" step="any"/>
@@ -374,7 +370,6 @@ export default function ParkingLotDetail() {
                 </div>
               </Section>
 
-              {/* Operating days */}
               <Section label="Operating Days">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {DAYS.map(day => {
@@ -382,9 +377,9 @@ export default function ParkingLotDetail() {
                     return (
                       <button key={day} type="button" onClick={() => toggleDay(day)} style={{
                         padding: '6px 14px', borderRadius: 6, fontSize: 13, cursor: 'pointer',
-                        background: active ? 'rgba(59,130,246,0.15)' : '#131c30',
-                        color: active ? '#3b82f6' : '#4a5568',
-                        border: `1px solid ${active ? '#3b82f6' : '#1a2540'}`,
+                        background: active ? 'rgba(125,57,235,0.15)' : T.bgInput,
+                        color: active ? T.accent : T.textMuted,
+                        border: `1px solid ${active ? T.accent : T.border}`,
                         fontWeight: active ? 600 : 400
                       }}>
                         {day.slice(0, 3)}
@@ -394,7 +389,6 @@ export default function ParkingLotDetail() {
                 </div>
               </Section>
 
-              {/* Amenities */}
               <Section label="Amenities">
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input
@@ -403,26 +397,26 @@ export default function ParkingLotDetail() {
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAmenity() } }}
                     placeholder="Type an amenity and press Enter"
                     style={{
-                      flex: 1, background: '#131c30', border: '1px solid #1a2540',
+                      flex: 1, background: T.bgInput, border: `1px solid ${T.border}`,
                       color: '#fff', padding: '9px 12px', borderRadius: 8,
                       fontSize: 13, outline: 'none'
                     }}
                   />
                   <button type="button" onClick={addAmenity} style={{
-                    background: '#1a2540', border: '1px solid #2a3550', color: '#94a3b8',
+                    background: T.border, border: `1px solid ${T.borderHover}`, color: T.textSecondary,
                     padding: '9px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13
                   }}>Add</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {editForm.amenities.map(a => (
                     <span key={a} style={{
-                      background: '#1a2540', color: '#94a3b8',
+                      background: T.border, color: T.textSecondary,
                       padding: '4px 10px', borderRadius: 20, fontSize: 12,
                       display: 'flex', alignItems: 'center', gap: 6
                     }}>
                       {a}
                       <button type="button" onClick={() => removeAmenity(a)} style={{
-                        background: 'none', border: 'none', color: '#ef4444',
+                        background: 'none', border: 'none', color: T.danger,
                         cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 14
                       }}>×</button>
                     </span>
@@ -430,15 +424,14 @@ export default function ParkingLotDetail() {
                 </div>
               </Section>
 
-              {/* Subscription toggle */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#94a3b8', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: T.textSecondary, cursor: 'pointer' }}>
                 <input type="checkbox" checked={editForm.hasSubscriptions}
                   onChange={e => setEditForm(f => ({...f, hasSubscriptions: e.target.checked}))}/>
                 Has subscription plans
               </label>
 
               <button type="submit" disabled={saving} style={{
-                background: '#3b82f6', border: 'none', color: '#fff',
+                background: T.accent, border: 'none', color: '#fff',
                 padding: '12px', borderRadius: 10, fontSize: 15,
                 fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
                 opacity: saving ? 0.6 : 1
@@ -456,7 +449,7 @@ export default function ParkingLotDetail() {
 function Section({ label, children }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#4a5568', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 11, color: T.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{label}</div>
       {children}
     </div>
   )
@@ -465,12 +458,12 @@ function Section({ label, children }) {
 function EField({ label, name, value, onChange, required, type = 'text', step, min }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, color: '#4a5568' }}>{label}{required && ' *'}</label>
+      <label style={{ fontSize: 12, color: T.textMuted }}>{label}{required && ' *'}</label>
       <input
         name={name} value={value} onChange={onChange} required={required}
         type={type} step={step} min={min}
         style={{
-          background: '#131c30', border: '1px solid #1a2540',
+          background: T.bgInput, border: `1px solid ${T.border}`,
           color: '#fff', padding: '10px 12px', borderRadius: 8,
           fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box'
         }}
@@ -482,11 +475,11 @@ function EField({ label, name, value, onChange, required, type = 'text', step, m
 function ESelectField({ label, value, onChange, options, required }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, color: '#4a5568' }}>{label}{required && ' *'}</label>
+      <label style={{ fontSize: 12, color: T.textMuted }}>{label}{required && ' *'}</label>
       <select
         value={value} onChange={onChange} required={required}
         style={{
-          background: '#131c30', border: '1px solid #1a2540',
+          background: T.bgInput, border: `1px solid ${T.border}`,
           color: '#fff', padding: '10px 12px', borderRadius: 8,
           fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', cursor: 'pointer'
         }}
@@ -502,7 +495,7 @@ function ESelectField({ label, value, onChange, options, required }) {
 function InfoRow({ icon, label, value, rtl }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
         {icon} {label}
       </div>
       <div style={{ fontSize: 14, direction: rtl ? 'rtl' : 'ltr' }}>{value}</div>

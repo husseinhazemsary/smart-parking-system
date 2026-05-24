@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Wifi, WifiOff, Plus, Trash2, RefreshCw } from 'lucide-react'
+import { T } from '../constants/theme'
 
 const mockCameras = [
   { id: '0001', name: 'Entry Gate 1', type: 'ENTRY', location: 'Arkan Plaza', online: true  },
@@ -24,8 +25,8 @@ export default function LiveFeed() {
         </div>
         <button style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          background: '#1a2540', border: '1px solid #2a3550',
-          color: '#fff', padding: '10px 18px', borderRadius: 10,
+          background: T.border, border: `1px solid ${T.borderHover}`,
+          color: T.textPrimary, padding: '10px 18px', borderRadius: 10,
           cursor: 'pointer', fontSize: 14, fontWeight: 500
         }}>
           <Plus size={16}/> Add Camera
@@ -38,23 +39,23 @@ export default function LiveFeed() {
 
             {/* Camera feed */}
             <div style={{
-              height: 220, background: cam.online ? '#0a1628' : '#060a12',
+              height: 220, background: cam.online ? T.bgCard : T.bgDeep,
               position: 'relative', display: 'flex',
               alignItems: 'center', justifyContent: 'center'
             }}>
               {cam.online ? (
-                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #0d1f35, #0a1628)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${T.bgInput}, ${T.bgCard})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ fontSize: 48 }}>📷</div>
                 </div>
               ) : (
-                <WifiOff size={40} color="#2a3550"/>
+                <WifiOff size={40} color={T.borderHover}/>
               )}
 
               {/* Status badge */}
               <div style={{
                 position: 'absolute', top: 12, right: 12,
                 display: 'flex', alignItems: 'center', gap: 6,
-                background: cam.online ? '#16a34a' : '#dc2626',
+                background: cam.online ? T.success : T.danger,
                 padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700
               }}>
                 {cam.online ? <Wifi size={11}/> : <WifiOff size={11}/>}
@@ -74,19 +75,19 @@ export default function LiveFeed() {
             <div style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 15 }}>
-                  {cam.name} <RefreshCw size={13} color="#4a5568" style={{ cursor: 'pointer' }}/>
+                  {cam.name} <RefreshCw size={13} color={T.textMuted} style={{ cursor: 'pointer' }}/>
                 </div>
                 <button
                   onClick={() => removeCamera(cam.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    background: 'none', border: 'none', color: '#ef4444',
+                    background: 'none', border: 'none', color: T.danger,
                     cursor: 'pointer', fontSize: 12
                   }}>
                   <Trash2 size={13}/> Remove
                 </button>
               </div>
-              <div style={{ fontSize: 12, color: '#4a5568' }}>
+              <div style={{ fontSize: 12, color: T.textMuted }}>
                 {cam.type} | {cam.location}
               </div>
             </div>

@@ -3,21 +3,22 @@
    Inline styles in components use T from src/constants/theme.js (keep in sync).
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  --bg-deep:        #080d1a;
-  --bg-sidebar:     #0a0f1e;
-  --bg-card:        #0d1426;
-  --bg-input:       #131c30;
+  /* Matches web-app/src/constants/theme.js and mobile_app/lib/theme/app_colors.dart */
+  --bg-deep:        #07001a;
+  --bg-sidebar:     #0a0a1a;
+  --bg-card:        #0d0d1f;
+  --bg-input:       #0d0d1f;
 
-  --border:         #1a2540;
-  --border-hover:   #2a3550;
+  --border:         #1e1e3a;
+  --border-hover:   #2d2d5a;
 
-  --accent:         #3b82f6;
-  --accent-light:   #60a5fa;
+  --accent:         #7d39eb;
+  --accent-light:   #9b5ff5;
 
-  --text-primary:   #ffffff;
-  --text-secondary: #94a3b8;
-  --text-muted:     #4a5568;
-  --text-light:     #e2e8f0;
+  --text-primary:   #f0eafa;
+  --text-secondary: #9b8ec4;
+  --text-muted:     #555577;
+  --text-light:     #f0eafa;
 
   --success:        #22c55e;
   --danger:         #ef4444;

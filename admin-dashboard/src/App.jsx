@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import PasswordField from './components/PasswordField'
 import Sidebar      from './components/Sidebar'
 import logo         from './assets/logo.png'
+import { T } from './constants/theme'
 import Overview       from './pages/Overview'
 import ParkingSlots   from './pages/ParkingSlots'
 import LiveFeed       from './pages/LiveFeed'
@@ -80,22 +81,22 @@ function Login() {
     <div style={{
       minHeight: '100vh', display: 'flex',
       alignItems: 'center', justifyContent: 'center',
-      background: '#080d1a'
+      background: T.bgDeep
     }}>
       <div style={{
-        background: '#0d1426', border: '1px solid #1a2540',
+        background: T.bgCard, border: `1px solid ${T.border}`,
         borderRadius: 16, padding: 40, width: 380
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <img src={logo} alt="EzRakna" style={{ width: 64, height: 64, objectFit: 'contain', marginBottom: 12 }}/>
           <div style={{ fontWeight: 700, fontSize: 20 }}>EzRakna</div>
-          <div style={{ color: '#4a5568', fontSize: 13, marginTop: 4 }}>Admin Dashboard</div>
+          <div style={{ color: T.textMuted, fontSize: 13, marginTop: 4 }}>Admin Dashboard</div>
         </div>
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <input
             name="email" type="email" placeholder="Email"
             style={{
-              background: '#131c30', border: '1px solid #1a2540',
+              background: T.bgInput, border: `1px solid ${T.border}`,
               color: '#fff', padding: '12px 16px', borderRadius: 10,
               fontSize: 14, outline: 'none'
             }}
@@ -108,7 +109,7 @@ function Login() {
             style={{ padding: '12px 40px 12px 16px', borderRadius: 10, fontSize: 14 }}
           />
           <button type="submit" style={{
-            background: '#3b82f6', border: 'none', color: '#fff',
+            background: T.accent, border: 'none', color: '#fff',
             padding: '12px', borderRadius: 10, fontSize: 15,
             fontWeight: 600, cursor: 'pointer', marginTop: 8
           }}>

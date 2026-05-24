@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import PasswordField from '../components/PasswordField'
+import { T } from '../constants/theme'
+import logo from '../assets/logo.png'
 
 export default function SetupPassword() {
   const [searchParams]                = useSearchParams()
@@ -10,7 +12,7 @@ export default function SetupPassword() {
 
   const token                         = searchParams.get('token')
 
-  const [info,       setInfo]         = useState(null)   // { email, fullName }
+  const [info,       setInfo]         = useState(null)
   const [loadError,  setLoadError]    = useState('')
   const [password,   setPassword]     = useState('')
   const [confirm,    setConfirm]      = useState('')
@@ -47,7 +49,6 @@ export default function SetupPassword() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Failed to set up your account.')
 
-      // Fetch profile and log in automatically
       const profileRes = await fetch('http://localhost:8081/api/users/me', {
         headers: { Authorization: `Bearer ${data.accessToken}` },
       })
@@ -61,21 +62,19 @@ export default function SetupPassword() {
     }
   }
 
-  const cardStyle = {
-    background: '#0d1426', border: '1px solid #1a2540',
-    borderRadius: 16, padding: 40, width: 400,
-  }
+  const pageStyle = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bgDeep }
+  const cardStyle = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 16, padding: 40, width: 400 }
 
   if (loadError) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080d1a' }}>
+      <div style={pageStyle}>
         <div style={cardStyle}>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: '#ef4444', marginBottom: 8 }}>Invalid Link</div>
-            <div style={{ color: '#94a3b8', fontSize: 14 }}>{loadError}</div>
+            <div style={{ fontWeight: 700, fontSize: 18, color: T.danger, marginBottom: 8 }}>Invalid Link</div>
+            <div style={{ color: T.textSecondary, fontSize: 14 }}>{loadError}</div>
           </div>
-          <p style={{ textAlign: 'center', fontSize: 13, color: '#4a5568' }}>
+          <p style={{ textAlign: 'center', fontSize: 13, color: T.textMuted }}>
             Contact your system administrator to request a new invitation.
           </p>
         </div>
@@ -85,57 +84,43 @@ export default function SetupPassword() {
 
   if (!info) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080d1a' }}>
-        <div style={{ color: '#94a3b8', fontSize: 14 }}>Validating invitation…</div>
+      <div style={pageStyle}>
+        <div style={{ color: T.textSecondary, fontSize: 14 }}>Validating invitation…</div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080d1a' }}>
+    <div style={pageStyle}>
       <div style={cardStyle}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🅿</div>
+          <img src={logo} alt="EzRakna" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10 }}/>
           <div style={{ fontWeight: 700, fontSize: 20 }}>EzRakna</div>
-          <div style={{ color: '#4a5568', fontSize: 13, marginTop: 4 }}>Admin Dashboard</div>
+          <div style={{ color: T.textMuted, fontSize: 13, marginTop: 4 }}>Admin Dashboard</div>
         </div>
 
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>Welcome, {info.fullName}</div>
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>
-            Set a password for <span style={{ color: '#3b82f6' }}>{info.email}</span> to activate your account.
+          <div style={{ fontSize: 13, color: T.textSecondary }}>
+            Set a password for <span style={{ color: T.accent }}>{info.email}</span> to activate your account.
           </div>
         </div>
 
         {submitError && (
-          <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 14 }}>{submitError}</div>
+          <div style={{ color: T.danger, fontSize: 13, marginBottom: 14 }}>{submitError}</div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 12, color: '#4a5568' }}>Password *</label>
-            <PasswordField
-              name="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              required
-            />
+            <label style={{ fontSize: 12, color: T.textMuted }}>Password *</label>
+            <PasswordField name="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required/>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 12, color: '#4a5568' }}>Confirm Password *</label>
-            <PasswordField
-              name="confirm"
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-              placeholder="Repeat your password"
-              required
-            />
+            <label style={{ fontSize: 12, color: T.textMuted }}>Confirm Password *</label>
+            <PasswordField name="confirm" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat your password" required/>
           </div>
-
           <button type="submit" disabled={saving} style={{
-            background: '#3b82f6', border: 'none', color: '#fff',
+            background: T.accent, border: 'none', color: '#fff',
             padding: '12px', borderRadius: 10, fontSize: 15,
             fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
             marginTop: 8, opacity: saving ? 0.6 : 1,
