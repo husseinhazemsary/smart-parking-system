@@ -680,6 +680,7 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
   const [wordAnim, setWordAnim] = useState("in");
   const [liveCount, setLiveCount] = useState(2847);
   const [hiwStep, setHiwStep] = useState(0);
+  const [activeNav, setActiveNav] = useState(null);
   const { isMobile } = useBreakpoint();
   const isTablet = !isMobile && typeof window !== "undefined" && window.innerWidth < 1024;
   const hiwRef = useRef(null);
@@ -778,10 +779,10 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
         .eyebrow-dot{width:5px;height:5px;border-radius:50%;background:#C6FF33;box-shadow:0 0 10px rgba(198,255,51,.7)}
 
         /* Nav link underline */
-        .nav-link-ul{position:relative;padding:4px 0;outline:none}
-        .nav-link-ul:focus-visible{color:#C6FF33}
+        .nav-link-ul{position:relative;padding:4px 0;outline:none!important}
+        .nav-link-ul:focus,.nav-link-ul:focus-visible{outline:none!important;box-shadow:none!important}
         .nav-link-ul::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;background:#C6FF33;transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.65,0,.35,1)}
-        .nav-link-ul:hover::after,.nav-link-ul:focus-visible::after{transform:scaleX(1)}
+        .nav-link-ul:hover::after,.nav-link-ul.nav-active::after{transform:scaleX(1)}
 
         /* HIW cycling */
         @keyframes hiwIsoFloat{0%{transform:rotateX(52deg) rotateZ(-42deg) translateY(0) scale(1)}33%{transform:rotateX(54deg) rotateZ(-40deg) translateY(-8px) scale(1.02)}66%{transform:rotateX(50deg) rotateZ(-44deg) translateY(-14px) scale(1.01)}100%{transform:rotateX(52deg) rotateZ(-42deg) translateY(0) scale(1)}}
@@ -883,13 +884,17 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
               {label:"For Business",action:()=>scrollTo("bizZone")},
               {label:"Pricing",     action:()=>scrollTo("ctaZone")},
             ].map(({label,action})=>(
-              <button key={label} onClick={action} className="nav-link-ul" style={{
-                background:"none",border:"none",cursor:"pointer",
-                color:T.sub,fontSize:14,fontFamily:"inherit",
-                padding:"4px 0",transition:"color .2s",
-              }}
-              onMouseEnter={e=>e.currentTarget.style.color=T.text}
-              onMouseLeave={e=>e.currentTarget.style.color=T.sub}
+              <button key={label} onClick={()=>{ action(); setActiveNav(label); }}
+                className={"nav-link-ul"+(activeNav===label?" nav-active":"")}
+                style={{
+                  background:"none",border:"none",cursor:"pointer",
+                  color:activeNav===label?"#C6FF33":T.sub,
+                  fontWeight:activeNav===label?600:400,
+                  fontSize:14,fontFamily:"inherit",
+                  padding:"4px 0",transition:"color .2s,font-weight .2s",
+                }}
+                onMouseEnter={e=>{ if(activeNav!==label) e.currentTarget.style.color=T.text; }}
+                onMouseLeave={e=>{ if(activeNav!==label) e.currentTarget.style.color=T.sub; }}
               >{label}</button>
             ))}
           </div>
