@@ -181,22 +181,14 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
       const lot = await findBackendLot(spot);
       if (!lot) throw new Error("No parking lots are available in the system. Please contact an administrator.");
 
-      const gates = await apiFetch(`/api/parking-lots/${lot.id}/gates`);
-      if (!gates?.length) throw new Error("No gates found for this parking lot.");
-
-      const slots = await apiFetch(`/api/parking-lots/${lot.id}/slots`);
-      const available = (slots || []).find(s => s.status === "AVAILABLE");
-      if (!available) throw new Error("No available slots right now. Try again shortly.");
-
       const startTime = new Date(Date.now() + 5 * 60_000).toISOString();
       const endTime   = new Date(Date.now() + 65 * 60_000).toISOString();
 
       const reservation = await apiFetch("/api/reservations", {
         method: "POST",
         body: JSON.stringify({
-          vehicleId: primaryVehicle.id,
-          gateId:    gates[0].id,
-          spotId:    available.id,
+          vehicleId:    primaryVehicle.id,
+          parkingLotId: lot.id,
           startTime,
           endTime,
         }),

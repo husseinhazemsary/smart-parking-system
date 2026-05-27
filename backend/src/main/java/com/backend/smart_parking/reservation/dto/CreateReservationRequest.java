@@ -12,10 +12,7 @@ public class CreateReservationRequest {
     private UUID vehicleId;
 
     @NotNull
-    private UUID gateId;
-
-    @NotNull
-    private UUID spotId;
+    private UUID parkingLotId;
 
     @NotNull
     @Future
@@ -26,14 +23,12 @@ public class CreateReservationRequest {
     private Instant endTime;
 
     public UUID getVehicleId() { return vehicleId; }
-    public UUID getGateId() { return gateId; }
-    public UUID getSpotId() { return spotId; }
+    public UUID getParkingLotId() { return parkingLotId; }
     public Instant getStartTime() { return startTime; }
     public Instant getEndTime() { return endTime; }
 
     public void setVehicleId(UUID vehicleId) { this.vehicleId = vehicleId; }
-    public void setGateId(UUID gateId) { this.gateId = gateId; }
-    public void setSpotId(UUID spotId) { this.spotId = spotId; }
+    public void setParkingLotId(UUID parkingLotId) { this.parkingLotId = parkingLotId; }
     public void setStartTime(Instant startTime) { this.startTime = startTime; }
     public void setEndTime(Instant endTime) { this.endTime = endTime; }
 }

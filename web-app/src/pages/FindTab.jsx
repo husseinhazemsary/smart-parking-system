@@ -151,7 +151,6 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
     );
 
   const openDetail = (s) => { setDetailSpot(s); setSlotSpot(null); };
-  const openSlots  = (s) => { setSlotSpot(s);   setDetailSpot(null); };
   const closeAll   = ()  => { setDetailSpot(null); setSlotSpot(null); };
 
   const handleReserve = (spot) => {
@@ -260,19 +259,6 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
           spot={detailSpot} user={user}
           onClose={closeAll}
           onReserve={()=>handleReserve(detailSpot)}
-          onViewSlots={()=>openSlots(detailSpot)}
-          onAuthOpen={onAuthOpen}
-        />
-      )}
-      {slotSpot && (
-        <SlotMapModal
-          spot={slotSpot}
-          slots={SPOT_SLOTS[slotSpot.id]}
-          user={user}
-          profile={profile}
-          onClose={closeAll}
-          onBack={()=>{ setSlotSpot(null); setDetailSpot(slotSpot); }}
-          onReserve={()=>handleReserve(slotSpot)}
           onAuthOpen={onAuthOpen}
         />
       )}
@@ -281,7 +267,7 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
 }
 
 // SpotCard — compact listing card with availability bar and action buttons.
-function SpotCard({ spot:s, onViewDetail, onViewSlots }) {
+function SpotCard({ spot:s, onViewDetail }) {
   const ac = availColor(s.available, s.total);
   const al = availLabel(s.available, s.total);
 
@@ -322,7 +308,7 @@ function SpotCard({ spot:s, onViewDetail, onViewSlots }) {
         {/* Actions */}
         <div style={{display:"flex",gap:8}}>
           <button onClick={onViewDetail} style={{
-            flex:2,padding:"10px",borderRadius:11,
+            flex:1,padding:"10px",borderRadius:11,
             border:`1.5px solid ${T.purple}`,background:"rgba(125,57,235,.08)",
             color:T.purple,fontFamily:"inherit",fontSize:13,fontWeight:700,cursor:"pointer",
             transition:"background .2s",
@@ -331,16 +317,6 @@ function SpotCard({ spot:s, onViewDetail, onViewSlots }) {
             onMouseLeave={e=>e.currentTarget.style.background="rgba(125,57,235,.08)"}>
             View Details
           </button>
-          <button onClick={onViewSlots} style={{
-            flex:1,padding:"10px",borderRadius:11,
-            border:`1.5px solid ${T.border}`,background:"transparent",
-            color:T.sub,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",
-            transition:"border-color .2s,color .2s",
-          }}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=T.purple;e.currentTarget.style.color=T.text;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.sub;}}>
-            🗺 Slots
-          </button>
         </div>
       </div>
     </div>
@@ -348,7 +324,7 @@ function SpotCard({ spot:s, onViewDetail, onViewSlots }) {
 }
 
 // DetailModal — full spot info with reserve CTA and maps link.
-function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen }) {
+function DetailModal({ spot:s, user, onClose, onReserve, onAuthOpen }) {
   const ac = availColor(s.available, s.total);
   const al = availLabel(s.available, s.total);
   const catColor = CAT_COLORS[s.category] || T.purple;
@@ -430,7 +406,7 @@ function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen
               </div>
           }
 
-          {/* Secondary: Maps + Slots */}
+          {/* Secondary: Maps */}
           <div style={{display:"flex",gap:10,marginBottom:!user&&s.available>0?12:0}}>
             <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" style={{
               flex:1,padding:"10px 12px",borderRadius:10,
@@ -443,17 +419,6 @@ function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen
               onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.background="transparent";}}>
               🗺 Open in Maps
             </a>
-            <button onClick={onViewSlots} style={{
-              flex:1,padding:"10px 12px",borderRadius:10,
-              border:`1.5px solid ${T.border}`,background:"transparent",
-              color:T.text,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",
-              display:"flex",alignItems:"center",justifyContent:"center",gap:5,
-              transition:"border-color .2s,background .2s",
-            }}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor=T.purple;e.currentTarget.style.background="rgba(125,57,235,.07)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.background="transparent";}}>
-              🅿️ View Slots
-            </button>
           </div>
 
           {/* Auth nudge — only inside modal, only if not logged in + spot available */}

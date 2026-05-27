@@ -30,7 +30,7 @@ public class Reservation {
     private Gate gate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "spot_id", nullable = false)
+    @JoinColumn(name = "spot_id", nullable = true)
     private ParkingSlot spot;
 
     @Column(name = "start_time", nullable = false)
