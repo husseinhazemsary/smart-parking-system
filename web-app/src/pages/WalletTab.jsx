@@ -1,14 +1,8 @@
 import React, { useState } from "react";
 import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
-import { TRANSACTIONS } from "../data/transactions";
 import GlowBtn from "../components/ui/GlowBtn";
 import Modal from "../components/ui/Modal";
-
-const INITIAL_CARDS = [
-  { id:1, type:"visa",       last4:"4582", holder:"Nour Ahmed", expiry:"09/28", gradient:["#5B21B6","#7C3AED"] },
-  { id:2, type:"mastercard", last4:"1197", holder:"Nour Ahmed", expiry:"03/27", gradient:["#1E3A5F","#1D4ED8"] },
-];
 
 const CSS = `
   .wlt-wrap { animation: wlt-up .32s cubic-bezier(.22,1,.36,1); }
@@ -55,7 +49,7 @@ const CSS = `
 
 function VisaLogo() {
   return (
-    <span style={{fontSize:13,fontWeight:900,fontStyle:"italic",color:"rgba(255,255,255,.9)",letterSpacing:-.5,fontFamily:"serif"}}>
+    <span style={{ fontSize:13,fontWeight:900,fontStyle:"italic",color:"rgba(255,255,255,.9)",letterSpacing:-.5,fontFamily:"serif" }}>
       VISA
     </span>
   );
@@ -63,59 +57,49 @@ function VisaLogo() {
 
 function MCLogo() {
   return (
-    <div style={{display:"flex",position:"relative",width:28,height:18}}>
-      <div style={{width:18,height:18,borderRadius:"50%",background:"#EB001B",opacity:.85,position:"absolute",left:0}}/>
-      <div style={{width:18,height:18,borderRadius:"50%",background:"#F79E1B",opacity:.85,position:"absolute",left:10}}/>
+    <div style={{ display:"flex",position:"relative",width:28,height:18 }}>
+      <div style={{ width:18,height:18,borderRadius:"50%",background:"#EB001B",opacity:.85,position:"absolute",left:0 }}/>
+      <div style={{ width:18,height:18,borderRadius:"50%",background:"#F79E1B",opacity:.85,position:"absolute",left:10 }}/>
     </div>
   );
 }
 
-// Visual card tile — highlights when selected.
 function PayCard({ card, active, onClick }) {
   return (
-    <div className={`wlt-card${active?" active":""}`} onClick={onClick}
-      style={{background:`linear-gradient(135deg,${card.gradient[0]},${card.gradient[1]})`}}>
-      <div style={{position:"absolute",width:110,height:110,borderRadius:"50%",
-        background:"rgba(255,255,255,.07)",top:-28,right:-28,pointerEvents:"none"}}/>
-      <div style={{position:"absolute",width:70,height:70,borderRadius:"50%",
-        background:"rgba(255,255,255,.05)",bottom:-18,left:-18,pointerEvents:"none"}}/>
+    <div className={`wlt-card${active ? " active" : ""}`} onClick={onClick}
+      style={{ background:`linear-gradient(135deg,${card.gradient[0]},${card.gradient[1]})` }}>
+      <div style={{ position:"absolute",width:110,height:110,borderRadius:"50%",background:"rgba(255,255,255,.07)",top:-28,right:-28,pointerEvents:"none" }}/>
+      <div style={{ position:"absolute",width:70,height:70,borderRadius:"50%",background:"rgba(255,255,255,.05)",bottom:-18,left:-18,pointerEvents:"none" }}/>
 
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-        <div style={{width:28,height:20,borderRadius:4,
-          background:"linear-gradient(135deg,rgba(255,220,80,.7),rgba(255,180,30,.5))",
-          border:"1px solid rgba(255,255,255,.25)"}}/>
-        {card.type==="visa" ? <VisaLogo/> : <MCLogo/>}
+      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18 }}>
+        <div style={{ width:28,height:20,borderRadius:4,background:"linear-gradient(135deg,rgba(255,220,80,.7),rgba(255,180,30,.5))",border:"1px solid rgba(255,255,255,.25)" }}/>
+        {card.type === "visa" ? <VisaLogo/> : <MCLogo/>}
       </div>
 
-      <div style={{fontSize:13,fontWeight:600,letterSpacing:2,color:"rgba(255,255,255,.88)",
-        marginBottom:14,fontFamily:"monospace"}}>
+      <div style={{ fontSize:13,fontWeight:600,letterSpacing:2,color:"rgba(255,255,255,.88)",marginBottom:14,fontFamily:"monospace" }}>
         •••• •••• •••• {card.last4}
       </div>
 
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-end" }}>
         <div>
-          <div style={{fontSize:8,color:"rgba(255,255,255,.5)",letterSpacing:1,marginBottom:1}}>CARDHOLDER</div>
-          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.9)"}}>{card.holder}</div>
+          <div style={{ fontSize:8,color:"rgba(255,255,255,.5)",letterSpacing:1,marginBottom:1 }}>CARDHOLDER</div>
+          <div style={{ fontSize:11,fontWeight:700,color:"rgba(255,255,255,.9)" }}>{card.holder}</div>
         </div>
-        <div style={{textAlign:"right"}}>
-          <div style={{fontSize:8,color:"rgba(255,255,255,.5)",letterSpacing:1,marginBottom:1}}>EXPIRES</div>
-          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.9)"}}>{card.expiry}</div>
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontSize:8,color:"rgba(255,255,255,.5)",letterSpacing:1,marginBottom:1 }}>EXPIRES</div>
+          <div style={{ fontSize:11,fontWeight:700,color:"rgba(255,255,255,.9)" }}>{card.expiry}</div>
         </div>
       </div>
 
       {active && (
-        <div style={{position:"absolute",top:10,right:10,
-          width:20,height:20,borderRadius:"50%",
-          background:"rgba(255,255,255,.9)",
-          display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <span style={{fontSize:10,fontWeight:900,color:card.gradient[1]}}>✓</span>
+        <div style={{ position:"absolute",top:10,right:10,width:20,height:20,borderRadius:"50%",background:"rgba(255,255,255,.9)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+          <span style={{ fontSize:10,fontWeight:900,color:card.gradient[1] }}>✓</span>
         </div>
       )}
     </div>
   );
 }
 
-// Add Card modal — auto-detects Visa vs Mastercard from first digit.
 function AddCardModal({ open, onClose, onAdd }) {
   const [num,  setNum]  = useState("");
   const [name, setName] = useState("");
@@ -127,27 +111,30 @@ function AddCardModal({ open, onClose, onAdd }) {
 
   const handleAdd = () => {
     if (!num || !name || !exp || !cvv) return;
-    const type = num.replace(/\s/g,"")[0]==="4" ? "visa" : "mastercard";
-    onAdd({ type, last4:num.replace(/\s/g,"").slice(-4), holder:name, expiry:exp,
-      gradient:type==="visa"?["#5B21B6","#7C3AED"]:["#1E3A5F","#1D4ED8"] });
+    const type = num.replace(/\s/g,"")[0] === "4" ? "visa" : "mastercard";
+    onAdd({
+      type,
+      last4:    num.replace(/\s/g,"").slice(-4),
+      holder:   name,
+      expiry:   exp,
+      gradient: type === "visa" ? ["#5B21B6","#7C3AED"] : ["#1E3A5F","#1D4ED8"],
+    });
     setNum(""); setName(""); setExp(""); setCvv("");
     onClose();
   };
 
   return (
     <Modal open={open} onClose={onClose} maxWidth={420}>
-      <div style={{padding:"26px 22px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
-          <div style={{width:44,height:44,borderRadius:12,
-            background:"rgba(125,57,235,.12)",
-            display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💳</div>
+      <div style={{ padding:"26px 22px" }}>
+        <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:22 }}>
+          <div style={{ width:44,height:44,borderRadius:12,background:"rgba(125,57,235,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20 }}>💳</div>
           <div>
-            <div style={{fontSize:18,fontWeight:800}}>Add New Card</div>
-            <div style={{fontSize:12,color:T.sub}}>Your details are encrypted & secure</div>
+            <div style={{ fontSize:18,fontWeight:800 }}>Add New Card</div>
+            <div style={{ fontSize:12,color:T.sub }}>Your details are encrypted &amp; secure</div>
           </div>
         </div>
 
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
           <div>
             <div className="wlt-label">CARD NUMBER</div>
             <input className="wlt-field" value={num} onChange={e=>setNum(fmtNum(e.target.value))}
@@ -158,7 +145,7 @@ function AddCardModal({ open, onClose, onAdd }) {
             <input className="wlt-field" value={name} onChange={e=>setName(e.target.value)}
               placeholder="Full name on card"/>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
             <div>
               <div className="wlt-label">EXPIRY DATE</div>
               <input className="wlt-field" value={exp} onChange={e=>setExp(fmtExp(e.target.value))}
@@ -172,12 +159,12 @@ function AddCardModal({ open, onClose, onAdd }) {
           </div>
         </div>
 
-        <div style={{display:"flex",gap:10,marginTop:22}}>
+        <div style={{ display:"flex",gap:10,marginTop:22 }}>
           <button onClick={onClose} style={{
             flex:1,padding:12,borderRadius:11,border:`1px solid ${T.border}`,
-            background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:14,
-            fontWeight:600,cursor:"pointer"}}>Cancel</button>
-          <div style={{flex:2}}><GlowBtn full noArrow onClick={handleAdd}>Add Card</GlowBtn></div>
+            background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",
+          }}>Cancel</button>
+          <div style={{ flex:2 }}><GlowBtn full noArrow onClick={handleAdd}>Add Card</GlowBtn></div>
         </div>
       </div>
     </Modal>
@@ -188,149 +175,161 @@ function TxRow({ t }) {
   const ok = !t.failed;
   return (
     <div className="wlt-tx">
-      <div style={{width:42,height:42,borderRadius:12,flexShrink:0,
-        background:ok?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",
-        display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>
+      <div style={{ width:42,height:42,borderRadius:12,flexShrink:0,background:ok?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18 }}>
         {ok ? "🅿️" : "⚠️"}
       </div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+      <div style={{ flex:1,minWidth:0 }}>
+        <div style={{ fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
           {t.name}
         </div>
-        <div style={{fontSize:11,color:T.sub,marginTop:2}}>{t.date} · {t.duration}</div>
+        <div style={{ fontSize:11,color:T.sub,marginTop:2 }}>
+          {t.date} · {t.duration}
+          {t.cardLast4 && <span style={{ color:"rgba(255,255,255,.35)" }}> · ···· {t.cardLast4}</span>}
+        </div>
       </div>
-      <div style={{textAlign:"right",flexShrink:0}}>
-        <div style={{fontSize:13,fontWeight:700,color:ok?T.text:T.red}}>{t.cost}</div>
-        <div style={{fontSize:11,marginTop:2,fontWeight:600,color:ok?T.green:T.red}}>{t.status}</div>
+      <div style={{ textAlign:"right",flexShrink:0 }}>
+        <div style={{ fontSize:13,fontWeight:700,color:ok?T.text:T.red }}>{t.cost}</div>
+        <div style={{ fontSize:11,marginTop:2,fontWeight:600,color:ok?T.green:T.red }}>{t.status}</div>
       </div>
     </div>
   );
 }
 
-// Wallet tab — manages payment cards, shows active session cost, and recent transactions.
-export default function WalletTab({ activeSpot, onGoToSession }) {
-  const [cards,       setCards]      = useState(INITIAL_CARDS);
-  const [activeCard,  setActiveCard] = useState(1);
-  const [addOpen,     setAddOpen]    = useState(false);
-  const [showAllTx,   setShowAllTx]  = useState(false);
+export default function WalletTab({
+  cards = [],
+  activeCardId,
+  onActiveCardChange,
+  onAddCard,
+  onRemoveCard,
+  transactions = [],
+  activeReservation,
+  onGoToSession,
+}) {
+  const [addOpen,   setAddOpen]   = useState(false);
+  const [showAllTx, setShowAllTx] = useState(false);
   const { isMobile } = useBreakpoint();
 
   const pad = isMobile ? "20px 16px" : "32px 28px";
 
   return (
-    <div className="wlt-wrap" style={{maxWidth:780,margin:"0 auto",padding:pad}}>
-      <style dangerouslySetInnerHTML={{__html:CSS}}/>
+    <div className="wlt-wrap" style={{ maxWidth:780,margin:"0 auto",padding:pad }}>
+      <style dangerouslySetInnerHTML={{ __html: CSS }}/>
 
-      <div style={{marginBottom:30}}>
-        <div style={{fontSize:16,fontWeight:800,marginBottom:16}}>Payment Cards</div>
+      {/* ── Payment Cards ─────────────────────────────────────────── */}
+      <div style={{ marginBottom:30 }}>
+        <div style={{ fontSize:16,fontWeight:800,marginBottom:16 }}>Payment Cards</div>
 
-        {/* Horizontally scrollable card row */}
-        <div style={{display:"flex",gap:14,overflowX:"auto",paddingBottom:8,
-          scrollbarWidth:"none"}} className="hideScroll">
-          {cards.map(c=>(
-            <PayCard key={c.id} card={c} active={activeCard===c.id} onClick={()=>setActiveCard(c.id)}/>
+        <div style={{ display:"flex",gap:14,overflowX:"auto",paddingBottom:8,scrollbarWidth:"none" }} className="hideScroll">
+          {cards.map(c => (
+            <PayCard key={c.id} card={c} active={activeCardId === c.id} onClick={() => onActiveCardChange(c.id)}/>
           ))}
-          <div className="wlt-add" onClick={()=>setAddOpen(true)}>
-            <div style={{width:40,height:40,borderRadius:"50%",
-              border:`2px dashed rgba(125,57,235,.4)`,
-              display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:22,color:T.purple}}>+</div>
-            <div style={{fontSize:13,fontWeight:600,color:T.purple}}>Add Card</div>
+          <div className="wlt-add" onClick={() => setAddOpen(true)}>
+            <div style={{ width:40,height:40,borderRadius:"50%",border:`2px dashed rgba(125,57,235,.4)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,color:T.purple }}>+</div>
+            <div style={{ fontSize:13,fontWeight:600,color:T.purple }}>Add Card</div>
           </div>
         </div>
 
-        {cards.length>0 && (
-          <div style={{marginTop:14,display:"flex",gap:8}}>
-            {[
-              {icon:"🗑", label:"Remove Card",  color:T.red,    bg:"rgba(239,68,68,.08)",   bd:"rgba(239,68,68,.2)" },
-              {icon:"⭐", label:"Set as Default",color:T.purple, bg:"rgba(125,57,235,.08)", bd:"rgba(125,57,235,.25)"},
-            ].map(a=>(
-              <button key={a.label} style={{
-                display:"flex",alignItems:"center",gap:6,
-                padding:"7px 14px",borderRadius:9,
-                border:`1px solid ${a.bd}`,background:a.bg,
-                color:a.color,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",
-                transition:"opacity .15s",
-              }}
-                onMouseEnter={e=>e.currentTarget.style.opacity=".75"}
-                onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                {a.icon} {a.label}
-              </button>
-            ))}
+        {cards.length > 0 && (
+          <div style={{ marginTop:14,display:"flex",gap:8 }}>
+            <button onClick={() => onRemoveCard(activeCardId)} style={{
+              display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:9,
+              border:"1px solid rgba(239,68,68,.2)",background:"rgba(239,68,68,.08)",
+              color:T.red,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",transition:"opacity .15s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.opacity=".75"}
+              onMouseLeave={e => e.currentTarget.style.opacity="1"}>
+              🗑 Remove Card
+            </button>
+            <button onClick={() => onActiveCardChange(activeCardId)} style={{
+              display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:9,
+              border:"1px solid rgba(125,57,235,.25)",background:"rgba(125,57,235,.08)",
+              color:T.purple,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",transition:"opacity .15s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.opacity=".75"}
+              onMouseLeave={e => e.currentTarget.style.opacity="1"}>
+              ⭐ Set as Default
+            </button>
           </div>
         )}
       </div>
 
-      <div style={{marginBottom:30}}>
-        <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Active Session</div>
+      {/* ── Active Session ────────────────────────────────────────── */}
+      <div style={{ marginBottom:30 }}>
+        <div style={{ fontSize:16,fontWeight:800,marginBottom:14 }}>Active Session</div>
 
-        {activeSpot ? (
-          <div style={{borderRadius:16,padding:"16px 18px",
-            background:"rgba(34,197,94,.05)",
-            border:"1.5px solid rgba(34,197,94,.2)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:12}}>
-              <div style={{width:8,height:8,borderRadius:"50%",
-                background:T.green,animation:"pls 1.5s infinite"}}/>
-              <span style={{fontSize:11,fontWeight:700,color:T.green,letterSpacing:.5}}>LIVE</span>
+        {activeReservation ? (
+          <div style={{ borderRadius:16,padding:"16px 18px",background:"rgba(34,197,94,.05)",border:"1.5px solid rgba(34,197,94,.2)" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:7,marginBottom:12 }}>
+              <div style={{ width:8,height:8,borderRadius:"50%",background:T.green,animation:"pls 1.5s infinite" }}/>
+              <span style={{ fontSize:11,fontWeight:700,color:T.green,letterSpacing:.5 }}>
+                {activeReservation.status === "ACTIVE" ? "LIVE" : "PENDING"}
+              </span>
             </div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>{activeSpot.name}</div>
-                <div style={{fontSize:12,color:T.sub,marginBottom:12}}>📍 Level 2 – B4</div>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12 }}>
+              <div style={{ flex:1,minWidth:0 }}>
+                <div style={{ fontSize:15,fontWeight:700,marginBottom:3 }}>{activeReservation.parkingLotName || "Parking"}</div>
+                <div style={{ fontSize:12,color:T.sub,marginBottom:12 }}>📍 {activeReservation.gateName || "–"}</div>
                 <button onClick={onGoToSession} style={{
                   padding:"7px 14px",borderRadius:9,
-                  border:"1px solid rgba(34,197,94,.3)",
-                  background:"rgba(34,197,94,.08)",
-                  color:T.green,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",
-                  transition:"background .2s",
+                  border:"1px solid rgba(34,197,94,.3)",background:"rgba(34,197,94,.08)",
+                  color:T.green,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",transition:"background .2s",
                 }}
-                  onMouseEnter={e=>e.currentTarget.style.background="rgba(34,197,94,.16)"}
-                  onMouseLeave={e=>e.currentTarget.style.background="rgba(34,197,94,.08)"}>
+                  onMouseEnter={e => e.currentTarget.style.background="rgba(34,197,94,.16)"}
+                  onMouseLeave={e => e.currentTarget.style.background="rgba(34,197,94,.08)"}>
                   View Session →
                 </button>
               </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                <div style={{fontSize:10,color:T.sub,letterSpacing:.8,marginBottom:3}}>EST. COST</div>
-                <div style={{fontSize:22,fontWeight:800,color:T.green}}>EGP 50</div>
-                <div style={{fontSize:11,color:T.sub}}>~2h 10m so far</div>
+              <div style={{ textAlign:"right",flexShrink:0 }}>
+                <div style={{ fontSize:10,color:T.sub,letterSpacing:.8,marginBottom:3 }}>RATE</div>
+                <div style={{ fontSize:20,fontWeight:800,color:T.green }}>
+                  {activeReservation.hourlyRate > 0 ? `EGP ${Number(activeReservation.hourlyRate).toFixed(0)}/hr` : "Free"}
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div style={{borderRadius:14,padding:"18px 20px",
-            background:"rgba(255,255,255,.02)",border:`1px solid ${T.border}`,
-            display:"flex",alignItems:"center",gap:14}}>
-            <div style={{fontSize:26,opacity:.5}}>🅿️</div>
+          <div style={{ borderRadius:14,padding:"18px 20px",background:"rgba(255,255,255,.02)",border:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:14 }}>
+            <div style={{ fontSize:26,opacity:.5 }}>🅿️</div>
             <div>
-              <div style={{fontSize:14,fontWeight:600,marginBottom:2}}>No active session</div>
-              <div style={{fontSize:12,color:T.sub}}>Reserve a parking spot to start a session.</div>
+              <div style={{ fontSize:14,fontWeight:600,marginBottom:2 }}>No active session</div>
+              <div style={{ fontSize:12,color:T.sub }}>Reserve a parking spot to start a session.</div>
             </div>
           </div>
         )}
       </div>
 
+      {/* ── Recent Activity ───────────────────────────────────────── */}
       <div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontSize:16,fontWeight:800}}>Recent Activity</div>
-          <button onClick={()=>setShowAllTx(true)} style={{
-            background:"none",border:"none",color:T.purple,
-            fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
-            View all →
-          </button>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
+          <div style={{ fontSize:16,fontWeight:800 }}>Recent Activity</div>
+          {transactions.length > 4 && (
+            <button onClick={() => setShowAllTx(true)} style={{
+              background:"none",border:"none",color:T.purple,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+            }}>View all →</button>
+          )}
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {TRANSACTIONS.slice(0,4).map(t=><TxRow key={t.id} t={t}/>)}
-        </div>
+
+        {transactions.length === 0 ? (
+          <div style={{ padding:"28px 20px",textAlign:"center",borderRadius:14,border:`1px solid ${T.border}`,background:"rgba(255,255,255,.02)" }}>
+            <div style={{ fontSize:32,marginBottom:10,opacity:.4 }}>🧾</div>
+            <div style={{ fontSize:14,fontWeight:600,marginBottom:4 }}>No transactions yet</div>
+            <div style={{ fontSize:12,color:T.sub }}>Completed parking sessions will appear here.</div>
+          </div>
+        ) : (
+          <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+            {transactions.slice(0,4).map(t => <TxRow key={t.id} t={t}/>)}
+          </div>
+        )}
       </div>
 
-      <AddCardModal open={addOpen} onClose={()=>setAddOpen(false)}
-        onAdd={c=>setCards(p=>[...p,{...c,id:Date.now()}])}/>
+      <AddCardModal open={addOpen} onClose={() => setAddOpen(false)}
+        onAdd={c => onAddCard({ ...c, id: Date.now() })}/>
 
-      <Modal open={showAllTx} onClose={()=>setShowAllTx(false)} maxWidth={500}>
-        <div style={{padding:"24px 20px"}}>
-          <div style={{fontSize:18,fontWeight:800,marginBottom:18}}>All Transactions</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {TRANSACTIONS.map(t=><TxRow key={t.id} t={t}/>)}
+      <Modal open={showAllTx} onClose={() => setShowAllTx(false)} maxWidth={500}>
+        <div style={{ padding:"24px 20px" }}>
+          <div style={{ fontSize:18,fontWeight:800,marginBottom:18 }}>All Transactions</div>
+          <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+            {transactions.map(t => <TxRow key={t.id} t={t}/>)}
           </div>
         </div>
       </Modal>

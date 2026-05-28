@@ -113,9 +113,10 @@ public class ReservationService {
     public ReservationResponse cancelReservation(UUID reservationId, UUID userId) {
         Reservation reservation = findAndValidateOwnership(reservationId, userId);
 
-        if (reservation.getStatus() != ReservationStatus.PENDING) {
+        if (reservation.getStatus() != ReservationStatus.PENDING &&
+                reservation.getStatus() != ReservationStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only PENDING reservations can be cancelled");
+                    "Only PENDING or ACTIVE reservations can be cancelled");
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);

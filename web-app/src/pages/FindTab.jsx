@@ -120,7 +120,7 @@ const CSS = `
 `;
 
 // Main FindTab component — search, filter, and view parking spots.
-export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, onSpotDetailOpened, profile }) {
+export default function FindTab({ onReserve, user, onAuthOpen, activeReservation, onGoToSession, initialSpotId, onSpotDetailOpened, profile }) {
   const [search,     setSearch]     = useState("");
   const [cat,        setCat]        = useState("All");
   const [sort,       setSort]       = useState("distance");
@@ -180,6 +180,26 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
               <GlowBtn small outline noArrow onClick={onAuthOpen}>Log In</GlowBtn>
               <GlowBtn small noArrow onClick={onAuthOpen}>Sign Up</GlowBtn>
             </div>
+          </div>
+        )}
+
+        {/* Active reservation banner — shown when the user already has a reservation */}
+        {user && activeReservation && (
+          <div style={{
+            display:"flex",alignItems:"center",gap:10,marginBottom:16,
+            padding:"11px 14px",borderRadius:11,
+            background:"rgba(245,158,11,.07)",border:"1px solid rgba(245,158,11,.22)",
+          }}>
+            <span style={{fontSize:18}}>⏱</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:1,color:"#F59E0B"}}>
+                You already have an active reservation
+              </div>
+              <div style={{fontSize:11,color:T.sub}}>
+                Cancel it first from My Session if you want to book elsewhere.
+              </div>
+            </div>
+            <GlowBtn small noArrow onClick={onGoToSession}>My Session</GlowBtn>
           </div>
         )}
 

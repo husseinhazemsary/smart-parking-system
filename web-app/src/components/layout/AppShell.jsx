@@ -11,6 +11,12 @@ import SessionTab from "../../pages/SessionTab";
 import WalletTab from "../../pages/WalletTab";
 import HistoryTab from "../../pages/HistoryTab";
 import AccountTab from "../../pages/AccountTab";
+import PaymentModal from "../ui/PaymentModal";
+
+const DEMO_CARDS = [
+  { id:1, type:"visa",       last4:"4582", holder:"Nour Ahmed", expiry:"09/28", gradient:["#5B21B6","#7C3AED"] },
+  { id:2, type:"mastercard", last4:"1197", holder:"Nour Ahmed", expiry:"03/27", gradient:["#1E3A5F","#1D4ED8"] },
+];
 
 export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSpotId, onSpotDetailOpened }) {
   const [tab, setTab] = useState("find");
@@ -21,6 +27,14 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
   const [parkingLots, setParkingLots] = useState([]);
   const [reserveLoading, setReserveLoading] = useState(false);
   const [reserveError, setReserveError] = useState("");
+
+  // ── Payment state ──────────────────────────────────────────────────────────
+  const [cards,             setCards]            = useState(DEMO_CARDS);
+  const [activeCardId,      setActiveCardId]     = useState(DEMO_CARDS[0].id);
+  const [transactions,      setTransactions]     = useState([]);
+  const [paymentModal,      setPaymentModal]     = useState(null); // { reservationId, amount, durationMins, lotName }
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentSuccess,    setPaymentSuccess]   = useState(false);
 
   const mapVehicle = v => ({
     id: v.id,
@@ -113,15 +127,68 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
     }
   };
 
-  const handleCompleteReservation = async reservationId => {
-    setReserveError("");
+  // Opens the payment modal — actual API call happens in confirmPayment
+  const handleCompleteReservation = reservationId => {
+    const enteredAt   = activeReservation?.enteredAt;
+    const rate        = activeReservation?.hourlyRate ? Number(activeReservation.hourlyRate) : 0;
+    const elapsedSecs = enteredAt ? (Date.now() - new Date(enteredAt).getTime()) / 1000 : 0;
+    const amount      = (elapsedSecs / 3600) * rate;
+    const durationMins = Math.max(1, Math.ceil(elapsedSecs / 60));
+
+    setPaymentModal({
+      reservationId,
+      amount,
+      durationMins,
+      lotName: activeReservation?.parkingLotName || "Parking",
+    });
+  };
+
+  const confirmPayment = async () => {
+    if (!paymentModal) return;
+    const { reservationId, amount, durationMins, lotName } = paymentModal;
+    const card = cards.find(c => c.id === activeCardId);
+
+    setPaymentProcessing(true);
     try {
+      // Simulate payment processing delay
+      await new Promise(r => setTimeout(r, 1500));
       await apiFetch(`/api/reservations/${reservationId}/complete`, { method: "POST" });
-      setActiveReservation(null);
-      setTab("history");
+
+      const hrs   = Math.floor(durationMins / 60);
+      const mins  = durationMins % 60;
+      const label = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+      setTransactions(prev => [{
+        id:        Date.now(),
+        name:      lotName,
+        date:      new Date().toLocaleString("en-US", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" }),
+        duration:  label,
+        cost:      amount === 0 ? "Free" : `EGP ${amount.toFixed(2)}`,
+        status:    amount === 0 ? "Free" : "Paid",
+        cardLast4: card?.last4,
+        cardType:  card?.type,
+        failed:    false,
+      }, ...prev]);
+
+      setPaymentSuccess(true);
+      setTimeout(() => {
+        setActiveReservation(null);
+        setPaymentModal(null);
+        setPaymentSuccess(false);
+        setTab("wallet");
+      }, 2000);
     } catch (e) {
-      setReserveError(e?.message || "Failed to complete session");
+      setReserveError(e?.message || "Payment failed. Please try again.");
+      setPaymentModal(null);
+    } finally {
+      setPaymentProcessing(false);
     }
+  };
+
+  const handleAddCard = card => setCards(prev => [...prev, { ...card, id: Date.now() }]);
+  const handleRemoveCard = cardId => {
+    setCards(prev => prev.filter(c => c.id !== cardId));
+    if (activeCardId === cardId) setActiveCardId(cards.find(c => c.id !== cardId)?.id ?? null);
   };
 
   // ── Reserve a spot ─────────────────────────────────────────────────────────
@@ -318,6 +385,8 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
             onAuthOpen={onAuthOpen}
             onReserve={handleReserve}
             reserveLoading={reserveLoading}
+            activeReservation={activeReservation}
+            onGoToSession={() => setTab("session")}
             initialSpotId={initialSpotId}
             onSpotDetailOpened={onSpotDetailOpened}
             profile={{ ...profile, vehicles }}
@@ -346,7 +415,18 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
             onComplete={handleCompleteReservation}
           />
         )}
-        {tab==="wallet"  && user && <WalletTab />}
+        {tab==="wallet" && user && (
+          <WalletTab
+            cards={cards}
+            activeCardId={activeCardId}
+            onActiveCardChange={setActiveCardId}
+            onAddCard={handleAddCard}
+            onRemoveCard={handleRemoveCard}
+            transactions={transactions}
+            activeReservation={activeReservation}
+            onGoToSession={() => setTab("session")}
+          />
+        )}
         {tab==="history" && user && <HistoryTab />}
         {tab==="account" && user && (
           <AccountTab
@@ -363,6 +443,17 @@ export default function AppShell({ user, onLogout, onBack, onAuthOpen, initialSp
 
       {/* Mobile bottom nav */}
       {isMobile && <BottomNav tabs={tabs} tab={tab} setTabSafe={setTabSafe} />}
+
+      <PaymentModal
+        reservation={paymentModal}
+        cards={cards}
+        activeCardId={activeCardId}
+        onCardChange={setActiveCardId}
+        processing={paymentProcessing}
+        success={paymentSuccess}
+        onConfirm={confirmPayment}
+        onCancel={() => setPaymentModal(null)}
+      />
     </div>
   );
 }
