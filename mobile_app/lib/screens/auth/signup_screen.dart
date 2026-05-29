@@ -8,7 +8,7 @@ import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_colors.dart';
 import '../auth/login_screen.dart';
-import '../navigation/app_navigator.dart';
+import '../auth/verify_email_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -33,7 +33,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _termsRecognizer = TapGestureRecognizer();
   final _privacyRecognizer = TapGestureRecognizer();
 
-  static final _emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
+  static final _emailRegex = RegExp(r'^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$');
   static final _phoneRegex = RegExp(r'^\+?[0-9]{7,15}$');
 
   @override
@@ -283,7 +283,7 @@ class _SignupScreenState extends State<SignupScreen> {
         '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
 
     final auth = context.read<AuthProvider>();
-    final success = await auth.register(
+    final registeredEmail = await auth.register(
       fullName: _nameController.text.trim(),
       email: _emailController.text.trim(),
       phoneNumber: _phoneController.text.trim(),
@@ -292,9 +292,11 @@ class _SignupScreenState extends State<SignupScreen> {
     );
 
     if (!mounted) return;
-    if (success) {
+    if (registeredEmail != null) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AppNavigator()),
+        MaterialPageRoute(
+          builder: (_) => VerifyEmailScreen(email: registeredEmail),
+        ),
       );
     } else {
       setState(() => _serverError = auth.error ?? 'Registration failed. Please try again.');

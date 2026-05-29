@@ -7,26 +7,25 @@ import AppShell from "./components/layout/AppShell";
 import AuthModal from "./pages/Auth";
 import BusinessPage from "./pages/BusinessPage";
 
-/* ─── Root ───────────────────────────────────────────────────── */
-export default function Ezrakna(){
-  const [view,setView]=useState("landing");   // landing | app | business
-  const [authOpen,setAuthOpen]=useState(false);
-  const [authInitialMode,setAuthInitialMode]=useState("login");
-  const [user,setUser]=useState(null);
-  const [initialSpotId,setInitialSpotId]=useState(null);
+/* ─── Root ───────────────────────────────────────────────── */
+export default function Ezrakna() {
+  const [view, setView] = useState("landing");
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState("login");
+  const [user, setUser] = useState(null);
+  const [initialSpotId, setInitialSpotId] = useState(null);
 
   const go = (v) => { setView(v); };
 
-  // Restore session from localStorage on first load
   React.useEffect(() => {
     const token = localStorage.getItem("token");
     const name  = localStorage.getItem("userName");
     const email = localStorage.getItem("userEmail");
     const id    = localStorage.getItem("userId");
-    if (token && email) setUser({ id, name, email, token });
+    if (token && email) setUser({ id, name, email, token }); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
-  React.useEffect(() => { window.scrollTo({top:0,left:0,behavior:"instant"}); }, [view]);
+  React.useEffect(() => { window.scrollTo({ top:0, left:0, behavior:"instant" }); }, [view]);
 
   const handleAuth = (u) => { setUser(u); setAuthOpen(false); go("app"); };
   const handleUserUpdate = (updates) => {
@@ -36,8 +35,8 @@ export default function Ezrakna(){
   const handleLogout = async () => {
     try {
       const rt = localStorage.getItem("refreshToken");
-      if (rt) await apiFetch("/api/auth/logout", { method: "POST", body: JSON.stringify({ refreshToken: rt }) });
-    } catch {}
+      if (rt) await apiFetch("/api/auth/logout", { method:"POST", body:JSON.stringify({ refreshToken:rt }) });
+    } catch { /* best-effort logout */ }
     ["token","refreshToken","userId","userName","userEmail"].forEach(k => localStorage.removeItem(k));
     setUser(null);
     go("landing");
@@ -46,8 +45,8 @@ export default function Ezrakna(){
   const handleEnterWithSpot = (spot) => { setInitialSpotId(spot.id); go("app"); };
   const handleBusiness = () => { go("business"); };
 
-  return(
-    <div style={{ background:T.dark,minHeight:"100vh",color:T.text }}>
+  return (
+    <div style={{ background:T.dark, minHeight:"100vh", color:T.text }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
@@ -55,7 +54,7 @@ export default function Ezrakna(){
         body{background:#07001A;}
         #root{width:100%;max-width:none;margin:0;padding:0;}
         html,body{width:100%;overflow-x:hidden;}
-        
+
         ::-webkit-scrollbar{width:6px;height:6px;}
         ::-webkit-scrollbar-track{background:rgba(255,255,255,.02);}
         ::-webkit-scrollbar-thumb{background:rgba(125,57,235,.4);border-radius:3px;}

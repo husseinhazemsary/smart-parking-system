@@ -73,6 +73,65 @@ function Toggle({ on, onChange }) {
   );
 }
 
+// ── Email Code Input ──────────────────────────────────────────────────────────
+
+function EmailCodeInput({ value, onChange }) {
+  const refsArr = useRef([]);
+  const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");
+
+  const notify = (arr) => onChange(arr.join(""));
+
+  const handleChange = (i, e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    if (!raw) {
+      const arr = [...digits]; arr[i] = "";
+      notify(arr); return;
+    }
+    if (raw.length > 1) {
+      const arr = [...digits];
+      for (let j = 0; j < raw.length && i + j < 6; j++) arr[i + j] = raw[j];
+      notify(arr);
+      refsArr.current[Math.min(i + raw.length, 5)]?.focus();
+      return;
+    }
+    const arr = [...digits]; arr[i] = raw[0];
+    notify(arr);
+    if (i < 5) refsArr.current[i + 1]?.focus();
+  };
+
+  const handleKey = (i, e) => {
+    if (e.key === "Backspace" && !digits[i] && i > 0) {
+      const arr = [...digits]; arr[i - 1] = "";
+      notify(arr);
+      refsArr.current[i - 1]?.focus();
+    }
+  };
+
+  return (
+    <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={el => { refsArr.current[i] = el; }}
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          value={d}
+          onChange={e => handleChange(i, e)}
+          onKeyDown={e => handleKey(i, e)}
+          style={{
+            width:44, height:52, borderRadius:10, textAlign:"center",
+            fontSize:22, fontWeight:700, fontFamily:"inherit",
+            border:`1.5px solid ${d ? T.purple : T.border}`,
+            background:"rgba(255,255,255,.04)", color:T.text,
+            outline:"none", caretColor:"transparent",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ── Edit Profile Modal ────────────────────────────────────────────────────────
 
 function EditProfileModal({ open, onClose, user, profile, onSave }) {
@@ -85,19 +144,22 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
   // Email-change sub-flow
   const [showEmailChange, setShowEmailChange] = useState(false);
   const [newEmail,        setNewEmail]        = useState("");
-  const [emailSent,       setEmailSent]       = useState(false);
+  const [emailStep,       setEmailStep]       = useState("input"); // input | code | done
+  const [emailCode,       setEmailCode]       = useState("");
   const [emailLoading,    setEmailLoading]    = useState(false);
   const [emailError,      setEmailError]      = useState("");
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(user?.name || "");
       setPhone(profile?.phoneNumber || "");
       setDob(profile?.dateOfBirth || "");
       setError("");
       setShowEmailChange(false);
       setNewEmail("");
-      setEmailSent(false);
+      setEmailStep("input");
+      setEmailCode("");
       setEmailError("");
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -131,16 +193,31 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
       const token = localStorage.getItem("token");
       await fetch(`${BASE_URL}/api/users/me/email-change-request`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ newEmail: newEmail.trim() }),
       });
-    } catch {
-      // Show success regardless — don't block the UI on backend availability
+      setEmailStep("code");
+    } catch (e) {
+      setEmailError(e?.message || "Failed to send code.");
     } finally {
-      setEmailSent(true);
+      setEmailLoading(false);
+    }
+  };
+
+  const handleEmailChangeVerify = async () => {
+    if (emailCode.length < 6) { setEmailError("Enter the full 6-digit code."); return; }
+    setEmailError(""); setEmailLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${BASE_URL}/api/users/me/verify-email-change`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ code: emailCode }),
+      });
+      setEmailStep("done");
+    } catch (e) {
+      setEmailError(e?.message || "Invalid code. Please try again.");
+    } finally {
       setEmailLoading(false);
     }
   };
@@ -172,46 +249,59 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
 
           {/* Email change sub-form */}
           {showEmailChange && (
-            <div style={{
-              padding:"14px 14px 12px",borderRadius:12,
-              border:`1px solid ${T.border}`,background:"rgba(125,57,235,.04)",
-            }}>
-              {emailSent ? (
-                <div style={{
-                  padding:"12px 14px",borderRadius:10,
-                  background:"rgba(34,197,94,.08)",border:"1px solid rgba(34,197,94,.25)",
-                  color:"#86EFAC",fontSize:13,lineHeight:1.6,
-                }}>
-                  ✓ A verification link has been sent to <strong>{newEmail}</strong>. Click it to confirm the change.
-                </div>
-              ) : (
+            <div style={{ padding:"14px 14px 12px",borderRadius:12,border:`1px solid ${T.border}`,background:"rgba(125,57,235,.04)" }}>
+
+              {/* Step 1 — enter new email */}
+              {emailStep === "input" && (
                 <>
                   <div className="acc-label">NEW EMAIL ADDRESS</div>
-                  <input
-                    className="acc-field"
-                    type="email"
-                    value={newEmail}
+                  <input className="acc-field" type="email" value={newEmail}
                     onChange={e => { setNewEmail(e.target.value); setEmailError(""); }}
-                    placeholder="new@example.com"
-                  />
-                  {emailError && (
-                    <div style={{ fontSize:12,color:T.red,marginTop:4 }}>{emailError}</div>
-                  )}
+                    placeholder="new@example.com" />
+                  {emailError && <div style={{ fontSize:12,color:T.red,marginTop:4 }}>{emailError}</div>}
                   <div style={{ display:"flex",gap:8,marginTop:10 }}>
                     <button onClick={() => { setShowEmailChange(false); setNewEmail(""); setEmailError(""); }} style={{
                       flex:1,padding:"9px",borderRadius:9,border:`1px solid ${T.border}`,
                       background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:13,cursor:"pointer",
                     }}>Cancel</button>
                     <button onClick={handleEmailChangeRequest} disabled={emailLoading} style={{
-                      flex:2,padding:"9px",borderRadius:9,
-                      border:`1px solid ${T.purple}`,
-                      background:`rgba(125,57,235,.12)`,color:T.purple,
+                      flex:2,padding:"9px",borderRadius:9,border:`1px solid ${T.purple}`,
+                      background:"rgba(125,57,235,.12)",color:T.purple,
                       fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",
-                    }}>
-                      {emailLoading ? "Sending…" : "Send Verification Link"}
-                    </button>
+                    }}>{emailLoading ? "Sending…" : "Send Code"}</button>
                   </div>
                 </>
+              )}
+
+              {/* Step 2 — enter verification code */}
+              {emailStep === "code" && (
+                <>
+                  <div style={{ fontSize:12,color:T.sub,marginBottom:12,lineHeight:1.6 }}>
+                    Enter the 6-digit code sent to <strong style={{ color:T.text }}>{newEmail}</strong>
+                  </div>
+                  <EmailCodeInput value={emailCode} onChange={v => { setEmailCode(v); setEmailError(""); }} />
+                  {emailError && <div style={{ fontSize:12,color:T.red,marginTop:8,textAlign:"center" }}>{emailError}</div>}
+                  <div style={{ display:"flex",gap:8,marginTop:12 }}>
+                    <button onClick={() => { setEmailStep("input"); setEmailCode(""); setEmailError(""); }} style={{
+                      flex:1,padding:"9px",borderRadius:9,border:`1px solid ${T.border}`,
+                      background:"transparent",color:T.sub,fontFamily:"inherit",fontSize:13,cursor:"pointer",
+                    }}>Back</button>
+                    <button onClick={handleEmailChangeVerify} disabled={emailLoading || emailCode.length < 6} style={{
+                      flex:2,padding:"9px",borderRadius:9,border:`1px solid ${T.purple}`,
+                      background:"rgba(125,57,235,.12)",color:T.purple,
+                      fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",
+                    }}>{emailLoading ? "Verifying…" : "Confirm Change"}</button>
+                  </div>
+                </>
+              )}
+
+              {/* Step 3 — success */}
+              {emailStep === "done" && (
+                <div style={{ padding:"12px 14px",borderRadius:10,background:"rgba(34,197,94,.08)",
+                  border:"1px solid rgba(34,197,94,.25)",color:"#86EFAC",fontSize:13,lineHeight:1.6 }}>
+                  ✓ Your email has been updated to <strong>{newEmail}</strong>.
+                  Please log in again to see the change.
+                </div>
               )}
             </div>
           )}
@@ -788,6 +878,7 @@ function EditVehicleModal({ open, onClose, vehicle, onSave }) {
   useEffect(() => {
     if (open && vehicle) {
       const parts = (vehicle.makeAndModel || "").split(" ");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMake(parts[0] || "");
       setModel(parts.slice(1).join(" ") || "");
       setNickname(vehicle.nickname || "");

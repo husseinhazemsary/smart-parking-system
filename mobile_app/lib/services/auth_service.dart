@@ -16,7 +16,7 @@ class AuthService {
     required String fullName,
     required String email,
     required String phoneNumber,
-    required String dateOfBirth, // ISO format: YYYY-MM-DD
+    required String dateOfBirth,
     required String password,
   }) async {
     final response = await _dio.post('/auth/register', data: {
@@ -38,5 +38,26 @@ class AuthService {
       'refreshToken': refreshToken,
     });
     return response.data as Map<String, dynamic>;
+  }
+
+  static Future<void> forgotPassword(String email) async {
+    await _dio.post('/auth/forgot-password', data: {'email': email});
+  }
+
+  static Future<void> resendVerification(String email) async {
+    await _dio.post('/auth/resend-verification', data: {'email': email});
+  }
+
+  static Future<Map<String, dynamic>> verifyEmail(
+      String email, String code) async {
+    final response = await _dio.post('/auth/verify-email',
+        data: {'email': email, 'code': code});
+    return response.data as Map<String, dynamic>;
+  }
+
+  static Future<void> resetPassword(
+      String email, String code, String newPassword) async {
+    await _dio.post('/auth/reset-password',
+        data: {'email': email, 'code': code, 'newPassword': newPassword});
   }
 }

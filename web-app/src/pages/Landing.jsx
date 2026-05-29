@@ -3,7 +3,7 @@ import { T } from "../constants/theme";
 import useBreakpoint from "../hooks/useBreakpoint";
 import apiFetch from "../api/client";
 
-// ─── constants ────────────────────────────────────────────────────────────────
+// constants 
 
 const CYCLE_WORDS = ["Cairo", "Giza", "your city", "seconds"];
 
@@ -46,7 +46,7 @@ const BIZ_CARDS = [
   },
 ];
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// helpers 
 
 function Reveal({ children, delay=0, direction="up", style={} }){
   const ref = useRef(null);
@@ -91,7 +91,7 @@ function Counter({ target, suffix="", duration=1600 }){
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// ─── viz SVGs for carousel ────────────────────────────────────────────────────
+// viz SVGs for carousel 
 
 function VizCircles(){
   return (
@@ -242,7 +242,7 @@ function VizPlate(){
 }
 const VIZ = { circles:VizCircles, cards:VizCards, diamond:VizDiamond, paycard:VizPayCard, ripple:VizRipple, plate:VizPlate };
 
-// ─── features carousel ────────────────────────────────────────────────────────
+// features carousel 
 
 function FeaturesCarousel({ isMobile }){
   const N = CAROUSEL_FEATURES.length;
@@ -351,7 +351,7 @@ function FeaturesCarousel({ isMobile }){
   );
 }
 
-// ─── how it works isometric grid ──────────────────────────────────────────────
+// how it works isometric grid
 
 function IsoGrid({ step }){
   // step 0: show base grid, step 1: one cell reserved, step 2: reserved→confirmed, step 3: pay vis
@@ -418,7 +418,7 @@ function IsoGrid({ step }){
   );
 }
 
-// ─── location card (real data) ────────────────────────────────────────────────
+// location card (real data) 
 
 function LocationCard({ s, onViewDetails, index=0 }){
   const [hov, setHov] = useState(false);
@@ -487,7 +487,7 @@ function LocationCard({ s, onViewDetails, index=0 }){
   );
 }
 
-// ─── HIW 3D: Phone (step 0 — Search) ─────────────────────────────────────────
+// HIW 3D: Phone (step 0 — Search)
 
 function HiwPhone({ active }){
   return (
@@ -549,7 +549,7 @@ function HiwPhone({ active }){
   );
 }
 
-// ─── HIW 3D: Gate (step 2 — Arrive) ──────────────────────────────────────────
+// HIW 3D: Gate (step 2 — Arrive)
 
 function HiwGate({ active }){
   const [scanning, setScanning] = useState(false);
@@ -625,7 +625,7 @@ function HiwGate({ active }){
   );
 }
 
-// ─── HIW 3D: Pay card (step 3 — Pay) ─────────────────────────────────────────
+// HIW 3D: Pay card (step 3 — Pay) 
 
 function HiwPay({ active }){
   return (
@@ -672,7 +672,7 @@ function HiwPay({ active }){
   );
 }
 
-// ─── main component ───────────────────────────────────────────────────────────
+// main component 
 
 export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness, user }){
   const [featuredLots, setFeaturedLots] = useState([]);
@@ -723,22 +723,83 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
     return ()=>clearInterval(id);
   },[]);
 
-  // cursor glow — direct DOM, no React re-render lag
+  // cursor glow + canvas trail — radial gradients composited into one merged image
   useEffect(()=>{
     const el = cursorGlowRef.current;
     if(!el) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:44;mix-blend-mode:screen;opacity:0;transition:opacity 1.4s ease;";
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+
+    const HIST = 50;
+    const history = [];
+    const mouse = {x:0, y:0};
+    let hx = 0, hy = 0;
     let visible = false;
-    const onMove = e=>{
-      el.style.transform = `translate(${e.clientX}px,${e.clientY}px) translate(-50%,-50%)`;
-      if(!visible){ el.style.opacity="1"; visible=true; }
+    let rafId;
+    const lerp = (a,b,t)=>a+(b-a)*t;
+
+    const draw = ()=>{
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const n = history.length;
+      if(!n) return;
+      // draw tail→head so brightest point sits on top
+      for(let i=n-1;i>=0;i--){
+        const t = 1 - i/Math.max(n-1,1); // 0=tail, 1=head
+        const p = history[i];
+        const r = 180;
+        const a = t * 0.26;
+        const g = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,r);
+        g.addColorStop(0,   `rgba(125,57,235,${a.toFixed(3)})`);
+        g.addColorStop(0.3, `rgba(125,57,235,${(a*0.4).toFixed(3)})`);
+        g.addColorStop(1,   "rgba(125,57,235,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fill();
+      }
     };
-    const onLeave = ()=>{ el.style.opacity="0"; visible=false; };
-    const onEnter = ()=>{ el.style.opacity="1"; visible=true; };
-    window.addEventListener("mousemove", onMove, {passive:true});
-    document.addEventListener("mouseleave", onLeave);
-    document.addEventListener("mouseenter", onEnter);
+
+    let lastMove = 0;
+    const IDLE_MS = 400;
+
+    const tick = ()=>{
+      const moving = Date.now() - lastMove < IDLE_MS;
+      hx = lerp(hx,mouse.x,0.18);
+      hy = lerp(hy,mouse.y,0.18);
+      el.style.transform = `translate(${hx}px,${hy}px) translate(-50%,-50%)`;
+
+      if(moving){
+        history.unshift({x:hx,y:hy});
+        if(history.length>HIST) history.length=HIST;
+        draw();
+        if(!visible){ el.style.opacity="1"; canvas.style.opacity="1"; visible=true; }
+      } else {
+        if(visible){ el.style.opacity="0"; canvas.style.opacity="0"; visible=false; history.length=0; }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+
+    const onResize = ()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; };
+    const onMove = e=>{ mouse.x=e.clientX; mouse.y=e.clientY; lastMove=Date.now(); };
+    const onLeave = ()=>{ el.style.opacity="0"; canvas.style.opacity="0"; visible=false; history.length=0; lastMove=0; };
+    const onEnter = ()=>{};
+
+    window.addEventListener("mousemove",onMove,{passive:true});
+    window.addEventListener("resize",onResize);
+    document.addEventListener("mouseleave",onLeave);
+    document.addEventListener("mouseenter",onEnter);
     return ()=>{
+      cancelAnimationFrame(rafId);
+      canvas.remove();
       window.removeEventListener("mousemove",onMove);
+      window.removeEventListener("resize",onResize);
       document.removeEventListener("mouseleave",onLeave);
       document.removeEventListener("mouseenter",onEnter);
     };
@@ -756,7 +817,7 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
         body{background:${T.dark}}
 
         /* Cursor glow */
-        .cg{position:fixed;top:0;left:0;width:720px;height:720px;border-radius:50%;background:radial-gradient(circle at center,rgba(125,57,235,.65) 0%,rgba(125,57,235,.35) 22%,rgba(125,57,235,.12) 45%,transparent 70%);filter:blur(30px);pointer-events:none;transform:translate(-50%,-50%);z-index:45;mix-blend-mode:screen;transition:opacity .6s ease;will-change:transform}
+        .cg{position:fixed;top:0;left:0;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle at center,rgba(125,57,235,.22) 0%,rgba(125,57,235,.11) 22%,rgba(125,57,235,.04) 45%,transparent 70%);filter:blur(18px);pointer-events:none;transform:translate(-50%,-50%);z-index:45;mix-blend-mode:screen;transition:opacity 1.4s ease;will-change:transform}
 
         /* Hero breathing mesh */
         @keyframes breathe{0%,100%{transform:scale(1) rotate(0deg);opacity:.85}50%{transform:scale(1.08) rotate(2deg);opacity:1}}
@@ -1239,7 +1300,7 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
                   transition:"opacity .5s ease,transform .5s ease",
                   pointerEvents:hiwStep===i?"auto":"none",
                 }}>
-                  <p style={{fontFamily:"'Geist Mono',monospace",fontSize:13,lineHeight:1.6,color:T.sub,textAlign:isMobile?"center":"right",letterSpacing:".02em"}}>{s.desc}</p>
+                  <p style={{fontFamily:"'Geist Mono',monospace",fontSize:16,lineHeight:1.6,color:T.sub,textAlign:isMobile?"center":"right",letterSpacing:".02em"}}>{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -1288,6 +1349,30 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
               ))
             }
           </div>
+
+          <Reveal delay={200}>
+            <div style={{display:"flex",justifyContent:"center",marginTop:52}}>
+              <button
+                onClick={onEnter}
+                style={{
+                  display:"inline-flex",alignItems:"center",gap:10,
+                  padding:"14px 28px",borderRadius:999,
+                  border:`1.5px solid rgba(125,57,235,.45)`,
+                  background:"rgba(125,57,235,.08)",
+                  color:T.text,fontFamily:"inherit",fontSize:15,fontWeight:500,
+                  cursor:"pointer",
+                  transition:"border-color .2s,background .2s,transform .2s",
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(125,57,235,.85)";e.currentTarget.style.background="rgba(125,57,235,.16)";e.currentTarget.style.transform="translateY(-2px)";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(125,57,235,.45)";e.currentTarget.style.background="rgba(125,57,235,.08)";e.currentTarget.style.transform="translateY(0)";}}
+              >
+                View all parking locations
+                <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 8h10M9 4l4 4-4 4"/>
+                </svg>
+              </button>
+            </div>
+          </Reveal>
         </div>
       </section>
 

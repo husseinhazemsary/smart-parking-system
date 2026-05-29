@@ -52,6 +52,9 @@ public class User implements UserDetails {
     )
     private List<ParkingLot> assignedLots = new java.util.ArrayList<>();
 
+    @Column(nullable = false, columnDefinition = "boolean not null default true")
+    private boolean emailVerified = true;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -101,4 +104,6 @@ public class User implements UserDetails {
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     public void setAssignedLots(List<ParkingLot> assignedLots) { this.assignedLots = assignedLots; }
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
 }

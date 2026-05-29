@@ -58,7 +58,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> register({
+  /// Returns the email address on success (verification required), or null on failure.
+  Future<String?> register({
     required String fullName,
     required String email,
     required String phoneNumber,
@@ -76,6 +77,25 @@ class AuthProvider extends ChangeNotifier {
         dateOfBirth: dateOfBirth,
         password: password,
       );
+      // Registration now requires email verification — no session to save yet.
+      final registeredEmail = data['email'] as String? ?? email;
+      return registeredEmail;
+    } catch (e) {
+      _error = _parseError(e);
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Verifies email with a 6-digit code, auto-logs the user in on success.
+  Future<bool> verifyEmail(String email, String code) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final data = await AuthService.verifyEmail(email, code);
       await _saveSession(data, persist: true);
       return true;
     } catch (e) {
@@ -141,10 +161,15 @@ class AuthProvider extends ChangeNotifier {
   String _parseError(dynamic e) {
     if (e is DioException) {
       final data = e.response?.data;
-      if (data is Map && data['message'] != null) return data['message'] as String;
+      if (data is Map) {
+        final msg = data['detail'] ?? data['message'];
+        if (msg != null) return msg as String;
+      }
       switch (e.response?.statusCode) {
         case 401:
           return 'Invalid email or password.';
+        case 403:
+          return 'Please verify your email before logging in. Check your inbox.';
         case 409:
           return 'An account with this email already exists.';
         case 400:

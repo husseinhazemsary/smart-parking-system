@@ -1,9 +1,6 @@
 package com.backend.smart_parking.user;
 
-import com.backend.smart_parking.user.dto.ChangePasswordRequest;
-import com.backend.smart_parking.user.dto.EmailChangeRequest;
-import com.backend.smart_parking.user.dto.UpdateProfileRequest;
-import com.backend.smart_parking.user.dto.UserProfileResponse;
+import com.backend.smart_parking.user.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,5 +39,12 @@ public class UserController {
     public void requestEmailChange(@AuthenticationPrincipal User currentUser,
                                    @Valid @RequestBody EmailChangeRequest request) {
         userService.requestEmailChange(currentUser, request);
+    }
+
+    @PostMapping("/me/verify-email-change")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyEmailChange(@AuthenticationPrincipal User currentUser,
+                                  @Valid @RequestBody VerifyEmailChangeRequest request) {
+        userService.verifyEmailChange(currentUser, request.code());
     }
 }

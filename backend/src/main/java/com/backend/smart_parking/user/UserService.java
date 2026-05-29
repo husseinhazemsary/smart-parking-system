@@ -1,10 +1,11 @@
 package com.backend.smart_parking.user;
 
+import com.backend.smart_parking.email.EmailService;
 import com.backend.smart_parking.exception.AuthException;
-import com.backend.smart_parking.user.dto.ChangePasswordRequest;
-import com.backend.smart_parking.user.dto.EmailChangeRequest;
-import com.backend.smart_parking.user.dto.UpdateProfileRequest;
-import com.backend.smart_parking.user.dto.UserProfileResponse;
+import com.backend.smart_parking.user.dto.*;
+import com.backend.smart_parking.verification.TokenType;
+import com.backend.smart_parking.verification.VerificationService;
+import com.backend.smart_parking.verification.VerificationToken;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,10 +21,17 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VerificationService verificationService;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       VerificationService verificationService,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.verificationService = verificationService;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +63,24 @@ public class UserService {
         if (userRepository.existsByEmail(request.newEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "That email address is already in use.");
         }
-        // TODO: send verification email to request.newEmail() with a signed token
+
+        String code = verificationService.createCode(user, TokenType.EMAIL_CHANGE, request.newEmail());
+        emailService.sendEmailChangeVerification(request.newEmail(), user.getFullName(), code);
+    }
+
+    public void verifyEmailChange(User user, String code) {
+        VerificationToken vt = verificationService.consumeCode(user.getId(), TokenType.EMAIL_CHANGE, code);
+        String newEmail = vt.getNewEmail();
+
+        if (newEmail == null || newEmail.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email change code.");
+        }
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "That email address is already in use.");
+        }
+
+        user.setEmail(newEmail);
+        userRepository.save(user);
     }
 
     private UserProfileResponse toResponse(User user) {
