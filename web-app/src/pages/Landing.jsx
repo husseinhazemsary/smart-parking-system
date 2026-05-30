@@ -461,6 +461,11 @@ function LocationCard({ s, onViewDetails, index=0 }){
         <div style={{padding:26,display:"flex",flexDirection:"column",flex:1}}>
           <h3 style={{fontSize:22,fontWeight:600,color:T.text,letterSpacing:"-.02em",lineHeight:1.2,marginBottom:6}}>{s.name}</h3>
           <p style={{fontSize:13,color:T.sub}}>{s.address}</p>
+          {s.distanceKm!=null&&(
+            <p style={{fontSize:12,color:T.purple,marginTop:4,fontFamily:"'Geist Mono',monospace"}}>
+              📍 {s.distanceKm<1?(s.distanceKm*1000).toFixed(0)+" m":s.distanceKm.toFixed(1)+" km"} away
+            </p>
+          )}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginTop:28,paddingTop:20,borderTop:`1px solid ${T.border}`,gap:16}}>
             <div>
               <div style={{fontSize:10,color:T.sub,textTransform:"uppercase",letterSpacing:".16em",fontWeight:500,marginBottom:6}}>Rate</div>
@@ -686,18 +691,31 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
   const hiwRef = useRef(null);
   const cursorGlowRef = useRef(null);
 
-  // fetch lots
+  // fetch lots — sorted by distance when geolocation is available
   useEffect(()=>{
-    apiFetch("/api/parking-lots")
-      .then(data=>{
-        setFeaturedLots((data||[]).map(lot=>({
-          id:lot.id, name:lot.name, address:lot.address,
-          total:lot.totalSlots, available:lot.availableSlots,
-          rate:lot.hourlyRate!=null?Number(lot.hourlyRate):0,
-          imageUrl:lot.imageUrl||null,
-        })));
-      })
-      .catch(()=>{});
+    function fetchLots(lat, lng){
+      const qs = lat != null ? `?lat=${lat}&lng=${lng}` : "";
+      apiFetch(`/api/parking-lots${qs}`)
+        .then(data=>{
+          setFeaturedLots((data||[]).map(lot=>({
+            id:lot.id, name:lot.name, address:lot.address,
+            total:lot.totalSlots, available:lot.availableSlots,
+            rate:lot.hourlyRate!=null?Number(lot.hourlyRate):0,
+            imageUrl:lot.imageUrl||null,
+            distanceKm:lot.distanceKm??null,
+          })));
+        })
+        .catch(()=>{});
+    }
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        pos => fetchLots(pos.coords.latitude, pos.coords.longitude),
+        ()  => fetchLots(null, null),
+        { timeout: 5000 }
+      );
+    } else {
+      fetchLots(null, null);
+    }
   },[]);
 
   // cycling words

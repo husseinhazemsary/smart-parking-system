@@ -258,7 +258,7 @@ const CSS = `
   /* ── CARDS STRIP ── */
   .wlt-cards-strip {
     display: flex; gap: 16px; overflow-x: auto;
-    padding-bottom: 10px; padding-top: 4px; scrollbar-width: none;
+    padding: 6px 6px 10px; scrollbar-width: none;
   }
   .wlt-cards-strip::-webkit-scrollbar { display: none; }
 
@@ -875,12 +875,7 @@ export default function WalletTab({ activeSpot, onGoToSession }) {
 
         {/* ── PAGE TITLE + ANCHOR NAV ──────────────────────────────── */}
         <div style={{paddingTop:32}}>
-          <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:T.sub,
-            letterSpacing:2.2,textTransform:"uppercase",
-            display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <span style={{display:"inline-block",width:18,height:1,background:T.purple,opacity:.55}}/>
-            Wallet
-          </div>
+          
           <div style={{fontFamily:"'Syne',sans-serif",
             fontSize:"clamp(26px,3.5vw,36px)",fontWeight:800,
             color:T.text,letterSpacing:"-1.5px",lineHeight:1.05,marginBottom:20}}>
