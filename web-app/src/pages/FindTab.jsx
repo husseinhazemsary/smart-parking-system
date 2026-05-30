@@ -440,6 +440,7 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
           <div style={{
             position:"absolute", left:15, top:"50%", transform:"translateY(-50%)",
             color:T.sub, pointerEvents:"none", display:"flex", alignItems:"center",
+            zIndex:1,
           }}>
             <SearchIcon/>
           </div>
@@ -451,24 +452,6 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
             placeholder="Where are you going?"
           />
 
-          {/* Live spots pill */}
-          {!search && (
-            <div style={{
-              position:"absolute", right:14, top:"50%", transform:"translateY(-50%)",
-              display:"flex", alignItems:"center", gap:5,
-              padding:"4px 10px", borderRadius:999,
-              background:"rgba(34,197,94,0.1)", border:"1px solid rgba(34,197,94,0.25)",
-              pointerEvents:"none",
-            }}>
-              <span style={{
-                width:6, height:6, borderRadius:"50%", background:T.green, flexShrink:0,
-                animation:"livePulse 2s ease-in-out infinite",
-              }}/>
-              <span style={{ fontSize:11, color:T.green, fontWeight:600, whiteSpace:"nowrap" }}>
-                {totalLive} spots live
-              </span>
-            </div>
-          )}
 
           {/* Clear button */}
           {search && (

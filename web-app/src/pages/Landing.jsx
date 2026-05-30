@@ -964,16 +964,21 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
         {/* Right CTA */}
         <div style={{display:"flex",gap:12,alignItems:"center"}}>
           {user ? (
-            <button onClick={onEnter} style={{
-              padding:"10px 18px",fontSize:14,color:"#07001A",fontWeight:600,
-              background:"#C6FF33",border:"none",borderRadius:999,cursor:"pointer",
-              fontFamily:"inherit",transition:"all .2s",
-              boxShadow:"0 0 0 1px rgba(255,255,255,0.12) inset,0 8px 24px -8px rgba(198,255,51,0.55)",
-            }}
-            onMouseEnter={e=>{e.currentTarget.style.background="#d4ff5c";e.currentTarget.style.transform="translateY(-1px)"}}
-            onMouseLeave={e=>{e.currentTarget.style.background="#C6FF33";e.currentTarget.style.transform="translateY(0)"}}>
-              Dashboard
-            </button>
+            <>
+              <span style={{fontSize:14,color:T.sub,fontWeight:400}}>
+                Hi, <span style={{color:T.text,fontWeight:500}}>{user.name?.split(" ")[0]}</span>
+              </span>
+              <button onClick={onEnter} style={{
+                padding:"10px 18px",fontSize:14,color:"#07001A",fontWeight:600,
+                background:"#C6FF33",border:"none",borderRadius:999,cursor:"pointer",
+                fontFamily:"inherit",transition:"all .2s",
+                boxShadow:"0 0 0 1px rgba(255,255,255,0.12) inset,0 8px 24px -8px rgba(198,255,51,0.55)",
+              }}
+              onMouseEnter={e=>{e.currentTarget.style.background="#d4ff5c";e.currentTarget.style.transform="translateY(-1px)"}}
+              onMouseLeave={e=>{e.currentTarget.style.background="#C6FF33";e.currentTarget.style.transform="translateY(0)"}}>
+                Dashboard
+              </button>
+            </>
           ) : (
             <>
               {!isMobile && (

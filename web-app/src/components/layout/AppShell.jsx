@@ -301,39 +301,43 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
     <div style={{ minHeight:"100vh",background:T.dark,color:T.text,display:"flex",flexDirection:"column" }}>
       {/* Top bar */}
       <header style={{
-        height:64,display:"flex",alignItems:"center",padding:`0 ${isMobile?"16px":"28px"}`,gap:16,
-        borderBottom:`1px solid ${T.border}`,background:"rgba(17,0,48,.95)",
-        backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50,flexShrink:0,
+        position:"fixed",top:0,left:0,right:0,zIndex:100,flexShrink:0,
+        background:"rgba(7,0,26,0.65)",backdropFilter:"blur(18px)",
+        borderBottom:`1px solid ${T.border}`,
+        padding: isMobile ? "18px 20px" : "18px 52px",
+        display:"flex",alignItems:"center",justifyContent:"space-between",
       }}>
-        <button onClick={onBack} style={{
-          background:"none",border:`1px solid ${T.border}`,borderRadius:10,
-          color:T.sub,cursor:"pointer",padding:"6px 12px",fontSize:13,
-          fontFamily:"inherit",whiteSpace:"nowrap",
-        }}>← Home</button>
-        <div style={{ fontWeight:800,fontSize:20,letterSpacing:-0.5,whiteSpace:"nowrap" }}>
+        {/* Left: Logo */}
+        <div
+          onClick={onBack}
+          style={{ fontWeight:800,fontSize:22,letterSpacing:-0.5,cursor:"pointer",flexShrink:0 }}
+        >
           <span style={{ color:T.purple }}>ez</span>rakna
         </div>
-        <div style={{ flex:1 }} />
 
-        {/* Desktop nav */}
+        {/* Center: Nav links */}
         {!isMobile && (
-          <nav className="hideScroll" style={{
-            display:"flex",gap:4,overflowX:"auto",maxWidth:"60vw",
-            paddingBottom:2,scrollbarWidth:"none",
-          }}>
+          <nav style={{ display:"flex",gap:36,fontSize:14,color:T.sub }}>
             {tabs.map(t => (
-              <button key={t.id} onClick={() => setTabSafe(t.id)} style={{
-                padding:"8px 16px",borderRadius:10,border:"none",fontFamily:"inherit",
-                background: tab===t.id ? "rgba(125,57,235,.18)" : "transparent",
-                color: tab===t.id ? T.text : T.sub,
-                fontSize:13,fontWeight:tab===t.id?700:400,cursor:"pointer",
-                position:"relative",whiteSpace:"nowrap",
-              }}>
-                {!isTablet && `${t.icon} `}{!isTablet ? t.label : t.icon}
+              <button key={t.id}
+                onClick={() => setTabSafe(t.id)}
+                className={"nav-link-ul" + (tab===t.id ? " nav-active" : "")}
+                style={{
+                  background:"none",border:"none",cursor:"pointer",
+                  color: tab===t.id ? "#C6FF33" : T.sub,
+                  fontWeight: tab===t.id ? 600 : 400,
+                  fontSize:14,fontFamily:"inherit",
+                  padding:"4px 0",transition:"color .2s",
+                  position:"relative",whiteSpace:"nowrap",
+                }}
+                onMouseEnter={e=>{ if(tab!==t.id) e.currentTarget.style.color=T.text; }}
+                onMouseLeave={e=>{ if(tab!==t.id) e.currentTarget.style.color=T.sub; }}
+              >
+                {t.label}
                 {t.dot && (
                   <span style={{
-                    position:"absolute",top:5,right:5,width:7,height:7,
-                    borderRadius:4,background:T.green,animation:"pls 1.5s infinite",
+                    position:"absolute",top:-2,right:-8,width:6,height:6,
+                    borderRadius:3,background:T.green,animation:"pls 1.5s infinite",
                   }} />
                 )}
               </button>
@@ -341,16 +345,30 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
           </nav>
         )}
 
-        {/* User controls */}
+        {/* Right: User controls */}
         <div style={{ display:"flex",alignItems:"center",gap:10,flexShrink:0 }}>
           {user ? (
             <>
-              {!isMobile && <span style={{ fontSize:13,color:T.sub,whiteSpace:"nowrap" }}>{user.name}</span>}
-              <button onClick={onLogout} style={{
-                background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",
-                borderRadius:10,color:T.red,cursor:"pointer",
-                padding:"6px 12px",fontSize:12,fontFamily:"inherit",whiteSpace:"nowrap",
-              }}>Log out</button>
+              {!isMobile && (
+                <span style={{ fontSize:13,color:T.sub,whiteSpace:"nowrap" }}>{user.name}</span>
+              )}
+              <button
+                onClick={onLogout}
+                style={{
+                  background:"transparent",border:"1px solid rgba(239,68,68,0.4)",
+                  borderRadius:100,color:T.red,cursor:"pointer",
+                  padding:"7px 16px",fontSize:13,fontFamily:"inherit",whiteSpace:"nowrap",
+                  transition:"color .2s, border-color .2s, background .2s",
+                }}
+                onMouseEnter={e=>{
+                  e.currentTarget.style.background="rgba(239,68,68,0.1)";
+                  e.currentTarget.style.borderColor="rgba(239,68,68,0.7)";
+                }}
+                onMouseLeave={e=>{
+                  e.currentTarget.style.background="transparent";
+                  e.currentTarget.style.borderColor="rgba(239,68,68,0.4)";
+                }}
+              >Log out</button>
             </>
           ) : (
             <>
@@ -360,6 +378,9 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
           )}
         </div>
       </header>
+
+      {/* Spacer to push content below fixed header (~18+20+18px) */}
+      <div style={{ height:56,flexShrink:0 }} />
 
       {/* Error banner */}
       {reserveError && (
@@ -413,7 +434,7 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
             onComplete={handleCompleteReservation}
           />
         )}
-        {tab==="wallet"  && user && <WalletTab />}
+        {tab==="wallet"  && user && <WalletTab user={user} onLogout={onLogout}/>}
         {tab==="history" && user && <HistoryTab />}
         {tab==="account" && user && (
           <AccountTab

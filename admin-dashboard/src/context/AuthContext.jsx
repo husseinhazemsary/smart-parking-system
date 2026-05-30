@@ -7,14 +7,16 @@ export function AuthProvider({ children }) {
     try { return JSON.parse(localStorage.getItem('user')) } catch { return null }
   })
 
-  function login(token, userInfo) {
+  function login(token, refreshToken, userInfo) {
     localStorage.setItem('token', token)
+    localStorage.setItem('refreshToken', refreshToken)
     localStorage.setItem('user', JSON.stringify(userInfo))
     setUser(userInfo)
   }
 
   function logout() {
     localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('user')
     setUser(null)
   }

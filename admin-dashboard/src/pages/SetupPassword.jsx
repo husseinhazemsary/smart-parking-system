@@ -53,7 +53,7 @@ export default function SetupPassword() {
         headers: { Authorization: `Bearer ${data.accessToken}` },
       })
       const profile = await profileRes.json()
-      login(data.accessToken, profile)
+      login(data.accessToken, data.refreshToken, profile)
       navigate('/', { replace: true })
     } catch (err) {
       setSubmitError(err.message)

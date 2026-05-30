@@ -40,6 +40,7 @@ public class DataSeeder {
             admin.setPassword(passwordEncoder.encode("Admin@1234"));
             admin.setProvider(AuthProvider.LOCAL);
             admin.setRole(Role.ROLE_ADMIN);
+            admin.setEmailVerified(true);
             userRepo.save(admin);
             log.info("Admin user created: admin@parking.com");
         }

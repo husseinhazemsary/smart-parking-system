@@ -71,6 +71,10 @@ export default function Ezrakna() {
         .hideScroll{msOverflowStyle:none;}
         a:hover{opacity:.8;}
         section{scroll-margin-top:68px;}
+        .nav-link-ul{position:relative;padding:4px 0;outline:none!important}
+        .nav-link-ul:focus,.nav-link-ul:focus-visible{outline:none!important;box-shadow:none!important}
+        .nav-link-ul::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;background:#C6FF33;transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.65,0,.35,1)}
+        .nav-link-ul:hover::after,.nav-link-ul.nav-active::after{transform:scaleX(1)}
       `}</style>
 
       {view==="landing"  && <Landing onEnter={handleEnter} onViewDetails={handleEnterWithSpot} onAuthOpen={(mode="login")=>{ setAuthInitialMode(mode); setAuthOpen(true); }} onBusiness={handleBusiness} user={user} />}

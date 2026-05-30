@@ -70,7 +70,7 @@ function Login() {
         return
       }
 
-      login(data.accessToken, profile)
+      login(data.accessToken, data.refreshToken, profile)
       window.location.href = '/'
     } catch {
       alert('Server error')
