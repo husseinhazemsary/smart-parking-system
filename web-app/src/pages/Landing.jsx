@@ -752,7 +752,7 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
         const t = 1 - i/Math.max(n-1,1); // 0=tail, 1=head
         const p = history[i];
         const r = 180;
-        const a = t * 0.26;
+        const a = t * 0.13;
         const g = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,r);
         g.addColorStop(0,   `rgba(125,57,235,${a.toFixed(3)})`);
         g.addColorStop(0.3, `rgba(125,57,235,${(a*0.4).toFixed(3)})`);
@@ -817,7 +817,7 @@ export default function Landing({ onEnter, onViewDetails, onAuthOpen, onBusiness
         body{background:${T.dark}}
 
         /* Cursor glow */
-        .cg{position:fixed;top:0;left:0;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle at center,rgba(125,57,235,.22) 0%,rgba(125,57,235,.11) 22%,rgba(125,57,235,.04) 45%,transparent 70%);filter:blur(18px);pointer-events:none;transform:translate(-50%,-50%);z-index:45;mix-blend-mode:screen;transition:opacity 1.4s ease;will-change:transform}
+        .cg{position:fixed;top:0;left:0;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle at center,rgba(125,57,235,.11) 0%,rgba(125,57,235,.05) 22%,rgba(125,57,235,.02) 45%,transparent 70%);filter:blur(18px);pointer-events:none;transform:translate(-50%,-50%);z-index:45;mix-blend-mode:screen;transition:opacity 1.4s ease;will-change:transform}
 
         /* Hero breathing mesh */
         @keyframes breathe{0%,100%{transform:scale(1) rotate(0deg);opacity:.85}50%{transform:scale(1.08) rotate(2deg);opacity:1}}

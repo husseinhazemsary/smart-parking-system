@@ -5,14 +5,31 @@ import GlowBtn from "../components/ui/GlowBtn";
 import apiFetch from "../api/client";
 
 const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phoneRx = /^01[0-9]{9}$/;
+
+function validatePhone(raw) {
+  const digits = raw.replace(/[\s\-()]/g, "").replace(/\D/g, "");
+  if (!digits) return "Phone number is required.";
+  if (digits[0] !== "0") return "Must start with 0 — e.g. 01012345678.";
+  if (digits.length >= 2 && digits[1] !== "1") return "Must start with 01 — e.g. 01012345678.";
+  if (digits.length >= 3 && !["010","011","012","015"].includes(digits.slice(0, 3)))
+    return "Must start with 010, 011, 012, or 015.";
+  if (digits.length > 11) {
+    const n = digits.length - 11;
+    return `${n} digit${n === 1 ? "" : "s"} too many — remove ${n}.`;
+  }
+  if (digits.length < 11) {
+    const n = 11 - digits.length;
+    return `${n} more digit${n === 1 ? "" : "s"} needed.`;
+  }
+  return "";
+}
 
 function validateField(field, value) {
   switch (field) {
     case "email":    return emailRx.test(value.trim()) ? "" : "Enter a valid email address.";
     case "password": return value.length >= 8 ? "" : "Password must be at least 8 characters.";
     case "name":     return value.trim() ? "" : "Full name is required.";
-    case "phone":    return phoneRx.test(value.replace(/\s/g, "")) ? "" : "Enter a valid Egyptian phone number (e.g. 01012345678).";
+    case "phone":    return validatePhone(value);
     case "dob":      return value ? "" : "Date of birth is required.";
     default:         return "";
   }

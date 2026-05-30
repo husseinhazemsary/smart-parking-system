@@ -51,7 +51,7 @@ public class InvitationService {
     public AuthResponse acceptInvitation(AcceptInvitationRequest req) {
         AdminInvitation inv = findValidInvitation(req.token());
 
-        if (userRepository.existsByEmail(inv.getEmail()))
+        if (userRepository.existsByEmailIgnoreCase(inv.getEmail()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
 
         List<ParkingLot> lots = parkingLotRepository.findAllById(inv.getAssignedLotIds());

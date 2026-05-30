@@ -437,7 +437,7 @@ abstract class AppLocalizations {
   /// No description provided for @myVehicles.
   ///
   /// In en, this message translates to:
-  /// **'MY VEHICLES'**
+  /// **'My Vehicles'**
   String get myVehicles;
 
   /// No description provided for @addVehicle.

@@ -30,7 +30,8 @@ export default function Ezrakna() {
   const handleAuth = (u) => { setUser(u); setAuthOpen(false); go("app"); };
   const handleUserUpdate = (updates) => {
     setUser(prev => ({ ...prev, ...updates }));
-    if (updates.name) localStorage.setItem("userName", updates.name);
+    if (updates.name)  localStorage.setItem("userName",  updates.name);
+    if (updates.email) localStorage.setItem("userEmail", updates.email);
   };
   const handleLogout = async () => {
     try {

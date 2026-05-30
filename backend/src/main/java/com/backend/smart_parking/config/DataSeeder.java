@@ -33,7 +33,7 @@ public class DataSeeder {
     }
 
     private void seedAdminUser() {
-        if (!userRepo.existsByEmail("admin@parking.com")) {
+        if (!userRepo.existsByEmailIgnoreCase("admin@parking.com")) {
             User admin = new User();
             admin.setFullName("Admin");
             admin.setEmail("admin@parking.com");

@@ -4,8 +4,21 @@ import useBreakpoint from "../hooks/useBreakpoint";
 import Modal from "../components/ui/Modal";
 import GlowBtn from "../components/ui/GlowBtn";
 import { detectEV } from "../utils/evDetection";
+import apiFetch from "../api/client";
 
 const BASE_URL = "http://localhost:8081";
+
+function validatePhone(raw) {
+  const digits = raw.replace(/[\s\-()]/g, "").replace(/^\+20/, "0").replace(/\D/g, "");
+  if (!digits) return "";                          // optional field — blank is fine
+  if (digits[0] !== "0") return "Must start with 0 — e.g. 01012345678.";
+  if (digits.length >= 2 && digits[1] !== "1") return "Must start with 01 — e.g. 01012345678.";
+  if (digits.length >= 3 && !["010","011","012","015"].includes(digits.slice(0, 3)))
+    return "Must start with 010, 011, 012, or 015.";
+  if (digits.length > 11) { const n = digits.length - 11; return `${n} digit${n === 1 ? "" : "s"} too many — remove ${n}.`; }
+  if (digits.length < 11) { const n = 11 - digits.length; return `${n} more digit${n === 1 ? "" : "s"} needed.`; }
+  return "";
+}
 
 const CSS = `
   .acc-wrap { animation:acc-up .32s cubic-bezier(.22,1,.36,1); }
@@ -134,17 +147,18 @@ function EmailCodeInput({ value, onChange }) {
 
 // ── Edit Profile Modal ────────────────────────────────────────────────────────
 
-function EditProfileModal({ open, onClose, user, profile, onSave }) {
-  const [name,    setName]    = useState("");
-  const [phone,   setPhone]   = useState("");
-  const [dob,     setDob]     = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState("");
+function EditProfileModal({ open, onClose, user, profile, onSave, onEmailChanged }) {
+  const [name,       setName]       = useState("");
+  const [phone,      setPhone]      = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [dob,        setDob]        = useState("");
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState("");
 
   // Email-change sub-flow
   const [showEmailChange, setShowEmailChange] = useState(false);
   const [newEmail,        setNewEmail]        = useState("");
-  const [emailStep,       setEmailStep]       = useState("input"); // input | code | done
+  const [emailStep,       setEmailStep]       = useState("input"); // input | code
   const [emailCode,       setEmailCode]       = useState("");
   const [emailLoading,    setEmailLoading]    = useState(false);
   const [emailError,      setEmailError]      = useState("");
@@ -154,6 +168,7 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(user?.name || "");
       setPhone(profile?.phoneNumber || "");
+      setPhoneError("");
       setDob(profile?.dateOfBirth || "");
       setError("");
       setShowEmailChange(false);
@@ -167,6 +182,8 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
   const handleSave = async () => {
     setError("");
     if (!name.trim()) { setError("Full name is required."); return; }
+    const pErr = validatePhone(phone);
+    if (pErr) { setPhoneError(pErr); return; }
     setLoading(true);
     try {
       await onSave({ fullName: name.trim(), phoneNumber: phone.trim() || undefined, dateOfBirth: dob || undefined });
@@ -209,12 +226,25 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
     setEmailError(""); setEmailLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${BASE_URL}/api/users/me/verify-email-change`, {
+      const res = await fetch(`${BASE_URL}/api/users/me/verify-email-change`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ code: emailCode }),
       });
-      setEmailStep("done");
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.message || "Invalid code. Please try again.");
+      }
+      // Fetch fresh profile from server — ground truth, same pattern as mobile
+      const profile = await apiFetch("/api/users/me");
+      if (profile?.email) {
+        localStorage.setItem("userEmail", profile.email);
+        onEmailChanged?.({ email: profile.email, name: profile.fullName });
+      }
+      setShowEmailChange(false);
+      setNewEmail("");
+      setEmailStep("input");
+      setEmailCode("");
     } catch (e) {
       setEmailError(e?.message || "Invalid code. Please try again.");
     } finally {
@@ -295,20 +325,20 @@ function EditProfileModal({ open, onClose, user, profile, onSave }) {
                 </>
               )}
 
-              {/* Step 3 — success */}
-              {emailStep === "done" && (
-                <div style={{ padding:"12px 14px",borderRadius:10,background:"rgba(34,197,94,.08)",
-                  border:"1px solid rgba(34,197,94,.25)",color:"#86EFAC",fontSize:13,lineHeight:1.6 }}>
-                  ✓ Your email has been updated to <strong>{newEmail}</strong>.
-                  Please log in again to see the change.
-                </div>
-              )}
             </div>
           )}
 
           <div>
             <div className="acc-label">PHONE NUMBER</div>
-            <input className="acc-field" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+20 100 000 0000" />
+            <input
+              className="acc-field"
+              value={phone}
+              onChange={e => { setPhone(e.target.value); if (phoneError) setPhoneError(validatePhone(e.target.value)); }}
+              onBlur={e => setPhoneError(validatePhone(e.target.value))}
+              placeholder="01012345678"
+              style={{ borderColor: phoneError ? T.red : undefined }}
+            />
+            {phoneError && <div style={{ fontSize:12, color:T.red, marginTop:4 }}>{phoneError}</div>}
           </div>
           <div>
             <div className="acc-label">DATE OF BIRTH</div>
@@ -965,7 +995,7 @@ function EditVehicleModal({ open, onClose, vehicle, onSave }) {
 
 // ── Account Tab ───────────────────────────────────────────────────────────────
 
-export default function AccountTab({ user, onLogout, vehicles, profile, onProfileUpdate, onAddVehicle, onUpdateVehicle, onDeleteVehicle, onSaveProfile, onChangePassword }) {
+export default function AccountTab({ user, onLogout, vehicles, profile, onProfileUpdate, onAddVehicle, onUpdateVehicle, onDeleteVehicle, onSaveProfile, onChangePassword, onUserUpdate }) {
   const { isMobile } = useBreakpoint();
 
   const [editOpen,        setEditOpen]        = useState(false);
@@ -1198,7 +1228,7 @@ export default function AccountTab({ user, onLogout, vehicles, profile, onProfil
           </div>
         </div>
 
-        <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} user={user} profile={profile} onSave={onSaveProfile} />
+        <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} user={user} profile={profile} onSave={onSaveProfile} onEmailChanged={onUserUpdate} />
         <ChangePasswordModal
           open={changePassOpen}
           onClose={() => setChangePassOpen(false)}

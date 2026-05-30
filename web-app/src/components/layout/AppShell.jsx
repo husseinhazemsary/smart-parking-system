@@ -427,6 +427,7 @@ export default function AppShell({ user, onLogout, onUserUpdate, onBack, onAuthO
             onDeleteVehicle={handleDeleteVehicle}
             onSaveProfile={handleSaveProfile}
             onChangePassword={handleChangePassword}
+            onUserUpdate={onUserUpdate}
           />
         )}
       </div>

@@ -23,6 +23,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final String _originalPhone;
   late final DateTime? _originalDate;
 
+  // Email change sub-flow
+  bool _showEmailChange = false;
+  // 'input' | 'code'
+  String _emailStep = 'input';
+  final TextEditingController _newEmailController = TextEditingController();
+  final List<TextEditingController> _codeControllers =
+      List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _codeFocusNodes =
+      List.generate(6, (_) => FocusNode());
+  bool _emailLoading = false;
+  String? _emailError;
+
   @override
   void initState() {
     super.initState();
@@ -42,14 +54,83 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _newEmailController.dispose();
+    for (final c in _codeControllers) c.dispose();
+    for (final n in _codeFocusNodes) n.dispose();
     super.dispose();
   }
 
   void _reset() {
     _nameController.text = _originalName;
     _phoneController.text = _originalPhone;
-    setState(() => _selectedDate = _originalDate);
+    setState(() {
+      _selectedDate = _originalDate;
+      _showEmailChange = false;
+      _emailStep = 'input';
+      _emailError = null;
+    });
+    _newEmailController.clear();
+    for (final c in _codeControllers) c.clear();
     _formKey.currentState?.reset();
+  }
+
+  void _resetEmailFlow() {
+    setState(() {
+      _showEmailChange = false;
+      _emailStep = 'input';
+      _emailError = null;
+    });
+    _newEmailController.clear();
+    for (final c in _codeControllers) c.clear();
+  }
+
+  Future<void> _sendEmailCode() async {
+    final newEmail = _newEmailController.text.trim();
+    final currentEmail =
+        context.read<UserProvider>().profile?.email ?? '';
+    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    if (!emailRegex.hasMatch(newEmail)) {
+      setState(() => _emailError = 'Enter a valid email address.');
+      return;
+    }
+    if (newEmail.toLowerCase() == currentEmail.toLowerCase()) {
+      setState(() => _emailError = "That's already your current email.");
+      return;
+    }
+    setState(() { _emailError = null; _emailLoading = true; });
+    final ok =
+        await context.read<UserProvider>().requestEmailChange(newEmail: newEmail);
+    if (!mounted) return;
+    setState(() { _emailLoading = false; });
+    if (ok) {
+      setState(() => _emailStep = 'code');
+    } else {
+      setState(() =>
+          _emailError = context.read<UserProvider>().error ?? 'Failed to send code.');
+    }
+  }
+
+  Future<void> _verifyEmailCode() async {
+    final code = _codeControllers.map((c) => c.text).join();
+    if (code.length < 6) {
+      setState(() => _emailError = 'Enter the full 6-digit code.');
+      return;
+    }
+    setState(() { _emailError = null; _emailLoading = true; });
+    final userProvider = context.read<UserProvider>();
+    final ok = await userProvider.verifyEmailChange(code: code);
+    if (!mounted) return;
+    if (ok) {
+      // Refresh profile so the displayed email updates immediately
+      await userProvider.fetchProfile();
+      if (!mounted) return;
+      _resetEmailFlow();
+    } else {
+      setState(() {
+        _emailLoading = false;
+        _emailError = userProvider.error ?? 'Invalid code. Please try again.';
+      });
+    }
   }
 
   String _dateDisplay(AppLocalizations l10n) {
@@ -156,11 +237,291 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   // ── Build ───────────────────────────────────────────────────────────────────
 
+  // ── Email section widget ────────────────────────────────────────────────────
+
+  Widget _buildEmailSection({
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color inputFill,
+    required Color borderColor,
+    required String currentEmail,
+  }) {
+    final purple = AppColors.purple;
+    final subBorder = isDark
+        ? const Color(0xFF2A1060)
+        : const Color(0xFFDDD0F5);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label row with "Change Email" button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _label('EMAIL', textSecondary),
+            if (!_showEmailChange)
+              GestureDetector(
+                onTap: () => setState(() {
+                  _showEmailChange = true;
+                  _emailStep = 'input';
+                  _emailError = null;
+                }),
+                child: Text(
+                  'Change Email',
+                  style: TextStyle(
+                    color: purple,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Read-only current email
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          decoration: BoxDecoration(
+            color: inputFill.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+          ),
+          child: Text(
+            currentEmail,
+            style: TextStyle(color: textSecondary, fontSize: 15),
+          ),
+        ),
+
+        // Email change sub-form
+        if (_showEmailChange) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.purple.withOpacity(0.04)
+                  : AppColors.purple.withOpacity(0.02),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: subBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_emailStep == 'input') ...[
+                  _label('NEW EMAIL ADDRESS', textSecondary),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _newEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    style: TextStyle(color: textPrimary, fontSize: 15),
+                    onChanged: (_) =>
+                        setState(() => _emailError = null),
+                    decoration: InputDecoration(
+                      hintText: 'new@example.com',
+                      hintStyle:
+                          TextStyle(color: textSecondary, fontSize: 14),
+                      filled: true,
+                      fillColor: inputFill,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 13),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: purple, width: 1.5),
+                      ),
+                    ),
+                  ),
+                  if (_emailError != null) ...[
+                    const SizedBox(height: 6),
+                    Text(_emailError!,
+                        style: const TextStyle(
+                            color: Colors.redAccent, fontSize: 12)),
+                  ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _resetEmailFlow,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: textSecondary,
+                            side: BorderSide(color: borderColor),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(9)),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          child: const Text('Cancel',
+                              style: TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: _emailLoading ? null : _sendEmailCode,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: purple.withOpacity(0.15),
+                            foregroundColor: purple,
+                            elevation: 0,
+                            side: BorderSide(color: purple),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(9)),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          child: Text(
+                            _emailLoading ? 'Sending…' : 'Send Code',
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (_emailStep == 'code') ...[
+                  Text(
+                    'Enter the 6-digit code sent to',
+                    style: TextStyle(color: textSecondary, fontSize: 12),
+                  ),
+                  Text(
+                    _newEmailController.text.trim(),
+                    style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+                  // 6-digit code boxes
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(6, (i) {
+                      return Container(
+                        width: 42,
+                        height: 50,
+                        margin: EdgeInsets.only(right: i < 5 ? 8 : 0),
+                        child: TextField(
+                          controller: _codeControllers[i],
+                          focusNode: _codeFocusNodes[i],
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                          maxLength: 1,
+                          style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700),
+                          decoration: InputDecoration(
+                            counterText: '',
+                            filled: true,
+                            fillColor: inputFill,
+                            contentPadding: EdgeInsets.zero,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide:
+                                  BorderSide(color: purple, width: 1.5),
+                            ),
+                          ),
+                          onChanged: (v) {
+                            setState(() => _emailError = null);
+                            if (v.isNotEmpty && i < 5) {
+                              _codeFocusNodes[i + 1].requestFocus();
+                            } else if (v.isEmpty && i > 0) {
+                              _codeFocusNodes[i - 1].requestFocus();
+                            }
+                          },
+                        ),
+                      );
+                    }),
+                  ),
+                  if (_emailError != null) ...[
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Text(_emailError!,
+                          style: const TextStyle(
+                              color: Colors.redAccent, fontSize: 12)),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => setState(() {
+                            _emailStep = 'input';
+                            _emailError = null;
+                            for (final c in _codeControllers) c.clear();
+                          }),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: textSecondary,
+                            side: BorderSide(color: borderColor),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(9)),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          child: const Text('Back',
+                              style: TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: _emailLoading ? null : _verifyEmailCode,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: purple.withOpacity(0.15),
+                            foregroundColor: purple,
+                            elevation: 0,
+                            side: BorderSide(color: purple),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(9)),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          child: Text(
+                            _emailLoading ? 'Verifying…' : 'Confirm Change',
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Build ───────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
     final l10n = AppLocalizations.of(context)!;
-    final isLoading = context.watch<UserProvider>().isLoading;
+    final userProvider = context.watch<UserProvider>();
+    final isLoading = userProvider.isLoading;
+    final currentEmail = userProvider.profile?.email ?? '';
     final bgColor =
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final textPrimary =
@@ -253,6 +614,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           textSecondary: textSecondary,
                         ),
                         validator: _validateName,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildEmailSection(
+                        isDark: isDark,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        inputFill: inputFill,
+                        borderColor: borderColor,
+                        currentEmail: currentEmail,
                       ),
                       const SizedBox(height: 20),
                       _label(l10n.phoneNumber, textSecondary),

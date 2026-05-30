@@ -60,12 +60,13 @@ public class UserService {
     }
 
     public void requestEmailChange(User user, EmailChangeRequest request) {
-        if (userRepository.existsByEmail(request.newEmail())) {
+        String newEmail = request.newEmail().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(newEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "That email address is already in use.");
         }
 
-        String code = verificationService.createCode(user, TokenType.EMAIL_CHANGE, request.newEmail());
-        emailService.sendEmailChangeVerification(request.newEmail(), user.getFullName(), code);
+        String code = verificationService.createCode(user, TokenType.EMAIL_CHANGE, newEmail);
+        emailService.sendEmailChangeVerification(newEmail, user.getFullName(), code);
     }
 
     public void verifyEmailChange(User user, String code) {
@@ -75,7 +76,7 @@ public class UserService {
         if (newEmail == null || newEmail.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email change code.");
         }
-        if (userRepository.existsByEmail(newEmail)) {
+        if (userRepository.existsByEmailIgnoreCase(newEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "That email address is already in use.");
         }
 

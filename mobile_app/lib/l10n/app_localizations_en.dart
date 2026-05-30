@@ -180,7 +180,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profile => 'Profile';
 
   @override
-  String get myVehicles => 'MY VEHICLES';
+  String get myVehicles => 'My Vehicles';
 
   @override
   String get addVehicle => 'Add Vehicle';

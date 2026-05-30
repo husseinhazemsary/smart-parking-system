@@ -57,7 +57,8 @@ public class AuthService {
     }
 
     public RegisterResponse register(RegisterRequest request) {
-        User user = userRepository.findByEmail(request.email()).orElse(null);
+        String email = request.email().trim().toLowerCase();
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
 
         if (user != null) {
             // Already verified (or OAuth account) — reject as duplicate
@@ -72,7 +73,7 @@ public class AuthService {
         } else {
             user = new User();
             user.setFullName(request.fullName());
-            user.setEmail(request.email());
+            user.setEmail(email);
             user.setPhoneNumber(request.phoneNumber());
             user.setDateOfBirth(request.dateOfBirth());
             user.setPassword(passwordEncoder.encode(request.password()));
@@ -88,7 +89,7 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailIgnoreCase(request.email())
                 .orElseThrow(() -> new AuthException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -104,7 +105,7 @@ public class AuthService {
     }
 
     public AuthResponse verifyEmail(VerifyEmailRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailIgnoreCase(request.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid code."));
 
         verificationService.consumeCode(user.getId(), TokenType.EMAIL_VERIFICATION, request.code());
@@ -114,7 +115,7 @@ public class AuthService {
     }
 
     public void resendVerification(ResendVerificationRequest request) {
-        userRepository.findByEmail(request.email()).ifPresent(user -> {
+        userRepository.findByEmailIgnoreCase(request.email()).ifPresent(user -> {
             if (!user.isEmailVerified() && user.getProvider() == AuthProvider.LOCAL) {
                 String code = verificationService.createCode(user, TokenType.EMAIL_VERIFICATION, null);
                 emailService.sendEmailVerification(user.getEmail(), user.getFullName(), code);
@@ -123,7 +124,7 @@ public class AuthService {
     }
 
     public void forgotPassword(ForgotPasswordRequest request) {
-        userRepository.findByEmail(request.email()).ifPresent(user -> {
+        userRepository.findByEmailIgnoreCase(request.email()).ifPresent(user -> {
             if (user.getProvider() == AuthProvider.LOCAL) {
                 String code = verificationService.createCode(user, TokenType.PASSWORD_RESET, null);
                 emailService.sendPasswordReset(user.getEmail(), user.getFullName(), code);
@@ -132,7 +133,7 @@ public class AuthService {
     }
 
     public void resetPassword(ResetPasswordRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailIgnoreCase(request.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid code."));
 
         verificationService.consumeCode(user.getId(), TokenType.PASSWORD_RESET, request.code());
@@ -176,9 +177,10 @@ public class AuthService {
     }
 
     private AuthResponse loginWithOAuth(OAuthUserInfo info, AuthProvider provider) {
-        User user = userRepository.findByEmail(info.email()).orElseGet(() -> {
+        String oauthEmail = info.email().trim().toLowerCase();
+        User user = userRepository.findByEmailIgnoreCase(oauthEmail).orElseGet(() -> {
             User newUser = new User();
-            newUser.setEmail(info.email());
+            newUser.setEmail(oauthEmail);
             newUser.setFullName(info.fullName());
             newUser.setProvider(provider);
             newUser.setProviderId(info.providerId());

@@ -112,7 +112,7 @@ public class AdminService {
 
     @Transactional
     public void createLotAdmin(CreateLotAdminRequest req) {
-        if (userRepository.existsByEmail(req.email()))
+        if (userRepository.existsByEmailIgnoreCase(req.email()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         if (invitationRepository.existsByEmail(req.email()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An invitation is already pending for this email");
@@ -138,7 +138,7 @@ public class AdminService {
     public LotAdminResponse updateLotAdmin(UUID id, UpdateLotAdminRequest req) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lot admin not found"));
-        if (!user.getEmail().equals(req.email()) && userRepository.existsByEmail(req.email()))
+        if (!user.getEmail().equals(req.email()) && userRepository.existsByEmailIgnoreCase(req.email()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         List<ParkingLot> lots = parkingLotRepository.findAllById(req.assignedLotIds());
         if (lots.isEmpty())

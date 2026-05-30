@@ -32,4 +32,12 @@ class UserService {
       'newPassword': newPassword,
     });
   }
+
+  static Future<void> requestEmailChange({required String newEmail}) async {
+    await _dio.post('/users/me/email-change-request', data: {'newEmail': newEmail});
+  }
+
+  static Future<void> verifyEmailChange({required String code}) async {
+    await _dio.post('/users/me/verify-email-change', data: {'code': code});
+  }
 }

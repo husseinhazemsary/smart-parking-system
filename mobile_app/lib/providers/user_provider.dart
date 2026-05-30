@@ -87,6 +87,38 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> requestEmailChange({required String newEmail}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await UserService.requestEmailChange(newEmail: newEmail);
+      return true;
+    } catch (e) {
+      _error = _parseError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifyEmailChange({required String code}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await UserService.verifyEmailChange(code: code);
+      return true;
+    } catch (e) {
+      _error = _parseError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   String _parseError(dynamic e) {
     if (e is DioException) {
       final data = e.response?.data;
