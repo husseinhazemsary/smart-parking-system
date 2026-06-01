@@ -16,4 +16,6 @@ public interface ParkingSlotRepository extends JpaRepository<ParkingSlot, UUID> 
     List<ParkingSlot> findAllByParkingLotIdOrderBySlotLabel(UUID parkingLotId);
 
     List<ParkingSlot> findAllByParkingLotIdInOrderBySlotLabel(List<UUID> parkingLotIds);
+
+    java.util.Optional<ParkingSlot> findFirstByParkingLotIdAndStatusOrderBySlotLabel(UUID parkingLotId, SlotStatus status);
 }

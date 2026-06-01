@@ -13,9 +13,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     boolean existsByUserIdAndStatus(UUID userId, ReservationStatus status);
 
-    boolean existsBySpotIdAndStatusIn(UUID spotId, List<ReservationStatus> statuses);
-
-    List<Reservation> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
+List<Reservation> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
 
     List<Reservation> findAllByStatus(ReservationStatus status);
 
@@ -26,6 +24,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<Reservation> findAllByStatusInOrderByCreatedAtDesc(List<ReservationStatus> statuses);
 
     List<Reservation> findByEnteredAtAfterOrderByEnteredAtDesc(Instant since);
+
+    long countByGate_ParkingLot_IdAndStatusIn(UUID parkingLotId, List<ReservationStatus> statuses);
 
     List<Reservation> findAllByGate_ParkingLot_IdOrderByCreatedAtDesc(UUID lotId);
 

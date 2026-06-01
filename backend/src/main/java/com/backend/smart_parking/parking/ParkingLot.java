@@ -63,6 +63,7 @@ public class ParkingLot {
     @Column(nullable = false)
     private LotCategory category = LotCategory.OTHER;
 
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "parking_lot_amenities", joinColumns = @JoinColumn(name = "parking_lot_id"))
     @Column(name = "amenity")

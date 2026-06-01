@@ -52,35 +52,32 @@ public class ReservationService {
                     "You already have a pending or active reservation");
         }
 
-        if (reservationRepository.existsBySpotIdAndStatusIn(req.getSpotId(),
-                List.of(ReservationStatus.PENDING, ReservationStatus.ACTIVE))) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Spot is already reserved");
-        }
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         Vehicle vehicle = vehicleRepository.findById(req.getVehicleId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vehicle not found"));
-        Gate gate = gateRepository.findById(req.getGateId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gate not found"));
-        ParkingSlot spot = slotRepository.findById(req.getSpotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Spot not found"));
 
-        if (spot.getStatus() != SlotStatus.AVAILABLE) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Spot is not available");
+        Gate gate = gateRepository.findAllByParkingLotIdAndIsActiveTrue(req.getParkingLotId())
+                .stream().findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No active gate found for this parking lot"));
+
+        int totalSpots = slotRepository.countByParkingLotId(req.getParkingLotId());
+        long activeReservations = reservationRepository.countByGate_ParkingLot_IdAndStatusIn(
+                req.getParkingLotId(), List.of(ReservationStatus.PENDING, ReservationStatus.ACTIVE));
+
+        if (activeReservations >= totalSpots) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No available spots in this parking lot");
         }
 
         Reservation reservation = new Reservation();
         reservation.setUser(user);
         reservation.setVehicle(vehicle);
         reservation.setGate(gate);
-        reservation.setSpot(spot);
         reservation.setStartTime(req.getStartTime());
         reservation.setEndTime(req.getEndTime());
         reservation.setStatus(ReservationStatus.PENDING);
-
-        spot.setStatus(SlotStatus.RESERVED);
-        slotRepository.save(spot);
 
         return toResponse(reservationRepository.save(reservation));
     }
@@ -95,8 +92,6 @@ public class ReservationService {
 
         reservation.setStatus(ReservationStatus.ACTIVE);
         reservation.setEnteredAt(Instant.now());
-        reservation.getSpot().setStatus(SlotStatus.OCCUPIED);
-        slotRepository.save(reservation.getSpot());
 
         return toResponse(reservationRepository.save(reservation));
     }
@@ -111,8 +106,6 @@ public class ReservationService {
 
         reservation.setStatus(ReservationStatus.COMPLETED);
         reservation.setExitedAt(Instant.now());
-        reservation.getSpot().setStatus(SlotStatus.AVAILABLE);
-        slotRepository.save(reservation.getSpot());
 
         return toResponse(reservationRepository.save(reservation));
     }
@@ -120,14 +113,13 @@ public class ReservationService {
     public ReservationResponse cancelReservation(UUID reservationId, UUID userId) {
         Reservation reservation = findAndValidateOwnership(reservationId, userId);
 
-        if (reservation.getStatus() != ReservationStatus.PENDING) {
+        if (reservation.getStatus() != ReservationStatus.PENDING &&
+                reservation.getStatus() != ReservationStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only PENDING reservations can be cancelled");
+                    "Only PENDING or ACTIVE reservations can be cancelled");
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);
-        reservation.getSpot().setStatus(SlotStatus.AVAILABLE);
-        slotRepository.save(reservation.getSpot());
 
         return toResponse(reservationRepository.save(reservation));
     }
@@ -156,8 +148,6 @@ public class ReservationService {
                 .filter(r -> r.getStartTime().isBefore(Instant.now().minusSeconds(900)))
                 .forEach(r -> {
                     r.setStatus(ReservationStatus.EXPIRED);
-                    r.getSpot().setStatus(SlotStatus.AVAILABLE);
-                    slotRepository.save(r.getSpot());
                     reservationRepository.save(r);
                 });
     }
@@ -193,8 +183,8 @@ public class ReservationService {
                 r.getVehicle().getPlateNumber(),
                 r.getGate().getId(),
                 r.getGate().getName(),
-                r.getSpot().getId(),
-                r.getSpot().getSlotLabel(),
+                null,
+                null,
                 lotName,
                 hourlyRate,
                 r.getStartTime(),

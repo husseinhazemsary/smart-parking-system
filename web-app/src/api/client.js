@@ -55,7 +55,6 @@ export default async function apiFetch(path, options = {}, _retry = false) {
 
   if (!res.ok) {
     if (res.status === 401 && !_retry) {
-      // Only attempt refresh if the user was actually authenticated
       const hadToken = !!localStorage.getItem("token");
       if (hadToken) {
         const refreshed = await tryRefresh();

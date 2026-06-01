@@ -967,6 +967,24 @@ export default function AccountTab({ user, vehicles, profile, onProfileUpdate, o
   const [changePassOpen, setChangePassOpen] = useState(false);
   const [deletingId,     setDeletingId]     = useState(null);
 
+  const [sessionCount, setSessionCount] = useState(0);
+  const [totalSpent,   setTotalSpent]   = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    apiFetch("/api/reservations/history").then(history => {
+      if (!Array.isArray(history)) return;
+      const completed = history.filter(r => r.status === "COMPLETED");
+      setSessionCount(completed.length);
+      const spent = completed.reduce((sum, r) => {
+        if (!r.enteredAt || !r.exitedAt || !r.hourlyRate) return sum;
+        const hours = (new Date(r.exitedAt) - new Date(r.enteredAt)) / 3_600_000;
+        return sum + hours * Number(r.hourlyRate);
+      }, 0);
+      setTotalSpent(Math.round(spent));
+    }).catch(() => {});
+  }, [user]);
+
   const [prefs, setPrefs] = useState({ notifications:true, location:true, emailAlerts:false, darkMode:true });
   const toggle = k => setPrefs(p => ({ ...p, [k]: !p[k] }));
 
@@ -1014,12 +1032,12 @@ export default function AccountTab({ user, vehicles, profile, onProfileUpdate, o
               <div className="acc-stat-lbl">Vehicles</div>
             </div>
             <div className="acc-stat">
-              <div className="acc-stat-val">14</div>
+              <div className="acc-stat-val">{sessionCount}</div>
               <div className="acc-stat-lbl">Sessions</div>
             </div>
             <div className="acc-stat">
-              <div className="acc-stat-val">320</div>
-              <div className="acc-stat-lbl">EGP Saved</div>
+              <div className="acc-stat-val">{totalSpent}</div>
+              <div className="acc-stat-lbl">EGP Spent</div>
             </div>
           </div>
         </div>

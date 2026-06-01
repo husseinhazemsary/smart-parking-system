@@ -428,8 +428,8 @@ export default function FindTab({ onReserve, user, onAuthOpen, initialSpotId, on
               <div style={{ fontSize: 11, color: T.sub }}>Browse freely — log in when you're ready to book.</div>
             </div>
             <div style={{ display:"flex", gap:7, flexShrink:0 }}>
-              <GlowBtn small outline noArrow onClick={onAuthOpen}>Log In</GlowBtn>
-              <GlowBtn small noArrow onClick={onAuthOpen}>Sign Up</GlowBtn>
+              <GlowBtn small outline noArrow onClick={() => onAuthOpen?.("login")}>Log In</GlowBtn>
+              <GlowBtn small noArrow onClick={() => onAuthOpen?.("signup")}>Sign Up</GlowBtn>
             </div>
           </div>
         )}
@@ -872,8 +872,8 @@ function DetailModal({ spot:s, user, onClose, onReserve, onViewSlots, onAuthOpen
               <span style={{fontSize:16}}>🔐</span>
               <span style={{fontSize:12,color:T.sub,flex:1}}>Log in to complete your reservation</span>
               <div style={{display:"flex",gap:6,flexShrink:0}}>
-                <GlowBtn small outline noArrow onClick={onAuthOpen}>Log In</GlowBtn>
-                <GlowBtn small noArrow onClick={onAuthOpen}>Sign Up</GlowBtn>
+                <GlowBtn small outline noArrow onClick={() => onAuthOpen?.("login")}>Log In</GlowBtn>
+                <GlowBtn small noArrow onClick={() => onAuthOpen?.("signup")}>Sign Up</GlowBtn>
               </div>
             </div>
           )}

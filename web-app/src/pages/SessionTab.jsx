@@ -177,11 +177,26 @@ export default function SessionTab({ activeReservation, vehicles, onActivate, on
           </>
         )}
         {isActive && (
-          <div style={{ flex:1 }}>
-            <GlowBtn full noArrow onClick={() => onComplete(id)}>
-              🚪 Exit Parking
-            </GlowBtn>
-          </div>
+          <>
+            <div style={{ flex:2 }}>
+              <GlowBtn full noArrow onClick={() => onComplete(id)}>
+                🚪 Exit Parking
+              </GlowBtn>
+            </div>
+            <button
+              onClick={() => onCancel(id)}
+              style={{
+                flex:1,padding:"12px 18px",borderRadius:13,
+                border:"1px solid rgba(239,68,68,.3)",background:"rgba(239,68,68,.07)",
+                color:T.red,fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",
+                transition:"background .2s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,.14)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(239,68,68,.07)"}
+            >
+              Cancel Session
+            </button>
+          </>
         )}
       </div>
     </div>
